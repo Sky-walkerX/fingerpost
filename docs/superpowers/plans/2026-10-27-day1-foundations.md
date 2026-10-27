@@ -444,10 +444,10 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
 - [x] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay. Uses guidance-spec §3's 640×480 aspect-preserving letterbox; six projection tests added red-first, then all 18 JVM tests pass. Build and lint pass.
 - [x] **Step 3: Build and install.** Run `./gradlew :app:installDebug`. Final optimized APK installed and launched successfully on 2026-10-28.
 - [ ] **Step 4: Check on the device.**
-  - The dot follows the index fingertip.
-  - The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
-  - Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
-  - **Blocked (2026-10-28):** two GPU runs miss the target; optimized run 8–11 fps / 45–92 ms after warm-up. Visual/orientation acceptance remains pending. See device report and progress Blocker; do not start T7d.
+  - [x] The dot follows the index fingertip in portrait and landscape and disappears when the hand leaves view. User confirmed on 2026-10-28.
+  - [ ] The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
+  - [x] Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
+  - **Blocked (2026-10-28):** two GPU runs miss the target; optimized run 8–11 fps / 45–92 ms after warm-up. Visual/orientation acceptance passed; performance and camera-screen TalkBack recheck remain pending. See device report and progress Blocker; do not start T7d.
 - [ ] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`
 

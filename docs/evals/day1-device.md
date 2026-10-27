@@ -11,6 +11,7 @@
 - Only one frame can be in flight. The optimized build reuses its model bitmap/MPImage and avoids camera bitmap conversion while the tracker is busy. Lifecycle stop closes the tracker and camera use cases.
 - `./scripts/android.sh :core:guidance:test :app:test :app:assembleDebug :app:lintDebug --console=plain` passes. Guidance: **18 tests, 0 failures/errors/skips**. App unit-test task has no source cases. Lint: 0 errors, 4 advisories (planned target SDK, backup metadata, launcher icon, bitmap KTX suggestion). No checks were disabled.
 - `./scripts/android.sh :app:installDebug --console=plain` succeeds after USB reconnection. Launch returns `Status: ok`. Final optimized APK was installed and launched.
+- **Visual acceptance passed (2026-10-28):** the user confirmed that the yellow dot follows the index fingertip in portrait and landscape and disappears when the hand leaves view. This is direct on-device confirmation; no camera image was exported.
 
 ## Device performance
 
@@ -23,13 +24,12 @@ Requirement: **≥25 result FPS and ≤25 ms inference**.
 
 FPS is a rolling count of result callbacks in the preceding second, including no-hand results. Inference is elapsed monotonic time from `detectAsync` submission to result handling; it excludes camera conversion/letterboxing. Logs are emitted about once per second and include the maximum callback latency in the rolling window. The 45–92 ms range describes those logged samples, not every frame. The second probe requires every retained window to meet FPS and maximum-latency budgets.
 
-The phone reported thermal status 1 (light throttling) during run 1. No controlled unthrottled comparison was made, so the cause of the shortfall is not established. The hand-count changes establish that the model returns both hand and no-hand results; they do **not** establish correct dot alignment or disappearance on screen.
+The phone reported thermal status 1 (light throttling) during run 1. No controlled unthrottled comparison was made, so the cause of the shortfall is not established. The hand-count changes establish that the model returns both hand and no-hand results. Correct dot alignment in both orientations and disappearance on screen were subsequently confirmed by the user, independently of the telemetry.
 
 Only the app's numeric tracking logs were read. No camera screenshot, recording, frame, landmark coordinates, or user content was exported. The exact second-probe command and its final output are preserved under [D1-T7c in progress.md](../progress.md#blockers).
 
 ## Remaining acceptance and next action
 
-- User confirmation: dot follows the index fingertip in portrait and landscape and disappears when the hand leaves view.
 - Confirm the added preview/debug content does not create extra TalkBack elements.
 - Resolve the performance shortfall, then rerun the documented build/test/install and device acceptance. Do not reduce the target, change pinned dependencies, or claim a faster phone is necessary without investigation.
 - Two unsuccessful performance attempts are recorded. AGENTS.md §9 requires stopping further attempts and task progression here. T7d remains unstarted.
