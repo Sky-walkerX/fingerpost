@@ -251,11 +251,11 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
     - Empty content → throw `Spark returned no content`. Then `SparkScreen.parse(JSON.parse(content))`.
     - Returns `{ layout: toLayout(...), usage: { inputTokens: prompt_tokens ?? 0, outputTokens: completion_tokens ?? 0 }, latencyMs, promptId: 'parse-screen.v1' }`.
 
-- [ ] **Step 1: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- sam spark-parse geometry`. Geometry should pass (15); sam and spark-parse fail with TODO(D1-T4).
-- [ ] **Step 2: Implement `sam.ts`.**
-- [ ] **Step 3: Implement `spark-parse.ts`.**
-- [ ] **Step 4: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 43 passed in total.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Confirm red.** Run `pnpm --filter @fingerpost/gateway test sam spark-parse geometry`. Geometry should pass (15); sam and spark-parse fail with TODO(D1-T4).
+- [x] **Step 2: Implement `sam.ts`.**
+- [x] **Step 3: Implement `spark-parse.ts`.**
+- [x] **Step 4: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 43 passed in total.
+- [x] **Step 5: Commit.**
   `git add services/gateway && git commit -m "feat(gateway): Spark screen parse + SAM 3.1 segmentation adapters"`
 
 ### Task D1-T5 (needs T0 keys and photos): live smoke, Cloud Run deploy, region latency (ADR-0003)

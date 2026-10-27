@@ -34,9 +34,41 @@ export const normalizeLabel = (s: string) => s.normalize('NFKC').toLowerCase().r
 
 /** Spark output → protocol layout. Drops zero-area boxes and empty labels; clamps confidence; ids are e1, e2, … in Spark's order. */
 export function toLayout(s: SparkScreen): ParsedLayout {
-  throw new Error('TODO(D1-T4): implement this; the tests describe the behaviour');
+  const elements: LayoutElement[] = [];
+  for (const element of s.elements) {
+    const box = normalizeSparkBox(element.bbox);
+    const label = element.label.trim();
+    if (!label || box.w === 0 || box.h === 0) continue;
+    const right = Math.min(1, box.u + box.w), bottom = Math.min(1, box.v + box.h);
+    const textNorm = normalizeLabel(label);
+    elements.push({ id: `e${elements.length + 1}`, label, role: element.role,
+      polygon: [{ u: box.u, v: box.v }, { u: right, v: box.v }, { u: right, v: bottom }, { u: box.u, v: bottom }],
+      confidence: Math.max(0, Math.min(1, element.confidence)),
+      ...(element.label_local !== null ? { labelLocal: element.label_local } : {}),
+      ...(element.state !== null ? { state: element.state } : {}),
+      ...(textNorm ? { textNorm } : {}),
+    });
+  }
+  return { screenType: s.screen_type, sensitivity: s.sensitivity,
+    language: s.language.slice(0, 16) || 'und', rotation: s.rotation, elements };
 }
 
 export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string }): Promise<ParseResult> {
-  throw new Error('TODO(D1-T4): implement this; the tests describe the behaviour');
+  const started = performance.now();
+  const response = await client.chat.completions.create({
+    model: MODELS.spark,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: [
+        { type: 'text', text: `Locale for label_local: ${opts.locale}.` + (opts.goal ? ` The user wants to: ${opts.goal}` : '') },
+        { type: 'image_url', image_url: { url: toDataUrl(image.bytes, image.mime) } },
+      ] },
+    ],
+    response_format: { type: 'json_schema', json_schema: { name: 'screen_layout', strict: true, schema: SPARK_SCREEN_JSON_SCHEMA } },
+  });
+  const content = response.choices[0]?.message.content;
+  if (!content) throw new Error('Spark returned no content');
+  const layout = toLayout(SparkScreen.parse(JSON.parse(content)));
+  return { layout, usage: { inputTokens: response.usage?.prompt_tokens ?? 0, outputTokens: response.usage?.completion_tokens ?? 0 },
+    latencyMs: Math.round(performance.now() - started), promptId: PARSE_PROMPT_ID };
 }
