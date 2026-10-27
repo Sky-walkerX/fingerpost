@@ -61,12 +61,12 @@ Agents and people both update this file. Keep each line short. Status values are
 _(task id · exact command · last lines of output · what you tried)_
 
 
-- D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
+- D1-T6 · A Galaxy A14 phone is connected; the required Android tablet has not been verified. Browser fast-food flow and scrambled PIN scene pass; tablet fullscreen/three-finger export acceptance remains pending.
 
 
 - D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
 
-- D1-T7b · `~/Android/Sdk/platform-tools/adb devices -l` returns only `List of devices attached`. App debug APK and signature verification pass, but install/permission-denial/settings-return/TalkBack checks require a connected phone. User asked to connect one; no device results assumed.
+- D1-T7b · Galaxy A14 (SM-A146B), Android 15/API 35, is now connected and authorized. Gradle installDebug succeeds on one device and MainActivity launches with Status ok. Camera is initially ungranted; accessibility initially off. Permission-denial/settings-return/TalkBack acceptance awaits user verification; task remains doing.
 - D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` fails: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` This is the D2-T1 module, not yet implemented. Current guidance tests and app build pass individually; CI workflow retained intact.
 
 ## Deviations from the plan
@@ -110,3 +110,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T4 complete: red run confirmed 12 adapter TODO failures; implemented Spark strict-schema parsing/layout normalization and SAM prompting, mask selection and polygon conversion. All 43 gateway tests, recursive typecheck and protocol/gateway builds pass. Fixture/stub tests only; no live API requests or paid calls.
 - 2026-10-28: D1-T7b shell implemented: Compose theme, camera permission request, denied-permission settings screen and announcement, lifecycle refresh after Settings, and one merged TalkBack action. `./scripts/android.sh :app:test :app:assembleDebug --console=plain` succeeds with compile SDK 37; app:test has no source cases. APK produced at apps/android/app/build/outputs/apk/debug/app-debug.apk. Device permission/TalkBack checks still pending.
 - 2026-10-28: Android debug APK signature verification (v2) and ZIP integrity pass; package io.github.fingerpost, min SDK 29, target SDK 36, compile SDK 37 verified with aapt. All 103 TS tests pass. D1-T7b remains blocked only on phone acceptance; D1-T7c/T7d have not started.
+- 2026-10-28: D1-T7b device connection resolved: Galaxy A14 SM-A146B, Android 15/API 35, authorized over USB. `./scripts/android.sh :app:installDebug --console=plain` succeeds (installed on one device); `am start -W -n io.github.fingerpost/.MainActivity` returns Status ok, process running. Awaiting manual TalkBack/permission acceptance before marking done or starting camera tracking. No device serial stored.
