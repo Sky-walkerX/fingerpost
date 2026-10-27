@@ -10,7 +10,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
 | D1-T1 | Monorepo root | – | – | done | Codex |
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
-| D1-T3 | Gateway: config, hub, app, container | B | T2 | blocked | Codex |
+| D1-T3 | Gateway: config, hub, app, container | B | T2 | doing | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | todo | |
@@ -60,7 +60,6 @@ Agents and people both update this file. Keep each line short. Status values are
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
-- D1-T3 · Spec conflict: `docs/protocol.md` Transport says “Going over a limit returns `error{code:"rate_limited"}`”; Day 1 plan rules 1/5 and `services/gateway/test/session.test.ts` require `bad_message` for oversized text/keyframes. AGENTS.md §4 requires blocking rather than changing tests; user decision requested. Hub remains a TODO.
 - D1-T3 · `docker version` → `/bin/bash: line 1: docker: command not found`. Container build/run cannot be verified; Docker is not installed.
 
 ## Deviations from the plan
@@ -70,6 +69,8 @@ _(task id · what changed · why · who approved)_
 
 - D1-T3 · Omitted literal `--` from targeted pnpm test commands: the documented command ran all 43 gateway tests, including D1-T4. Corrected `pnpm --filter @fingerpost/gateway test app session` selects the intended 14 tests.
 - D1-T3 · Removed Docker COPY lines for unrelated web/evals manifests (evals does not yet exist); gateway dependency installation only needs the protocol and gateway workspaces. Container execution remains unverified.
+
+- D1-T3 · User resolved the size-limit conflict on 2026-10-28: use `bad_message` for oversized text/keyframes and update the protocol prose to match existing tests. No message schema or Kotlin model changes are needed.
 
 ## Measurements
 | Date | What | Value | Where |
