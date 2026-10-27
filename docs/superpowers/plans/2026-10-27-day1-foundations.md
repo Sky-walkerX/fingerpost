@@ -345,13 +345,13 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - `tonePan(ex) = clamp(ex / 0.3, −1, 1)`
 - `magnitudeWord(e)`: `> 0.30 → A_LOT`; `≥ 0.10 → NONE`; `≥ 0.03 → A_LITTLE`; else `null`.
 
-- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 apps/android && chmod +x apps/android/gradlew`
-- [ ] **Step 2: Confirm red.** Run `cd apps/android && ./gradlew :core:guidance:test --console=plain`. Expected: 7 failures (CuesTest); OneEuroFilterTest passes.
+- [x] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 apps/android && chmod +x apps/android/gradlew`
+- [x] **Step 2: Confirm red.** Run `cd apps/android && ./gradlew :core:guidance:test --console=plain`. Expected: 7 failures (CuesTest); OneEuroFilterTest passes.
   - If Gradle can't find a JDK 21, check `JAVA_HOME` (D1-T0).
   - `gradle.properties` turns on configure-on-demand, so this task doesn't configure `:app`.
-- [ ] **Step 3: Implement `Cues.kt`.**
-- [ ] **Step 4: Confirm green.** Run `./gradlew :core:guidance:test`. Expected: 12 tests pass.
-- [ ] **Step 5: Commit.**
+- [x] **Step 3: Implement `Cues.kt`.**
+- [x] **Step 4: Confirm green.** Run `./gradlew :core:guidance:test`. Expected: 12 tests pass.
+- [x] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): gradle project, core:guidance cue math"`
 
 ### Task D1-T7b: app shell (Compose, TalkBack, camera permission)

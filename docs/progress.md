@@ -14,7 +14,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
-| D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | doing | Codex |
+| D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | todo | |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
 | D1-T7d | Tone prototype | A | T7c | todo | |
@@ -96,3 +96,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: Final baseline: protocol 46/46 and simulator 14/14 pass; gateway 31/43 pass with 12 D1-T4 TODO failures. `pnpm -r test` exits 1 as expected; all workspace typechecks and current package builds pass. CI run 40562763885 at 4512cdb is red; no claim of full application or CI completion.
 - 2026-10-28: Android tooling prerequisite resolved: java/javac 21.0.13 verified; official SDK CLI lists Platform 36 revision 2 and Build Tools 36.0.0. Added scripts/android.sh and docs/local-development.md. D1-T0 accounts/credits/photos/outreach remain pending.
 - 2026-10-28: D1-T3 complete: Dockerfile builds under rootless Podman; container /healthz returns status ok/version dev/protocol fp.v1, runtime UID 1000. Verification container removed. All 14 app/session tests and recursive TS typecheck pass.
+- 2026-10-28: D1-T7a complete: Android Gradle project copied; red run confirmed 7 CuesTest TODO failures with 5 filter tests passing; cue frequency, pan and magnitude implemented from guidance-spec §§5/7. All 12 JVM tests pass on JDK 21 / Gradle 9.8.2. App shell is the next Android task.
