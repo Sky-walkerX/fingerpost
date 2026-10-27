@@ -55,7 +55,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
 - Fixed in Day 3 assets: live config fails closed (AUTH_REQUIRED=false needs ALLOW_UNAUTHENTICATED_LIVE=true); software attestation off by default in live; challenge/attest rate-limited per IP; sim route disabled in live without SIM_TOKEN, timing-safe compare; kill switch also applies to unauthenticated sessions.
-- **Still open:** the Day 2 `app.ts` asset compares SIM_TOKEN with `!==` and leaves the sim route open in live without a token. Before deploying Day 2 live, set SIM_TOKEN; Day 3 replaces the file anyway.
+- Also fixed in Day 2 assets: the sim route fails closed in live mode and compares the token in constant time. Nothing is open.
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
@@ -68,4 +68,4 @@ _(task id · what changed · why · who approved)_
 |---|---|---|---|
 
 ## Log
-- 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 97 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
+- 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.

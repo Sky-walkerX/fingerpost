@@ -18,7 +18,7 @@
 - `docs/design.md` §4.1–§4.4.
 
 **Assets:** `docs/superpowers/plans/assets/day2/`, applied with `assets/apply.sh 2 <path>`. Skeletons throw `TODO(D2-Tn)`. Planning verified that the Day 2 starting state typechecks and compiles, that only Day 2 tests fail, and that the finished reference passes:
-- gateway 67;
+- gateway 68;
 - evals 5;
 - web 20;
 - Kotlin guidance 63;
@@ -263,7 +263,7 @@ Everything in Day 1's list still applies, plus:
 **Files:**
 - `apply.sh 2` with:
   - `services/gateway/package.json` (adds `ws`, and the `exports` for `./eval-api`);
-  - `services/gateway/src/{config,app,eval-api}.ts`;
+  - `services/gateway/src/{config,app,eval-api}.ts` and `services/gateway/src/util` (`safeEqual`, a constant-time token compare);
   - `services/gateway/src/session/controller.ts`, `src/asr`, `src/sim`, `src/models/mock/mock-asr.ts`;
   - `services/gateway/test/{asr,e2e}.test.ts`.
 - Then run `pnpm install`.
@@ -271,7 +271,7 @@ Everything in Day 1's list still applies, plus:
   - `controller.ts` (`createSessionController`);
   - `asr/relay.ts` (`handshake`, `openAsrRelay`);
   - `sim/registry.ts` (`SimRegistry.subscribe` and `publish`; the `SimEventBody` schema is given).
-- **Finished:** `app.ts` (sim route, per-session ordered queue), `config.ts` (+ `SIM_TOKEN`), `mock-asr.ts`, `eval-api.ts`.
+- **Finished:** `app.ts` (per-session ordered queue; the sim route is open in mock mode, and in live mode exists **only** when `SIM_TOKEN` is set, compared with `safeEqual`), `config.ts` (+ `SIM_TOKEN`), `mock-asr.ts`, `eval-api.ts`, `util/safe-equal.ts`.
 
 **Interfaces (Produces):**
 - **`handshake(o)`:** exactly the object in `asr.test.ts`. `languageBias` is `o.locales` mapped through `LANGUAGE_NAMES`; `keywords` is `o.keywords.slice(0, 50)`.
@@ -301,10 +301,10 @@ Everything in Day 1's list still applies, plus:
 
 - [ ] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test -- asr e2e`.
 - [ ] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
-- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 67 pass.
+- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 68 pass.
 - [ ] **Step 4: Live check** (needs the D1 key). Run `set -a; source .env; set +a; MODEL_MODE=live pnpm --filter @fingerpost/gateway dev` and connect any WS client.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
-- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region>`.
+- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region>`. To use the sim against the live gateway, first create a `sim-token` secret (`openssl rand -hex 16`), add `SIM_TOKEN=sim-token:latest` to `--set-secrets`, and open the sim with `&token=<value>`. Without it, live mode has no sim route at all.
 - [ ] **Step 6: Commit.**
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 

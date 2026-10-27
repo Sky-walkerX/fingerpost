@@ -275,10 +275,10 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   gcloud run deploy fingerpost-gateway --project "$1" --region "$2" --image "$IMAGE" \
     --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 3 --allow-unauthenticated \
     --set-secrets META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest \
-    --set-env-vars MODEL_MODE=live,GIT_SHA="$SHA",AUTH_REQUIRED=false
+    --set-env-vars MODEL_MODE=live,GIT_SHA="$SHA",AUTH_REQUIRED=false,ALLOW_UNAUTHENTICATED_LIVE=true
   ```
   Then `chmod +x infra/deploy-gateway.sh`.
-  - `AUTH_REQUIRED=false` holds only until Day 3 turns auth on. Day 1 and 2 configs simply ignore the variable.
+  - `AUTH_REQUIRED=false` plus `ALLOW_UNAUTHENTICATED_LIVE=true` hold only until Day 3 turns auth on (D3-T9 removes both). Day 1 and 2 configs ignore them; the Day 3 config refuses `AUTH_REQUIRED=false` in live mode without the second flag.
   - `gcloud builds submit --file` needs a recent gcloud. If it rejects `--file`, use a `cloudbuild.yaml` with `docker build -f services/gateway/Dockerfile` and record the change.
 - [ ] **Step 4: Create the secrets** (dev project):
   ```bash

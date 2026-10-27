@@ -21,7 +21,7 @@
 - `docs/design.md` §4.5–§4.7.
 
 **Assets:** `assets/day3/`. Planning verified that the Day 3 starting state typechecks and compiles, that only Day 3 tests fail, and that the finished reference passes:
-- gateway 104;
+- gateway 105;
 - Kotlin guidance 81;
 - Kotlin protocol 41;
 - web 20;
@@ -38,9 +38,10 @@ Everything from Days 1–2 still applies, plus:
 - **Quota:** 30 tasks per UTC day (hardware), 10 (software). A task is one goal's first locate.
   - Spend cap: `DAILY_CAP_USD` (default 12).
   - Kill switch: Firestore `config/runtime.cloudEnabled`, cached 30 s.
+- **Fail closed in live mode:** `AUTH_REQUIRED=false` with `MODEL_MODE=live` is rejected unless `ALLOW_UNAUTHENTICATED_LIVE=true` (pre-auth dev deploys only). Software attestation is off by default in live (`ALLOW_SOFTWARE_ATTESTATION` defaults to `MODEL_MODE !== 'live'`). The kill switch applies to unauthenticated sessions too.
 - **Attestation:** package `io.github.fingerpost`.
   - Signing digests are SHA-256 of the signing certificate as lowercase hex, from `keytool -list -v`, with colons removed and lowercased.
-  - Software attestation gets the `software` tier (`ALLOW_SOFTWARE_ATTESTATION=true`).
+  - Software attestation gets the `software` tier, and only where `ALLOW_SOFTWARE_ATTESTATION=true` (emulators in dev). It is forgeable, so it's off in live.
 - **pnpm:** Day 3 adds `overrides: { asn1js: 3.0.10 }` and `allowBuilds` (both `false`) for `@firebase/util` and `protobufjs`, in `pnpm-workspace.yaml` (asset).
 
 ## Review Focus
@@ -262,7 +263,8 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
 - `apply.sh 3` with `services/gateway/src/{config,app,server}.ts`, `services/gateway/src/quota` and `services/gateway/test/auth-e2e.test.ts`.
 - **Finished:**
   - `config.ts`: `AUTH_REQUIRED` (default: true in live), `SESSION_SECRET` (32+ chars), `SIGNING_DIGESTS`, `ALLOW_SOFTWARE_ATTESTATION`, `DAILY_CAP_USD`, `FIREBASE_PROJECT_ID`;
-  - `app.ts` (auth routes, the socket auth check with **early-message buffering**, the quota wiring);
+  - `app.ts` (auth routes, the socket auth check with **early-message buffering**, the quota wiring, the fail-closed sim route);
+  - `auth/rate-limit.ts` (per-IP limits: 60 challenges and 20 attests per hour → 429);
   - `server.ts` (firebase-admin wiring for live);
   - `quota/firestore-stores.ts`.
 - **Skeleton:** `quota/service.ts` (`QuotaService` methods, `utcDay`). `DEFAULT_QUOTA` is given.
@@ -279,7 +281,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
   - Returns the total.
 - **`utcDay(ms)`:** `new Date(ms).toISOString().slice(0, 10)`.
 
-- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 104 pass.
+- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 105 pass.
 - [ ] **Step 2: Firestore rules.** Create `infra/firestore.rules`:
   ```
   rules_version = '2';
@@ -321,7 +323,7 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 
 - [ ] **Step 1: Implement.**
 - [ ] **Step 2: Check locally.** Run the gateway with `MODEL_MODE=live AUTH_REQUIRED=true SESSION_SECRET=… SIGNING_DIGESTS=<debug digest>`, plus real Firebase credentials (`gcloud auth application-default login`).
-  - The app connects, and logs `tier=hardware` (or `software` on an emulator).
+  - The app connects, and logs `tier=hardware`. An emulator only gets in with `ALLOW_SOFTWARE_ATTESTATION=true` added locally (tier `software`); never set that on Cloud Run.
 - [ ] **Step 3: Commit:** `git commit -m "feat(android): Key Attestation + Firebase anonymous auth for authenticated sessions"`
 
 ### Task D3-T9: deploy with auth on
@@ -362,5 +364,5 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 - Gate result recorded (D3-T0).
 - With the tablet PIN pad, the gateway logs **no** upload (D3-T2).
 - Single-target guide and verify work end to end on Cloud Run **with auth and quota** (D3-T9).
-- Gateway CI shows 104 tests green.
+- Gateway CI shows 105 tests green.
 - The Day 4–7 plans get written tonight from these results (see `docs/progress.md`).

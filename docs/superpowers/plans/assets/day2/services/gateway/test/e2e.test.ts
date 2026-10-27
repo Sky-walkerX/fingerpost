@@ -53,6 +53,17 @@ test('sim events: invalid body → 400; unknown run → delivered 0', async () =
   expect((await app.inject({ method: 'POST', url: '/v1/sim/events', payload: { runId: 'nobody', screenId: 's', x: 0, y: 0, u: 0, v: 0, elementId: null, ts: 1 } })).json()).toEqual({ delivered: 0 });
 });
 
+test('live mode without SIM_TOKEN does not expose the sim route; with it, the token is checked', async () => {
+  const live = { LOG_LEVEL: 'silent', MODEL_MODE: 'live', META_API_KEY: 'x', AUTH_REQUIRED: 'false', ALLOW_UNAUTHENTICATED_LIVE: 'true' };
+  const body = { runId: 'r', screenId: 's', x: 0, y: 0, u: 0, v: 0, elementId: null, ts: 1 };
+  app = await buildApp(loadConfig(live));
+  expect((await app.inject({ method: 'POST', url: '/v1/sim/events', payload: body })).statusCode).toBe(404);
+  await app.close();
+  app = await buildApp(loadConfig({ ...live, SIM_TOKEN: 'secret-123' }));
+  expect((await app.inject({ method: 'POST', url: '/v1/sim/events', payload: body, headers: { 'x-sim-token': 'wrong-123' } })).statusCode).toBe(401);
+  expect((await app.inject({ method: 'POST', url: '/v1/sim/events', payload: body, headers: { 'x-sim-token': 'secret-123' } })).statusCode).toBe(200);
+});
+
 test('SIM_TOKEN, when set, is required', async () => {
   app = await buildApp(loadConfig({ LOG_LEVEL: 'silent', SIM_TOKEN: 'secret-123' }));
   const body = { runId: 'r', screenId: 's', x: 0, y: 0, u: 0, v: 0, elementId: null, ts: 1 };
