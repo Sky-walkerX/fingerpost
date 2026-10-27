@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "lib": ["es2024", "dom", "dom.iterable"], "module": "esnext", "moduleResolution": "bundler", "noEmit": true, "types": ["node", "vite/client"] },
+  "include": ["src", "test", "vite.config.ts"]
+}

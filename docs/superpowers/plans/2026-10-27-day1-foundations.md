@@ -321,10 +321,10 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - `exportRun(state)`: `JSON.stringify({ runId, scene: scene.id, seed: scene.seed, events }, null, 2)`.
 - `labelsFor(screen)`: `{id, label, role, u: x/CANVAS.w, v: y/CANVAS.h, w: w/CANVAS.w, h: h/CANVAS.h}` per element. This is the eval ground-truth format.
 
-- [ ] **Step 1: Copy and confirm red.** Run `docs/superpowers/plans/assets/apply.sh 1 apps/web && pnpm install && pnpm --filter @fingerpost/web test`. Expected: 7 failed, 7 passed.
-- [ ] **Step 2: Implement `hit.ts` and `log.ts`.**
-- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/web test && pnpm --filter @fingerpost/web build`. Expected: 14 passed; the build writes `dist/index.html` and `dist/sim/index.html`.
-- [ ] **Step 4: Check on the tablet.**
+- [x] **Step 1: Copy and confirm red.** Run `docs/superpowers/plans/assets/apply.sh 1 apps/web && pnpm install && pnpm --filter @fingerpost/web test`. Expected: 7 failed, 7 passed.
+- [x] **Step 2: Implement `hit.ts` and `log.ts`.**
+- [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/web test && pnpm --filter @fingerpost/web build`. Expected: 14 passed; the build writes `dist/index.html` and `dist/sim/index.html`.
+- [ ] **Step 4: Check on the tablet.** **Blocked: no connected device (2026-10-28); desktop browser flow verified.**
   - Run `pnpm --filter @fingerpost/web dev` and open `http://<laptop-LAN-IP>:5173/sim/?scene=fastfood&seed=1` on the Android tablet.
   - The first tap requests fullscreen.
   - Walk home → menu → Drinks → Medium → Pay by card → done.

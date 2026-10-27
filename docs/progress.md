@@ -13,7 +13,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | blocked | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
-| D1-T6 | Kiosk simulator v0 | C | T1 | doing | Codex |
+| D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | todo | |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | todo | |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
@@ -62,6 +62,8 @@ _(task id · exact command · last lines of output · what you tried)_
 
 - D1-T3 · `docker version` → `/bin/bash: line 1: docker: command not found`. Container build/run cannot be verified; Docker is not installed.
 
+- D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
+
 ## Deviations from the plan
 _(task id · what changed · why · who approved)_
 - D1-T1 · The referenced superpowers workflow skills are not installed; Codex follows the complete repository task checklist directly under the user’s autonomous-development instruction. No dependency or product changes.
@@ -84,3 +86,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T2 complete: binary framing and message parsing implemented after 45 expected TODO failures; all 46 tests pass, recursive typecheck, protocol build and JSON Schema export pass. Schemas and fixtures are unchanged from the plan. New commits use namanhere23 <namanhere23code@gmail.com> per user instruction.
 - 2026-10-28: D1-T3 partial: copied assets and implemented config validation; 3 config/health tests pass and recursive typecheck passes. Hub remains blocked on conflicting size-limit error codes; remaining gateway tests are expected TODO failures, not a passing gateway.
 - 2026-10-28: D1-T3 session hub implemented after user clarification: 14 app/session tests, recursive typecheck and protocol/gateway builds pass. Dev server and isolated `deploy --legacy --prod` package both return the expected /healthz JSON. Task stays blocked solely on the required Docker build/run; D1-T4 adapters remain TODO.
+- 2026-10-28: D1-T6 implementation complete after the expected 7 red/7 green baseline: all 14 tests pass; web production build and recursive typecheck pass. Desktop browser completes Start order → Drinks → Medium → Pay by card → done with no warnings/errors; scrambled PIN seed 3 renders all keys. Task remains blocked on the physical tablet check.
