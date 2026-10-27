@@ -378,7 +378,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [ ] **Step 3: Check on the device.** APK built; physical permission/TalkBack acceptance pending (2026-10-28). Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
   - [x] Debug APK installed and MainActivity launched successfully.
   - [x] TalkBack enabled, verified through device accessibility settings (2026-10-28).
-  - [ ] Confirm the permission-denial message is spoken and Open settings reaches the app settings.
+  - [x] Confirm the permission-denial message is spoken and Open settings reaches the app settings. User confirmed speech; app-details intent verified (2026-10-28).
   - [ ] Grant camera permission, return to the app and confirm the expected black session screen with one TalkBack element.
   - The app opens and asks for the camera.
   - Deny → the settings message is spoken with TalkBack on.
