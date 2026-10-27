@@ -123,9 +123,9 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - Returns `unknown` when `type` is a string that isn't in `SERVER_TYPES`.
 - Constants `PROTOCOL`, `LIMITS`, `CLIENT_TYPES` and `SERVER_TYPES`, plus all schema and type exports from `common/client/server.ts`.
 
-- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 packages/protocol && pnpm install`
-- [ ] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/protocol test`. Expected: 45 failed, 1 passed (every test that touches the skeletons throws TODO).
-- [ ] **Step 3: Implement `src/frame.ts`.**
+- [x] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 packages/protocol && pnpm install`
+- [x] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/protocol test`. Expected: 45 failed, 1 passed (every test that touches the skeletons throws TODO).
+- [x] **Step 3: Implement `src/frame.ts`.**
   - Big-endian u32 length via `DataView.setUint32(0, len, false)`.
   - Check the order exactly as the tests require:
     1. under 4 bytes → `short`;
@@ -134,13 +134,13 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
     4. `new TextDecoder('utf-8', { fatal: true })` throws → `header_not_utf8`;
     5. `JSON.parse` throws → `header_not_json`.
   - Use `buf.byteOffset` when making the DataView (a test passes a subarray).
-- [ ] **Step 4: Implement `src/parse.ts`.**
+- [x] **Step 4: Implement `src/parse.ts`.**
   - Both functions use `safeParse` on the union.
   - `parseServerMessage` first reads `type`. If `type` is a string not in `SERVER_TYPES`, return `{kind:'unknown', type}`.
   - Non-objects → `invalid`.
-- [ ] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/protocol test && pnpm --filter @fingerpost/protocol typecheck`. Expected: 46 passed, no type errors.
-- [ ] **Step 6: Export the JSON Schema.** Run `pnpm --filter @fingerpost/protocol schema`. Expected: `wrote schema/client.json and schema/server.json`. The `schema/` directory is a build output; add it to `.gitignore` if it isn't already.
-- [ ] **Step 7: Commit.**
+- [x] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/protocol test && pnpm --filter @fingerpost/protocol typecheck`. Expected: 46 passed, no type errors.
+- [x] **Step 6: Export the JSON Schema.** Run `pnpm --filter @fingerpost/protocol schema`. Expected: `wrote schema/client.json and schema/server.json`. The `schema/` directory is a build output; add it to `.gitignore` if it isn't already.
+- [x] **Step 7: Commit.**
   `git add packages/protocol .gitignore && git commit -m "feat(protocol): fp.v1 schemas, binary framing, golden fixtures"`
 
 ### Task D1-T3: gateway skeleton (config, session hub, app, container)

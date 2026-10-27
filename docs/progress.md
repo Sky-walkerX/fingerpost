@@ -9,7 +9,7 @@ Agents and people both update this file. Keep each line short. Status values are
 |---|---|---|---|---|---|
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
 | D1-T1 | Monorepo root | – | – | done | Codex |
-| D1-T2 | packages/protocol | B | T1 | doing | Codex |
+| D1-T2 | packages/protocol | B | T1 | done | Codex |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | todo | |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
@@ -72,3 +72,4 @@ _(task id · what changed · why · who approved)_
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
 - 2026-10-27: D1-T1 complete: root assets and lockfile added; SECURITY, CONTRIBUTING and Contributor Covenant 2.1 added. Node 24.22.1 / pnpm 11.10.0: install, recursive test and typecheck exited 0 (no packages yet); git diff --check clean. CI workflow is staged; Android CI awaits its planned modules.
+- 2026-10-28: D1-T2 complete: binary framing and message parsing implemented after 45 expected TODO failures; all 46 tests pass, recursive typecheck, protocol build and JSON Schema export pass. Schemas and fixtures are unchanged from the plan. New commits use namanhere23 <namanhere23code@gmail.com> per user instruction.
