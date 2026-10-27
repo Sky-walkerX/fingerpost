@@ -10,7 +10,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
 | D1-T1 | Monorepo root | – | – | done | Codex |
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
-| D1-T3 | Gateway: config, hub, app, container | B | T2 | doing | Codex |
+| D1-T3 | Gateway: config, hub, app, container | B | T2 | blocked | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | todo | |
@@ -72,6 +72,8 @@ _(task id · what changed · why · who approved)_
 
 - D1-T3 · User resolved the size-limit conflict on 2026-10-28: use `bad_message` for oversized text/keyframes and update the protocol prose to match existing tests. No message schema or Kotlin model changes are needed.
 
+- D1-T3 · Replaced the skeleton constructor parameter property with an explicit field assignment after `pnpm --filter @fingerpost/gateway dev` failed with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` under Node 24 strip-only execution. Public interface unchanged.
+
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
@@ -81,3 +83,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-27: D1-T1 complete: root assets and lockfile added; SECURITY, CONTRIBUTING and Contributor Covenant 2.1 added. Node 24.22.1 / pnpm 11.10.0: install, recursive test and typecheck exited 0 (no packages yet); git diff --check clean. CI workflow is staged; Android CI awaits its planned modules.
 - 2026-10-28: D1-T2 complete: binary framing and message parsing implemented after 45 expected TODO failures; all 46 tests pass, recursive typecheck, protocol build and JSON Schema export pass. Schemas and fixtures are unchanged from the plan. New commits use namanhere23 <namanhere23code@gmail.com> per user instruction.
 - 2026-10-28: D1-T3 partial: copied assets and implemented config validation; 3 config/health tests pass and recursive typecheck passes. Hub remains blocked on conflicting size-limit error codes; remaining gateway tests are expected TODO failures, not a passing gateway.
+- 2026-10-28: D1-T3 session hub implemented after user clarification: 14 app/session tests, recursive typecheck and protocol/gateway builds pass. Dev server and isolated `deploy --legacy --prod` package both return the expected /healthz JSON. Task stays blocked solely on the required Docker build/run; D1-T4 adapters remain TODO.

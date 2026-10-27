@@ -11,7 +11,8 @@ The source of truth is `packages/protocol/src/*.ts` (zod). This doc explains the
   - keyframe payload ≤ 400 KB;
   - audio chunks 20–100 ms;
   - at most 20 messages/s per client (audio excluded).
-  - Going over a limit returns `error{code:"rate_limited"}`, and the gateway closes the socket with code 1008 if it continues.
+  - Oversized text messages or keyframe payloads return `error{code:"bad_message"}` and are dropped.
+  - Exceeding the message-rate limit returns `error{code:"rate_limited"}`, and the gateway closes the socket with code 1008 if it continues.
 - **Keepalive:** a WebSocket ping every 15 s from the server. The client reconnects with exponential backoff (0.5 s → 8 s, with jitter) and sends `hello{resume: {sessionId, digest}}`.
 
 ## Lifecycle

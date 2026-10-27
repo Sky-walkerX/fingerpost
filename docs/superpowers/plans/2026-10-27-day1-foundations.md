@@ -179,13 +179,13 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   Every `error` has `retryable:false` unless rule 8 says otherwise; the default `say` is `Something went wrong talking to the server.` `id` comes from `ulid()` and `ts` from `now()`.
 
 - [x] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 services/gateway && pnpm install`
-- [x] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- app session`. The session and app tests fail with TODO(D1-T3).
+- [x] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/gateway test app session`. The session and app tests fail with TODO(D1-T3).
 - [x] **Step 3: Implement `loadConfig`.**
   - `Env.safeParse(env)`. On failure, throw `new Error('Invalid gateway config: ' + issues.map(i => \`${i.path.join('.')}: ${i.message}\`).join('; '))`.
   - Keep the `Env` schema exactly as given.
-- [ ] **Step 4: Implement `SessionHub`.** Follow rules 1–8 above, plus `private now()` and `private error(code, say?)`.
-- [ ] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/gateway test -- app session && pnpm --filter @fingerpost/gateway typecheck`. Expected: `app` 4 passed, `session` 10 passed.
-- [ ] **Step 6: Run it locally.**
+- [x] **Step 4: Implement `SessionHub`.** Follow rules 1–8 above, plus `private now()` and `private error(code, say?)`.
+- [x] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/gateway test app session && pnpm --filter @fingerpost/gateway typecheck`. Expected: `app` 4 passed, `session` 10 passed.
+- [x] **Step 6: Run it locally.**
   - `pnpm --filter @fingerpost/gateway dev`, then in another shell `curl -s localhost:8080/healthz`.
   - Expected: `{"status":"ok","version":"dev","protocol":"fp.v1"}`.
 - [ ] **Step 7: Build the container.** **Blocked: Docker unavailable (2026-10-28).** Needs Docker Desktop running; if it isn't, mark this step `blocked`.
