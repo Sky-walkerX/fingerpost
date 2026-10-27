@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Six tasks are complete within their documented scope; two are partial and 29 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task. Blocked work must be reported rather than skipped. Day 1's exit gate is not met; Days 2–3 have not started.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Six tasks are complete within their documented scope; three are partial and 28 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task. Blocked work must be reported rather than skipped. Day 1's exit gate is not met; Days 2–3 have not started.
 
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
@@ -18,7 +18,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
-| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | doing | Codex |
+| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
 | D1-T7d | Tone prototype | A | T7c | todo | |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
 
@@ -62,6 +62,71 @@ Agents and people both update this file. Keep each line short. Status values are
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
+- D1-T7c · Device performance gate failed twice. GPU run 1 measured roughly 6–16 fps / 43–180 ms after startup. Reusing the model input bitmap, skipping conversion while inference is busy, and backgrounding the app between builds did not resolve it: run 2 measured 8–11 fps / 45–92 ms after five warm-up windows (worst window latency 96 ms). Required: ≥25 fps and ≤25 ms. Light thermal throttling was observed during run 1; its contribution is unproven. Visual fingertip/orientation/removal confirmation is still pending. Stop further attempts/task progression under AGENTS.md §9; resume with a controlled device-performance investigation. Details: [device report](evals/day1-device.md).
+
+<details>
+<summary>D1-T7c: exact second-probe command and last 30 lines (all available)</summary>
+
+```bash
+python3 - <<'PY'
+import os, re, subprocess
+from pathlib import Path
+adb=str(Path(os.environ.get('ANDROID_HOME',str(Path.home()/'Android/Sdk')))/'platform-tools/adb')
+pid=subprocess.check_output([adb,'-d','shell','pidof','io.github.fingerpost'],text=True).strip()
+assert pid, 'Fingerpost is not running'
+p=subprocess.Popen([adb,'-d','logcat','--pid='+pid,'-T','1','-v','raw','-s','FingerpostTracker:I','*:S'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+try:
+ out,err=p.communicate(timeout=25)
+except subprocess.TimeoutExpired:
+ p.terminate()
+ out,err=p.communicate()
+lines=[line for line in out.splitlines() if line.startswith('delegate=')]
+print('\n'.join(lines[-30:]))
+rows=[tuple(map(int,re.search(r'fps=(\d+) inferenceMs=(\d+) maxMs=(\d+) hands=(\d+)',line).groups())) for line in lines[5:]]
+assert rows, 'No steady-state measurements'
+print('After five logged warm-up windows:')
+print(f'{len(rows)} windows; fps={min(r[0] for r in rows)}..{max(r[0] for r in rows)}; inferenceMs={min(r[1] for r in rows)}..{max(r[1] for r in rows)}; worst window maxMs={max(r[2] for r in rows)}; windows with hands={sum(r[3]>0 for r in rows)}')
+if not all(r[0]>=25 and r[2]<=25 for r in rows):
+ raise SystemExit('FAIL: D1-T7c requires >=25 fps and <=25 ms inference')
+print('PASS: D1-T7c performance budget')
+PY
+```
+
+Exit 1:
+
+```text
+FAIL: D1-T7c requires >=25 fps and <=25 ms inference
+delegate=GPU fps=9 inferenceMs=78 maxMs=85 hands=1
+delegate=GPU fps=9 inferenceMs=81 maxMs=81 hands=1
+delegate=GPU fps=9 inferenceMs=77 maxMs=90 hands=1
+delegate=GPU fps=9 inferenceMs=103 maxMs=103 hands=1
+delegate=GPU fps=9 inferenceMs=77 maxMs=82 hands=1
+delegate=GPU fps=9 inferenceMs=74 maxMs=80 hands=1
+delegate=GPU fps=9 inferenceMs=77 maxMs=79 hands=1
+delegate=GPU fps=10 inferenceMs=46 maxMs=82 hands=0
+delegate=GPU fps=11 inferenceMs=45 maxMs=54 hands=0
+delegate=GPU fps=9 inferenceMs=54 maxMs=55 hands=0
+delegate=GPU fps=9 inferenceMs=80 maxMs=80 hands=0
+delegate=GPU fps=9 inferenceMs=81 maxMs=84 hands=0
+delegate=GPU fps=9 inferenceMs=49 maxMs=82 hands=0
+delegate=GPU fps=9 inferenceMs=54 maxMs=74 hands=0
+delegate=GPU fps=9 inferenceMs=65 maxMs=87 hands=0
+delegate=GPU fps=9 inferenceMs=75 maxMs=82 hands=0
+delegate=GPU fps=9 inferenceMs=54 maxMs=65 hands=0
+delegate=GPU fps=9 inferenceMs=58 maxMs=82 hands=0
+delegate=GPU fps=9 inferenceMs=70 maxMs=82 hands=0
+delegate=GPU fps=8 inferenceMs=66 maxMs=83 hands=0
+delegate=GPU fps=9 inferenceMs=92 maxMs=92 hands=0
+delegate=GPU fps=8 inferenceMs=85 maxMs=90 hands=0
+delegate=GPU fps=8 inferenceMs=58 maxMs=82 hands=0
+delegate=GPU fps=8 inferenceMs=57 maxMs=96 hands=0
+delegate=GPU fps=9 inferenceMs=50 maxMs=60 hands=0
+After five logged warm-up windows:
+20 windows; fps=8..11; inferenceMs=45..92; worst window maxMs=96; windows with hands=2
+```
+
+</details>
+
 
 - D1-T6 · Android tablet acceptance has not been verified. Desktop flow and unit tests pass; tablet fullscreen, fast-food path, three-finger event export and scrambled PIN-pad checks remain pending.
 
@@ -94,14 +159,17 @@ _(task id · what changed · why · who approved)_
 
 - D1-T7b · First app build required compile SDK >=37 for pinned Compose/Core artifacts. Applied the task’s first-build config-fix provision: compileSdk 37, minimum SDK 29 and target SDK 36. Pinned dependencies and build checks retained; design technical default and launcher updated. Future asset applications must retain this correction.
 
+- D1-T7c · Followed authoritative guidance-spec §3's 640×480 input instead of the plan's fixed 640-pixel width: aspect-preserving letterbox and inverse mapping also handle portrait frames without stretching or exceeding that input size. Six JVM projection tests added test-first; detector defaults now recorded in the spec. No dependency changes.
+
 
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
-| 2026-10-28 | Kotlin guidance tests | 12 passed, 0 failures | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | Kotlin guidance tests | 18 passed, 0 failures/skips (12 existing + 6 projection) | apps/android/core/guidance/build/test-results/test |
 | 2026-10-28 | TypeScript tests | 103 passed (protocol 46, gateway 43, web 14) | pnpm -r test |
 | 2026-10-28 | Gateway container | expected health JSON; UID 1000 | rootless Podman build/run |
 | 2026-10-28 | Android shell | build/install/launch pass; permission and TalkBack device acceptance confirmed | apps/android/app/build/outputs/apk/debug/app-debug.apk |
+| 2026-10-28 | Android tracking, second GPU run | 8–11 fps; sampled inference 45–92 ms; worst window 96 ms; performance gate FAIL | docs/evals/day1-device.md |
 
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
@@ -122,3 +190,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: Full completion audit added in docs/task-audit.md. Fresh checks: protocol 46, gateway 43, web 14 and Kotlin guidance 12 pass; recursive typecheck, schema export, all current TS builds and app debug build pass. App unit-test task has no source cases. Rebuilt gateway container returns expected health JSON and runs as non-root. Latest inspected CI: TS passes; Android fails on absent core:protocol. No new feature task started; required device/live checks remain open. User completion gate and generic-device reporting rule recorded in AGENTS.md.
 - 2026-10-28: D1-T7b acceptance resumed: current guidance/test/build commands pass. User confirmed the exact spoken camera-needed message following denial with TalkBack. App-details settings intent is verified. Recorded evidence in docs/evals/day1-app-shell.md; remaining grant/return and single-session-element checks are pending, so task is not marked done.
 - 2026-10-28: D1-T7b complete: user confirmed spoken denial, app-settings navigation, permission grant/return to the black session screen, and one TalkBack session element with the required description. ADB corroborates CAMERA granted=true, TalkBack enabled and MainActivity resumed. Current guidance/test/build commands pass; app unit-test task has no source cases. Evidence: docs/evals/day1-app-shell.md. D1-T7c has not started.
+- 2026-10-28: D1-T7c implemented and installed: pinned model checksum/size verified, CameraX lifecycle/rotation/crop pipeline, two-hand GPU tracker with CPU fallback, fingertip overlay and numeric debug telemetry. Six projection tests confirmed red before implementation; all 18 guidance tests, app:test (no source cases), assembleDebug and lintDebug pass. APK contains the verified model. Two GPU performance runs missed the gate; task blocked with exact probe/output above. Visual acceptance remains pending; T7d not started. No camera frames captured or uploaded.

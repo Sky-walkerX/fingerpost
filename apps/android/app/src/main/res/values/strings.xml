@@ -4,4 +4,6 @@
     <string name="camera_needed">Fingerpost needs the camera to see the screen you want to press.</string>
     <string name="open_settings">Open settings</string>
     <string name="session_description">Fingerpost camera. Double-tap to start or stop the tone.</string>
+    <string name="camera_unavailable">Camera unavailable. Close other camera apps and reopen Fingerpost.</string>
+    <string name="tracking_unavailable">Finger tracking unavailable. Close and reopen Fingerpost.</string>
 </resources>

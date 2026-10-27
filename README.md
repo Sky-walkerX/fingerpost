@@ -4,7 +4,7 @@ Fingerpost is being built to guide a blind or low-vision person's finger to the 
 
 We're building it for the Meta Global AI Developer Hackathon (Indie track), using Muse Spark, SAM 3.1, Voice Transcribe and Muse Glimmer. The build runs Oct 27 to Nov 2, 2026, and the submission is due Nov 5 at 07:30 IST.
 
-> **Status (2026-10-28): Day 1 foundations in progress.** Workspace, TypeScript protocol, gateway foundations/adapters and Android guidance math are implemented. The Android Compose shell builds into a debug APK. Simulator tablet acceptance, camera tracking and live model validation remain pending. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
+> **Status (2026-10-28): Day 1 foundations in progress.** Workspace, TypeScript protocol, gateway foundations/adapters and Android guidance math are implemented. The Android camera/fingertip build is installed, but its device performance gate fails. Simulator tablet acceptance and live model validation remain pending. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
 
 ## Resume here
 1. **Read the workflow and current state.** Start with [`AGENTS.md`](AGENTS.md), then [`docs/progress.md`](docs/progress.md) and the current implementation plan. [`docs/design.md`](docs/design.md) §1 has the locked decisions, §4 the architecture, and §7 the 7-day outline and exit criteria.
@@ -28,14 +28,15 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
 | D1-T7a: Android foundation | Complete; Gradle project and cue math implemented; all 12 JVM guidance tests pass. |
 | D1-T7b: Android shell | Complete; debug APK builds, installs and launches. User-confirmed spoken denial, settings return, black session screen and single TalkBack element; permission state corroborated through ADB. Camera tracking and tone output come in T7c/T7d. |
+| D1-T7c: camera/fingertip | Implemented and installed; model checksum, 18 guidance tests, build and lint pass. Blocked: measured 8–11 fps / 45–92 ms after warm-up against ≥25 fps / ≤25 ms. Visual device acceptance pending. See [`device report`](docs/evals/day1-device.md). |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
 | CI | All 103 TypeScript tests pass locally. Android workflow still references `core:protocol`, scheduled for D2-T1; full CI remains pending. No checks disabled. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
-Current verified totals: 103 TypeScript tests and 12 Kotlin guidance tests pass; the app debug build passes. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
+Current verified totals: 103 TypeScript tests and 18 Kotlin guidance tests pass; the app debug build and lint pass. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
 
-The app shell APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. It is a development build; camera tracking, tone playback and end-to-end guidance are not implemented yet.
+The development APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. Camera tracking is implemented but has not met its acceptance gate. Tone playback and end-to-end guidance are not implemented yet.
 
 ## Planned layout
 ```

@@ -37,6 +37,8 @@ Rules:
 
 ## 3. Fingertip
 - **Source:** MediaPipe HandLandmarker in LIVE_STREAM mode, running on a 640×480 downscale. Uses landmark **8** (INDEX_FINGER_TIP) and **7** (INDEX_FINGER_DIP).
+  - Preserve the upright frame's aspect ratio with centered black padding inside 640×480; undo that padding when mapping landmarks back into upright frame pixels.
+  - **Detector configuration (initial values):** track up to 2 hands; minimum detection, model-presence and tracking confidences are each 0.5. These detector thresholds do not replace the guidance-validity threshold below.
 - **Pad point**, compensating for the finger touching with its pad rather than its tip:
   - `d = normalize(p8 − p7)`;
   - `pad = p8 − 0.25 · |p8 − p7| · d`.

@@ -440,13 +440,14 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
 - **Overlay:** a Compose `Canvas` over the `PreviewView` (`AndroidView`). Draw a 14 dp yellow circle at the tip of each sample, scaled from frame px to view px with the same `FILL_CENTER` math the preview uses.
 - **Debug text:** a top-left label `"%d fps · %d ms".format(fps, inferenceMs)`, where fps is a 1-second moving count of results. Mark it `invisibleToUser()` for TalkBack.
 
-- [ ] **Step 1: Add the model asset** and check its checksum: `shasum -a 256 app/src/main/assets/hand_landmarker.task`.
-- [ ] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay.
-- [ ] **Step 3: Build and install.** Run `./gradlew :app:installDebug`.
+- [x] **Step 1: Add the model asset** and check its checksum: `shasum -a 256 app/src/main/assets/hand_landmarker.task`. Verified pinned SHA-256 and 7,819,105 bytes on 2026-10-28; recorded in apps/android/ASSETS.md.
+- [x] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay. Uses guidance-spec §3's 640×480 aspect-preserving letterbox; six projection tests added red-first, then all 18 JVM tests pass. Build and lint pass.
+- [x] **Step 3: Build and install.** Run `./gradlew :app:installDebug`. Final optimized APK installed and launched successfully on 2026-10-28.
 - [ ] **Step 4: Check on the device.**
   - The dot follows the index fingertip.
   - The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
-  - Record the phone model, fps and ms in `docs/evals/day1-device.md`.
+  - Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
+  - **Blocked (2026-10-28):** two GPU runs miss the target; optimized run 8–11 fps / 45–92 ms after warm-up. Visual/orientation acceptance remains pending. See device report and progress Blocker; do not start T7d.
 - [ ] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`
 

@@ -1,8 +1,8 @@
 # Task completion audit — 2026-10-28
 
-This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. No new feature work was started during this audit.
+This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. Updated with subsequent T7b acceptance and T7c implementation/device results.
 
-Of the 37 tasks written for Days 1–3, **6 meet their complete task checklists, 2 have partial implementation/setup, and 29 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started.
+Of the 37 tasks written for Days 1–3, **6 meet their complete task checklists, 3 have partial implementation/setup, and 28 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started.
 
 ## Completion rule
 
@@ -20,7 +20,7 @@ Previously completed tasks are assessed against their documented scope. For exam
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
 | All current TypeScript package builds | Pass |
-| Kotlin guidance tests, forced rerun | 12 passed; 0 failed/skipped |
+| Kotlin guidance tests | 18 passed; 0 failed/skipped (12 original + 6 projection tests) |
 | Android `:app:test :app:assembleDebug` | Successful; app unit-test task has no source cases |
 | Current gateway container | Rebuilt; expected `/healthz` JSON; runtime UID 1000 |
 | Installed Android shell | Prior install/launch verified; device remains authorized |
@@ -43,7 +43,7 @@ CI evidence: [run at the audited source revision](https://github.com/Sky-walkerX
 | D1-T6 — simulator | **Partial: implementation/build complete** | 14 tests and build pass; desktop flow was checked. Android tablet fullscreen, full fast-food flow, three-finger export with one event per tap, and scrambled PIN-pad acceptance are not verified. | A tablet and actual device acceptance. Engineering handles any defects found. |
 | D1-T7a — Android foundation/cue math | **Yes** | Project/wrapper/toolchain and cue calculations implemented; all 12 JVM tests pass, including a fresh forced rerun. | No task gap. |
 | D1-T7b — Android app shell | **Yes** | APK builds, installs and launches. User confirmed the spoken denial message, settings navigation, grant/return to the black session screen and single TalkBack session element. ADB corroborates granted permission, resumed activity and enabled TalkBack. See docs/evals/day1-app-shell.md. | No task gap; camera tracking and tone playback remain T7c/T7d. |
-| D1-T7c — camera/fingertip | **No: not started** | Hand-landmarker asset/checksum record, CameraX pipeline, tracker, overlay and frame-rate/inference measurements are absent. Requires T7b completion first. | Engineering implementation, then real-device fingertip and performance checks (at least 25 fps and at most 25 ms inference). |
+| D1-T7c — camera/fingertip | **Partial: implemented; device performance blocked** | Model/checksum record, lifecycle-aware CameraX pipeline, GPU tracker/CPU fallback, overlay and telemetry are implemented and installed. All 18 guidance tests, app build and lint pass. Two GPU runs fail the ≥25 fps / ≤25 ms gate: optimized run 8–11 fps / 45–92 ms. Visual/orientation acceptance remains pending. See docs/evals/day1-device.md. | Resume controlled performance investigation after the two-attempt stop; then complete visual, TalkBack and speed acceptance. T7d remains pending. |
 | D1-T7d — tone prototype | **No: not started** | ToneSynth, playback wiring, ramp/pan behavior and audible latency/click tests are absent. Requires T7c completion first. | Engineering implementation and device listening/TalkBack checks. |
 | D1-T8 — CI/tester documents | **No: 0/6 steps complete** | Dependabot config, tester protocol, consent, outreach drafts and tester tracking file are absent. Overall CI is red. T7b and the CI sequencing issue below must be resolved. | Engineering writes documents and fixes the dependency order; human confirms contact details and performs outreach. |
 
