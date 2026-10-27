@@ -1,0 +1,29 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+google-services.json
+service-account*.json
+
+# node / ts
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# android
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.cxx/
+
+# evals: private captures stay local
+evals/datasets/private/
+
+# os
+.DS_Store
