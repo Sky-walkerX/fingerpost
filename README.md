@@ -4,7 +4,7 @@ Fingerpost is being built to guide a blind or low-vision person's finger to the 
 
 We're building it for the Meta Global AI Developer Hackathon (Indie track), using Muse Spark, SAM 3.1, Voice Transcribe and Muse Glimmer. The build runs Oct 27 to Nov 2, 2026, and the submission is due Nov 5 at 07:30 IST.
 
-> **Status (2026-10-28): Day 1 foundations in progress.** Workspace and TypeScript protocol are complete. Gateway config/session handling and simulator code pass their targeted checks; Docker and tablet acceptance remain blocked. Android and live model integration are not ready. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
+> **Status (2026-10-28): Day 1 foundations in progress.** Workspace, TypeScript protocol, gateway foundations/adapters and Android guidance math are implemented. The Android Compose shell builds into a debug APK. Device acceptance, camera tracking and live model validation remain pending. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
 
 ## Resume here
 1. **Read the workflow and current state.** Start with [`AGENTS.md`](AGENTS.md), then [`docs/progress.md`](docs/progress.md) and the current implementation plan. [`docs/design.md`](docs/design.md) §1 has the locked decisions, §4 the architecture, and §7 the 7-day outline and exit criteria.
@@ -23,15 +23,19 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | Implementation plans | Days 1–3 written; executing the task checklists sequentially |
 | D1-T1: workspace root | Complete; pinned tooling, lockfile, CI workflow and community documents present |
 | D1-T2: TypeScript protocol | Complete; 46 tests, typecheck, build and JSON Schema export pass. Kotlin counterpart is D2-T1. |
-| D1-T3: gateway foundations | Config/session hub implemented; 14 targeted tests, typecheck, builds and local/production-package health checks pass. Docker verification blocked. |
-| D1-T4: Spark/SAM adapters | Supplied skeletons and tests only; 12 adapter tests still fail with TODOs. Depends on D1-T3 completion. |
+| D1-T3: gateway foundations | Complete; 14 targeted tests, typecheck, builds and actual container health/non-root checks pass under rootless Podman. |
+| D1-T4: Spark/SAM adapters | Implemented; all 43 gateway tests pass with synthetic fixtures/stubs. Live model smoke is D1-T5 and still needs human setup. |
 | D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
-| Android | Not started. Local Android Studio has JDK 25 and SDK Platform 37; required JDK 21 and Platform 36 are missing. No device connected. |
-| CI | Not green: adapter TODO tests fail; Android job requires modules not yet implemented. No checks disabled. |
+| D1-T7a: Android foundation | Complete; Gradle project and cue math implemented; all 12 JVM guidance tests pass. |
+| D1-T7b: Android shell | Compose UI, high-contrast theme, camera permission/settings handling and TalkBack action implemented. Debug APK builds; physical permission/TalkBack acceptance pending. Camera tracking and tone output come in T7c/T7d. |
+| Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
+| CI | All 103 TypeScript tests pass locally. Android workflow still references `core:protocol`, scheduled for D2-T1; full CI remains pending. No checks disabled. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
-The larger test counts in the planning log describe reference assets, not the implemented checkout. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
+Current verified totals: 103 TypeScript tests and 12 Kotlin guidance tests pass; the app debug build passes. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
+
+The app shell APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. It is a development build; camera tracking, tone playback and end-to-end guidance are not implemented yet.
 
 ## Planned layout
 ```
