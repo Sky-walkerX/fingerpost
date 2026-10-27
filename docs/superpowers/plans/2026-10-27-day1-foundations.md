@@ -97,14 +97,14 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - Every TS package's `exports` maps `"source"` to `./src/index.ts`, so tests and `node --conditions=source` run straight from source.
   - Builds use `dist/`.
 
-- [ ] **Step 1: Copy the root assets.**
+- [x] **Step 1: Copy the root assets.**
   `docs/superpowers/plans/assets/apply.sh 1 package.json pnpm-workspace.yaml tsconfig.base.json .nvmrc .dockerignore .github`
-- [ ] **Step 2: Write the three docs.**
+- [x] **Step 2: Write the three docs.**
   - `SECURITY.md`: report vulnerabilities privately to the maintainers' email (placeholder `security@fingerpost.invalid` until a real address exists). Don't open public issues for them.
   - `CONTRIBUTING.md`: points to `AGENTS.md` §3–§8.
   - `CODE_OF_CONDUCT.md`: the Contributor Covenant 2.1 text, with the same contact.
-- [ ] **Step 3: Verify.** Run `pnpm install && pnpm -r test`. It should exit 0 ("No projects matched" is fine at this point).
-- [ ] **Step 4: Commit and push.**
+- [x] **Step 3: Verify.** Run `pnpm install && pnpm -r test`. It should exit 0 ("No projects matched" is fine at this point).
+- [x] **Step 4: Commit and push.**
   `git add -A && git commit -m "chore: workspace root, CI workflow, community docs" && git push`
 
 ### Task D1-T2: `packages/protocol`, the fp.v1 contract
