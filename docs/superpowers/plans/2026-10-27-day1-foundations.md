@@ -188,11 +188,11 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [x] **Step 6: Run it locally.**
   - `pnpm --filter @fingerpost/gateway dev`, then in another shell `curl -s localhost:8080/healthz`.
   - Expected: `{"status":"ok","version":"dev","protocol":"fp.v1"}`.
-- [ ] **Step 7: Build the container.** **Blocked: Docker unavailable (2026-10-28).** Needs Docker Desktop running; if it isn't, mark this step `blocked`.
+- [x] **Step 7: Build the container.** Verified 2026-10-28 with rootless Podman using the same Dockerfile; /healthz matches and runtime UID is 1000 (see progress.md). Docker or a compatible container runtime is required.
   - `docker build -f services/gateway/Dockerfile -t fp-gateway . && docker run --rm -d -p 8080:8080 --name fpg fp-gateway && sleep 2 && curl -s localhost:8080/healthz; docker rm -f fpg`
   - Expected: the same JSON.
   - The Dockerfile itself wasn't run during planning (no Docker daemon), but its exact pnpm steps were (filtered install, build, `deploy --legacy`, then `node dist/server.js` answering /healthz). Record any fix in progress.md.
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
   `git add services/gateway && git commit -m "feat(gateway): config, session hub, health, container"`
 
 ### Task D1-T4: Meta adapters (Spark screen parse, SAM 3.1 segmentation)

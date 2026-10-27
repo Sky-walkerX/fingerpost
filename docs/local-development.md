@@ -36,3 +36,14 @@ pnpm -r test
 ```
 
 Other machines can use their own Node 24 installation with pnpm 11.10.0. Full tests may remain red for planned skeletons; `docs/progress.md` records which tasks are implemented and which checks remain pending.
+
+## Gateway containers on this laptop
+
+Podman is installed. Its default container database still references an old home path, so Fingerpost uses a separate rootless store. This leaves existing containers untouched:
+
+```sh
+podman --root "$HOME/.local/share/fingerpost/containers" --runroot "/run/user/$(id -u)/fingerpost-containers" build --format docker -f services/gateway/Dockerfile -t localhost/fp-gateway .
+podman --root "$HOME/.local/share/fingerpost/containers" --runroot "/run/user/$(id -u)/fingerpost-containers" run --rm -p 127.0.0.1:8080:8080 localhost/fp-gateway
+```
+
+In another terminal, `curl --fail http://localhost:8080/healthz` should report status `ok`, version `dev` and protocol `fp.v1`. This is a local mock-model check and makes no paid model calls.

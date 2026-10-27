@@ -10,7 +10,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
 | D1-T1 | Monorepo root | – | – | done | Codex |
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
-| D1-T3 | Gateway: config, hub, app, container | B | T2 | doing | Codex |
+| D1-T3 | Gateway: config, hub, app, container | B | T2 | done | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
@@ -60,7 +60,6 @@ Agents and people both update this file. Keep each line short. Status values are
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
-- D1-T3 · `docker version` → `/bin/bash: line 1: docker: command not found`. Container build/run cannot be verified; Docker is not installed.
 
 - D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
 
@@ -80,6 +79,8 @@ _(task id · what changed · why · who approved)_
 
 - D1-T0 · User explicitly authorized laptop tooling setup on 2026-10-28. Installed checksum-verified Temurin JDK 21.0.13+9, official Android command-line tools and Platform 36; retained Build Tools 36.0.0 and existing SDK/Studio. Pinned pnpm 11.10.0 now persists under ~/.local/share/fingerpost/node-tools. Project launcher selects tools without changing Java for other apps.
 
+- D1-T3 · Container verification used installed rootless Podman with the same Dockerfile instead of installing Docker. Its default database referenced the old /home/namanhere23 path; a separate ~/.local/share/fingerpost/containers store avoids changing existing containers. Build, mock health response and non-root UID 1000 verified.
+
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
@@ -94,3 +95,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: README audit corrected stale code/tooling status and separated accepted design/reference assets from working features. Verified accepted ADRs 0001/0002/0004/0005; ADR-0003 remains proposed. D1-T1 completion is valid for its root-workspace scope, not a claim that all CI or product functionality is complete.
 - 2026-10-28: Final baseline: protocol 46/46 and simulator 14/14 pass; gateway 31/43 pass with 12 D1-T4 TODO failures. `pnpm -r test` exits 1 as expected; all workspace typechecks and current package builds pass. CI run 40562763885 at 4512cdb is red; no claim of full application or CI completion.
 - 2026-10-28: Android tooling prerequisite resolved: java/javac 21.0.13 verified; official SDK CLI lists Platform 36 revision 2 and Build Tools 36.0.0. Added scripts/android.sh and docs/local-development.md. D1-T0 accounts/credits/photos/outreach remain pending.
+- 2026-10-28: D1-T3 complete: Dockerfile builds under rootless Podman; container /healthz returns status ok/version dev/protocol fp.v1, runtime UID 1000. Verification container removed. All 14 app/session tests and recursive TS typecheck pass.
