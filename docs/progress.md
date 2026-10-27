@@ -8,7 +8,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
-| D1-T1 | Monorepo root | – | – | todo | |
+| D1-T1 | Monorepo root | – | – | doing | Codex |
 | D1-T2 | packages/protocol | B | T1 | todo | |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | todo | |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
