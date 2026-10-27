@@ -324,7 +324,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [x] **Step 1: Copy and confirm red.** Run `docs/superpowers/plans/assets/apply.sh 1 apps/web && pnpm install && pnpm --filter @fingerpost/web test`. Expected: 7 failed, 7 passed.
 - [x] **Step 2: Implement `hit.ts` and `log.ts`.**
 - [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/web test && pnpm --filter @fingerpost/web build`. Expected: 14 passed; the build writes `dist/index.html` and `dist/sim/index.html`.
-- [ ] **Step 4: Check on the tablet.** **Blocked: no connected device (2026-10-28); desktop browser flow verified.**
+- [ ] **Step 4: Check on the tablet.** **Tablet acceptance pending (2026-10-28); desktop browser flow verified.**
   - Run `pnpm --filter @fingerpost/web dev` and open `http://<laptop-LAN-IP>:5173/sim/?scene=fastfood&seed=1` on the Android tablet.
   - The first tap requests fullscreen.
   - Walk home → menu → Drinks → Medium → Pay by card → done.
@@ -376,6 +376,10 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [x] **Step 2: Build.** Run `./gradlew :app:assembleDebug --console=plain`. Expected: BUILD SUCCESSFUL.
   - If AGP or Kotlin complain about the plugin setup, check AGENTS.md (built-in Kotlin: no `kotlin-android` plugin). Record any fix to `app/build.gradle.kts` under Deviations.
 - [ ] **Step 3: Check on the device.** APK built; physical permission/TalkBack acceptance pending (2026-10-28). Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
+  - [x] Debug APK installed and MainActivity launched successfully.
+  - [x] TalkBack enabled, verified through device accessibility settings (2026-10-28).
+  - [ ] Confirm the permission-denial message is spoken and Open settings reaches the app settings.
+  - [ ] Grant camera permission, return to the app and confirm the expected black session screen with one TalkBack element.
   - The app opens and asks for the camera.
   - Deny → the settings message is spoken with TalkBack on.
   - Allow → a black screen (the camera comes in T7c).

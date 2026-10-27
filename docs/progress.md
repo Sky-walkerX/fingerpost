@@ -4,10 +4,12 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Five tasks are complete within their documented scope; three are partial and 29 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task. Blocked work must be reported rather than skipped. Day 1's exit gate is not met; Days 2–3 have not started.
+
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
-| D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
+| D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | blocked | Human |
 | D1-T1 | Monorepo root | – | – | done | Codex |
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | done | Codex |
@@ -61,13 +63,17 @@ Agents and people both update this file. Keep each line short. Status values are
 _(task id · exact command · last lines of output · what you tried)_
 
 
-- D1-T6 · A Galaxy A14 phone is connected; the required Android tablet has not been verified. Browser fast-food flow and scrambled PIN scene pass; tablet fullscreen/three-finger export acceptance remains pending.
+- D1-T6 · Android tablet acceptance has not been verified. Desktop flow and unit tests pass; tablet fullscreen, fast-food path, three-finger event export and scrambled PIN-pad checks remain pending.
 
 
 - D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
 
-- D1-T7b · Galaxy A14 (SM-A146B), Android 15/API 35, is now connected and authorized. Gradle installDebug succeeds on one device and MainActivity launches with Status ok. Camera is initially ungranted; accessibility initially off. Permission-denial/settings-return/TalkBack acceptance awaits user verification; task remains doing.
+- D1-T7b · Connected Android device is authorized; debug APK install and launch are verified. TalkBack is now enabled, but camera permission is ungranted at audit time. Spoken denial, Open settings, grant/return behavior and single session element still need acceptance confirmation.
 - D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` fails: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` This is the D2-T1 module, not yet implemented. Current guidance tests and app build pass individually; CI workflow retained intact.
+
+- D1-T0 · Only the tooling item is verified (1/8 top-level items). Account/credit/cloud/registry/name/photo/outreach requirements lack recorded completion evidence; local .env and Day 1 photo dataset are absent. Human-only setup remains required.
+- D1-T5 · Audit found smoke output privacy conflict: the script writes image bytes into SVGs and recognized labels into Markdown under docs/evals, which the plan stages for commit. Fix raw-output handling and retain only sanitized metrics in Git before running real photos. Deployment CLI is also absent locally.
+- D1-T8 / phase order · Day 1 CI requires the D2-T1 protocol module, but the Day 2 plan requires Day 1 completion. Reconcile this forward dependency before phase progression; do not bypass the CI check. T0 outreach also depends on missing T8 drafts, and T8's stated 45-minute agenda currently totals 50 minutes.
 
 ## Deviations from the plan
 _(task id · what changed · why · who approved)_
@@ -85,7 +91,7 @@ _(task id · what changed · why · who approved)_
 
 - D1-T3 · Container verification used installed rootless Podman with the same Dockerfile instead of installing Docker. Its default database referenced the old /home/namanhere23 path; a separate ~/.local/share/fingerpost/containers store avoids changing existing containers. Build, mock health response and non-root UID 1000 verified.
 
-- D1-T7b · First app build failed `:app:checkDebugAarMetadata`: 14 pinned Compose 1.12.1/Core 1.19.1 artifacts require compile SDK >=37, contradicting the unverified plan default 36. Applied the task’s first-build config-fix provision: compileSdk 37, existing SDK 37.0, minSdk 29 and targetSdk 36 retained. No pinned dependency versions or checks changed. Updated design technical default and launcher; future asset applications must retain this correction.
+- D1-T7b · Connected Android device is authorized; debug APK install and launch are verified. TalkBack is now enabled, but camera permission is ungranted at audit time. Spoken denial, Open settings, grant/return behavior and single session element still need acceptance confirmation.
 
 ## Measurements
 | Date | What | Value | Where |
@@ -111,3 +117,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T7b shell implemented: Compose theme, camera permission request, denied-permission settings screen and announcement, lifecycle refresh after Settings, and one merged TalkBack action. `./scripts/android.sh :app:test :app:assembleDebug --console=plain` succeeds with compile SDK 37; app:test has no source cases. APK produced at apps/android/app/build/outputs/apk/debug/app-debug.apk. Device permission/TalkBack checks still pending.
 - 2026-10-28: Android debug APK signature verification (v2) and ZIP integrity pass; package io.github.fingerpost, min SDK 29, target SDK 36, compile SDK 37 verified with aapt. All 103 TS tests pass. D1-T7b remains blocked only on phone acceptance; D1-T7c/T7d have not started.
 - 2026-10-28: D1-T7b device connection resolved: Galaxy A14 SM-A146B, Android 15/API 35, authorized over USB. `./scripts/android.sh :app:installDebug --console=plain` succeeds (installed on one device); `am start -W -n io.github.fingerpost/.MainActivity` returns Status ok, process running. Awaiting manual TalkBack/permission acceptance before marking done or starting camera tracking. No device serial stored.
+- 2026-10-28: Full completion audit added in docs/task-audit.md. Fresh checks: protocol 46, gateway 43, web 14 and Kotlin guidance 12 pass; recursive typecheck, schema export, all current TS builds and app debug build pass. App unit-test task has no source cases. Rebuilt gateway container returns expected health JSON and runs as non-root. Latest inspected CI: TS passes; Android fails on absent core:protocol. No new feature task started; required device/live checks remain open. User completion gate and generic-device reporting rule recorded in AGENTS.md.

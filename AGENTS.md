@@ -24,6 +24,8 @@ Product decisions are **locked** in `docs/design.md` §1. Don't change them. If 
    - Planning checked that each day's starting state typechecks and compiles, with only that day's tests failing.
 
 ## 3. How to pick up and finish a task
+**Completion gate (user requirement):** Finish every requirement of the current task, including its required live/device acceptance and final verification, before starting the next task. Copied assets, passing unit tests or a commit alone do not make a task complete. If a requirement is blocked, record it and tell the user what is needed; do not skip ahead unless the user explicitly reprioritizes the work. Day 2 starts only after Day 1 is complete, and Day 3 only after Day 2 is complete. Resolve contradictory task ordering before advancing a phase; never bypass a check to claim completion.
+
 1. **Choose:** in `docs/progress.md`, take the first task whose status is `todo` and whose "Depends on" tasks are all `done`.
 2. **Claim it:** set its status to `doing`, put your name or agent id in "Owner", and commit that one-line change: `chore(progress): claim D1-T2`.
 3. **Work:** follow the task's steps **in order**:
@@ -45,6 +47,7 @@ Product decisions are **locked** in `docs/design.md` §1. Don't change them. If 
 
 ## 5. Hard rules
 - **Never commit** `.env`, keystores, `google-services.json` or service-account JSON. The `.gitignore` covers them, so don't override it.
+- **Use generic device labels** in commit messages and progress/evaluation notes. Do not add device models, serials or other personal/device-identifying details unless the user explicitly authorizes them.
 - **Never use a Meta "contributor" model id** (`*-contributor`). Only Standard mode.
 - **Never send camera frames anywhere** except through the gateway path described in the spec. Never upload anything while PIN mode is active.
 - **Guidance numbers** (thresholds, timings, frequencies) come only from `docs/guidance-spec.md`. If you need a number that isn't there, add it to the spec in the same commit, marked `initial value`.
@@ -119,5 +122,5 @@ pnpm --filter @fingerpost/web dev            # open http://<laptop-ip>:5173/sim/
 ## 9. When you're stuck
 - After 2 failed attempts at the same error, stop.
   - Write a Blocker in progress.md: the task id, the exact command, the last 30 lines of output, and what you tried.
-  - Then move to another unblocked task.
+  - Then report the blocker and stop task progression under the completion gate in §3. Resume after it is resolved or the user explicitly reprioritizes the work.
 - Never "fix" a failure by changing pinned versions, disabling type checks (`any`, `@ts-ignore`, `skipLibCheck` changes), or loosening a zod schema.
