@@ -27,7 +27,7 @@
 
 ## Global Constraints
 - **License:** Apache-2.0 (root `LICENSE`, already committed).
-- **App id / package:** `io.github.fingerpost`, minSdk 29, target/compile SDK 36.
+- **App id / package:** `io.github.fingerpost`, minSdk 29, target SDK 36, compile SDK 37 (D1-T7b first-build correction; pinned Compose/Core libraries require API 37).
 - **Protocol:**
   - `fp.v1`; binary frame `[u32 BE headerLen][UTF-8 JSON header][payload]`.
   - Limits: text ≤ 16 384 B, header ≤ 16 384 B, keyframe payload ≤ 409 600 B.
@@ -372,14 +372,14 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - `Modifier.fillMaxSize().semantics(mergeDescendants = true) { contentDescription = "Fingerpost camera. Double-tap to start or stop the tone." }.clickable { onToggle() }`.
 - Strings live in `strings.xml`: `app_name`, `camera_needed`, `open_settings`, `session_description`.
 
-- [ ] **Step 1: Write the files** from the requirements.
-- [ ] **Step 2: Build.** Run `./gradlew :app:assembleDebug --console=plain`. Expected: BUILD SUCCESSFUL.
+- [x] **Step 1: Write the files** from the requirements.
+- [x] **Step 2: Build.** Run `./gradlew :app:assembleDebug --console=plain`. Expected: BUILD SUCCESSFUL.
   - If AGP or Kotlin complain about the plugin setup, check AGENTS.md (built-in Kotlin: no `kotlin-android` plugin). Record any fix to `app/build.gradle.kts` under Deviations.
-- [ ] **Step 3: Check on the device.** Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
+- [ ] **Step 3: Check on the device.** APK built; physical permission/TalkBack acceptance pending (2026-10-28). Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
   - The app opens and asks for the camera.
   - Deny → the settings message is spoken with TalkBack on.
   - Allow → a black screen (the camera comes in T7c).
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.** Shell implementation checkpoint; device acceptance remains blocked.
   `git commit -am "feat(android): Compose shell, TalkBack single action, camera permission"` (after `git add apps/android/app`)
 
 ### Task D1-T7c: CameraX + MediaPipe fingertip overlay + fps

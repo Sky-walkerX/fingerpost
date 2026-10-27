@@ -6,7 +6,7 @@ The repository pins its tool versions in `AGENTS.md`. Run commands from the repo
 
 The Android Studio installation is in `~/Downloads/android-studio-rabbit1-linux/android-studio`. Its bundled Java is version 25; Fingerpost uses a separate Temurin JDK 21 at `~/.local/share/fingerpost/jdk-21`.
 
-The SDK is at `~/Android/Sdk`. Fingerpost needs SDK Platform 36, Build Tools 36.0.0 and Platform Tools. Command-line tools are installed at `~/Android/Sdk/cmdline-tools/latest`. Platform 37 can remain installed alongside 36.
+The SDK is at `~/Android/Sdk`. Fingerpost needs SDK Platform 37 for the pinned Compose/Core libraries, Build Tools 36.0.0 and Platform Tools. The app retains minSdk 29 and targetSdk 36. Command-line tools are installed at `~/Android/Sdk/cmdline-tools/latest`. Platform 36 was also installed for the original plan; both platforms remain available.
 
 Use the project launcher to select JDK 21 and the SDK without changing Java for other applications:
 

@@ -1,4 +1,4 @@
-// UNVERIFIED IN PLANNING (no Android SDK on the planning machine). The first agent to build it records any fix in docs/progress.md.
+// First-build corrections are recorded in docs/progress.md.
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)   // AGP 9 has built-in Kotlin: do NOT add org.jetbrains.kotlin.android
@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "io.github.fingerpost"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "io.github.fingerpost"
         minSdk = 29          // Android 10, required by the Meta Wearables DAT SDK later

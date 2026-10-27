@@ -16,8 +16,8 @@ if [ "$java_version" != 21 ]; then
     echo "Fingerpost requires JDK 21; selected JDK is $java_version." >&2
     exit 1
 fi
-if [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ]; then
-    echo 'Android SDK Platform 36 is required. Check ANDROID_HOME and docs/local-development.md.' >&2
+if [ ! -f "$ANDROID_HOME/platforms/android-37/android.jar" ] && [ ! -f "$ANDROID_HOME/platforms/android-37.0/android.jar" ]; then
+    echo 'Android SDK Platform 37 is required. Check ANDROID_HOME and docs/local-development.md.' >&2
     exit 1
 fi
 

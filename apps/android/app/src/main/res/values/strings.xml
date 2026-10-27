@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fingerpost</string>
+    <string name="camera_needed">Fingerpost needs the camera to see the screen you want to press.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="session_description">Fingerpost camera. Double-tap to start or stop the tone.</string>
+</resources>

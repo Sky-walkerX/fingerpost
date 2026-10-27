@@ -12,10 +12,10 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | done | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | done | Codex |
-| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
+| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | blocked | Codex |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
-| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | doing | Codex |
+| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | blocked | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
 | D1-T7d | Tone prototype | A | T7c | todo | |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
@@ -63,7 +63,11 @@ _(task id · exact command · last lines of output · what you tried)_
 
 - D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
 
-- D1-T8 / CI · `gh run view 40523977390 --log-failed` reports `An error occurred trying to start process '/usr/bin/bash' with working directory '/home/runner/work/fingerpost/fingerpost/apps/android'. No such file or directory`. Root CI is present, not green; Android modules have not been implemented. Workflow not weakened to hide this.
+
+- D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
+
+- D1-T7b · `~/Android/Sdk/platform-tools/adb devices -l` returns only `List of devices attached`. App debug APK and signature verification pass, but install/permission-denial/settings-return/TalkBack checks require a connected phone. User asked to connect one; no device results assumed.
+- D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` fails: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` This is the D2-T1 module, not yet implemented. Current guidance tests and app build pass individually; CI workflow retained intact.
 
 ## Deviations from the plan
 _(task id · what changed · why · who approved)_
@@ -81,9 +85,15 @@ _(task id · what changed · why · who approved)_
 
 - D1-T3 · Container verification used installed rootless Podman with the same Dockerfile instead of installing Docker. Its default database referenced the old /home/namanhere23 path; a separate ~/.local/share/fingerpost/containers store avoids changing existing containers. Build, mock health response and non-root UID 1000 verified.
 
+- D1-T7b · First app build failed `:app:checkDebugAarMetadata`: 14 pinned Compose 1.12.1/Core 1.19.1 artifacts require compile SDK >=37, contradicting the unverified plan default 36. Applied the task’s first-build config-fix provision: compileSdk 37, existing SDK 37.0, minSdk 29 and targetSdk 36 retained. No pinned dependency versions or checks changed. Updated design technical default and launcher; future asset applications must retain this correction.
+
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
+| 2026-10-28 | Kotlin guidance tests | 12 passed, 0 failures | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | TypeScript tests | 103 passed (protocol 46, gateway 43, web 14) | pnpm -r test |
+| 2026-10-28 | Gateway container | expected health JSON; UID 1000 | rootless Podman build/run |
+| 2026-10-28 | Android shell | debug APK built; signature valid; device checks pending | apps/android/app/build/outputs/apk/debug/app-debug.apk |
 
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
@@ -98,3 +108,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T3 complete: Dockerfile builds under rootless Podman; container /healthz returns status ok/version dev/protocol fp.v1, runtime UID 1000. Verification container removed. All 14 app/session tests and recursive TS typecheck pass.
 - 2026-10-28: D1-T7a complete: Android Gradle project copied; red run confirmed 7 CuesTest TODO failures with 5 filter tests passing; cue frequency, pan and magnitude implemented from guidance-spec §§5/7. All 12 JVM tests pass on JDK 21 / Gradle 9.8.2. App shell is the next Android task.
 - 2026-10-28: D1-T4 complete: red run confirmed 12 adapter TODO failures; implemented Spark strict-schema parsing/layout normalization and SAM prompting, mask selection and polygon conversion. All 43 gateway tests, recursive typecheck and protocol/gateway builds pass. Fixture/stub tests only; no live API requests or paid calls.
+- 2026-10-28: D1-T7b shell implemented: Compose theme, camera permission request, denied-permission settings screen and announcement, lifecycle refresh after Settings, and one merged TalkBack action. `./scripts/android.sh :app:test :app:assembleDebug --console=plain` succeeds with compile SDK 37; app:test has no source cases. APK produced at apps/android/app/build/outputs/apk/debug/app-debug.apk. Device permission/TalkBack checks still pending.
+- 2026-10-28: Android debug APK signature verification (v2) and ZIP integrity pass; package io.github.fingerpost, min SDK 29, target SDK 36, compile SDK 37 verified with aapt. All 103 TS tests pass. D1-T7b remains blocked only on phone acceptance; D1-T7c/T7d have not started.

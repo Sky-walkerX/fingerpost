@@ -369,7 +369,7 @@ JSON text frames, plus binary frames shaped `[u32 headerLen][JSON header][payloa
   - the screen tracker excludes features inside the hand's bounding box.
 - **Starting a task:** opens listening; Quick Settings `TileService`; a static app shortcut; launch by app name works with "Hey Google".
 - **Updates:** a check against the GitHub Releases API at startup gives a spoken prompt. Remote Config can force a minimum version. Compatible with Obtainium.
-- **minSdk 29** (Android 10, which DAT requires); target/compile SDK 36.
+- **minSdk 29** (Android 10, which DAT requires); target SDK 36, compile SDK 37 (D1-T7b first-build correction: pinned Compose/Core libraries require API 37).
 
 ### 5.2 Gateway (`services/gateway`)
 - **Stack:** Node 24 LTS, Fastify + `@fastify/websocket`, zod, OpenAI SDK (`baseURL https://api.meta.ai/v1`), `@meta-sam/parser`, `ws` (ASR relay), firebase-admin, pino, OpenTelemetry, `pkijs`/`asn1js` (attestation).
