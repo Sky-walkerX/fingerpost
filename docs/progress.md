@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Five tasks are complete within their documented scope; three are partial and 29 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task. Blocked work must be reported rather than skipped. Day 1's exit gate is not met; Days 2–3 have not started.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Six tasks are complete within their documented scope; two are partial and 29 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task. Blocked work must be reported rather than skipped. Day 1's exit gate is not met; Days 2–3 have not started.
 
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
@@ -17,7 +17,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | blocked | Codex |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
-| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | doing | Codex |
+| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
 | D1-T7d | Tone prototype | A | T7c | todo | |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
@@ -68,12 +68,12 @@ _(task id · exact command · last lines of output · what you tried)_
 
 - D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
 
-- D1-T7b · Spoken camera-permission denial is confirmed by the user with TalkBack enabled. Open settings is verified by the app-details intent targeting this app. Camera is still ungranted at the latest check; grant/return to the black session screen and single TalkBack session-element acceptance remain pending.
 - D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` fails: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` This is the D2-T1 module, not yet implemented. Current guidance tests and app build pass individually; CI workflow retained intact.
 
 - D1-T0 · Only the tooling item is verified (1/8 top-level items). Account/credit/cloud/registry/name/photo/outreach requirements lack recorded completion evidence; local .env and Day 1 photo dataset are absent. Human-only setup remains required.
 - D1-T5 · Audit found smoke output privacy conflict: the script writes image bytes into SVGs and recognized labels into Markdown under docs/evals, which the plan stages for commit. Fix raw-output handling and retain only sanitized metrics in Git before running real photos. Deployment CLI is also absent locally.
 - D1-T8 / phase order · Day 1 CI requires the D2-T1 protocol module, but the Day 2 plan requires Day 1 completion. Reconcile this forward dependency before phase progression; do not bypass the CI check. T0 outreach also depends on missing T8 drafts, and T8's stated 45-minute agenda currently totals 50 minutes.
+
 
 
 ## Deviations from the plan
@@ -101,7 +101,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Kotlin guidance tests | 12 passed, 0 failures | apps/android/core/guidance/build/test-results/test |
 | 2026-10-28 | TypeScript tests | 103 passed (protocol 46, gateway 43, web 14) | pnpm -r test |
 | 2026-10-28 | Gateway container | expected health JSON; UID 1000 | rootless Podman build/run |
-| 2026-10-28 | Android shell | debug APK built; signature valid; device checks pending | apps/android/app/build/outputs/apk/debug/app-debug.apk |
+| 2026-10-28 | Android shell | build/install/launch pass; permission and TalkBack device acceptance confirmed | apps/android/app/build/outputs/apk/debug/app-debug.apk |
 
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
@@ -121,3 +121,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T7b device connection resolved: Galaxy A14 SM-A146B, Android 15/API 35, authorized over USB. `./scripts/android.sh :app:installDebug --console=plain` succeeds (installed on one device); `am start -W -n io.github.fingerpost/.MainActivity` returns Status ok, process running. Awaiting manual TalkBack/permission acceptance before marking done or starting camera tracking. No device serial stored.
 - 2026-10-28: Full completion audit added in docs/task-audit.md. Fresh checks: protocol 46, gateway 43, web 14 and Kotlin guidance 12 pass; recursive typecheck, schema export, all current TS builds and app debug build pass. App unit-test task has no source cases. Rebuilt gateway container returns expected health JSON and runs as non-root. Latest inspected CI: TS passes; Android fails on absent core:protocol. No new feature task started; required device/live checks remain open. User completion gate and generic-device reporting rule recorded in AGENTS.md.
 - 2026-10-28: D1-T7b acceptance resumed: current guidance/test/build commands pass. User confirmed the exact spoken camera-needed message following denial with TalkBack. App-details settings intent is verified. Recorded evidence in docs/evals/day1-app-shell.md; remaining grant/return and single-session-element checks are pending, so task is not marked done.
+- 2026-10-28: D1-T7b complete: user confirmed spoken denial, app-settings navigation, permission grant/return to the black session screen, and one TalkBack session element with the required description. ADB corroborates CAMERA granted=true, TalkBack enabled and MainActivity resumed. Current guidance/test/build commands pass; app unit-test task has no source cases. Evidence: docs/evals/day1-app-shell.md. D1-T7c has not started.

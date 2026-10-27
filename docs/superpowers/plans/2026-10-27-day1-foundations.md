@@ -375,15 +375,15 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [x] **Step 1: Write the files** from the requirements.
 - [x] **Step 2: Build.** Run `./gradlew :app:assembleDebug --console=plain`. Expected: BUILD SUCCESSFUL.
   - If AGP or Kotlin complain about the plugin setup, check AGENTS.md (built-in Kotlin: no `kotlin-android` plugin). Record any fix to `app/build.gradle.kts` under Deviations.
-- [ ] **Step 3: Check on the device.** APK built; physical permission/TalkBack acceptance pending (2026-10-28). Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
+- [x] **Step 3: Check on the device.** All permission/TalkBack acceptance checks passed (2026-10-28); see docs/evals/day1-app-shell.md. Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
   - [x] Debug APK installed and MainActivity launched successfully.
   - [x] TalkBack enabled, verified through device accessibility settings (2026-10-28).
   - [x] Confirm the permission-denial message is spoken and Open settings reaches the app settings. User confirmed speech; app-details intent verified (2026-10-28).
-  - [ ] Grant camera permission, return to the app and confirm the expected black session screen with one TalkBack element.
+  - [x] Grant camera permission, return to the app and confirm the expected black session screen with one TalkBack element. User confirmed; permission and resumed activity corroborated through ADB.
   - The app opens and asks for the camera.
   - Deny → the settings message is spoken with TalkBack on.
   - Allow → a black screen (the camera comes in T7c).
-- [x] **Step 4: Commit.** Shell implementation checkpoint; device acceptance remains blocked.
+- [x] **Step 4: Commit.** Shell implementation and final device acceptance committed.
   `git commit -am "feat(android): Compose shell, TalkBack single action, camera permission"` (after `git add apps/android/app`)
 
 ### Task D1-T7c: CameraX + MediaPipe fingertip overlay + fps

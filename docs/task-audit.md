@@ -2,7 +2,7 @@
 
 This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. No new feature work was started during this audit.
 
-Of the 37 tasks written for Days 1–3, **5 meet their complete task checklists, 3 have partial implementation/setup, and 29 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started.
+Of the 37 tasks written for Days 1–3, **6 meet their complete task checklists, 2 have partial implementation/setup, and 29 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started.
 
 ## Completion rule
 
@@ -24,8 +24,8 @@ Previously completed tasks are assessed against their documented scope. For exam
 | Android `:app:test :app:assembleDebug` | Successful; app unit-test task has no source cases |
 | Current gateway container | Rebuilt; expected `/healthz` JSON; runtime UID 1000 |
 | Installed Android shell | Prior install/launch verified; device remains authorized |
-| Current device accessibility state | Spoken denial subsequently confirmed by the user; single-session-element acceptance remains pending |
-| Current camera permission | Ungranted at audit time; denial/settings-return acceptance still unconfirmed |
+| Device accessibility acceptance | User confirmed spoken denial and single session element; TalkBack enabled corroborated through device settings |
+| Camera/settings-return acceptance | User confirmed black session screen after grant/return; CAMERA granted=true and MainActivity resumed corroborated through ADB |
 | Latest inspected CI | TypeScript passes; Android fails on missing `:core:protocol:test` |
 
 CI evidence: [run at the audited source revision](https://github.com/Sky-walkerX/fingerpost/actions/runs/40573052543). Documentation changes after this audit do not constitute new implementation validation.
@@ -42,7 +42,7 @@ CI evidence: [run at the audited source revision](https://github.com/Sky-walkerX
 | D1-T5 — live smoke/deploy/region | **No: 0/8 steps complete** | No live smoke report, real overlays, deployment script, regional deployment/measurements or accepted ADR-0003. The latency image is still a 4-byte placeholder; the deployment CLI is absent locally. Human setup is unverified. The smoke output privacy issue below must also be fixed before real images are used. | Human supplies verified access/credits/cloud setup and local panel photos. Engineering fixes the smoke output handling, implements deployment and performs authorized live measurements. |
 | D1-T6 — simulator | **Partial: implementation/build complete** | 14 tests and build pass; desktop flow was checked. Android tablet fullscreen, full fast-food flow, three-finger export with one event per tap, and scrambled PIN-pad acceptance are not verified. | A tablet and actual device acceptance. Engineering handles any defects found. |
 | D1-T7a — Android foundation/cue math | **Yes** | Project/wrapper/toolchain and cue calculations implemented; all 12 JVM tests pass, including a fresh forced rerun. | No task gap. |
-| D1-T7b — Android app shell | **Partial: built, installed and launched** | Permission/settings UI, high-contrast theme and merged session semantics exist. APK builds. Spoken denial is now confirmed by the user and the app-details settings intent is verified. Granting camera and returning to the black session screen with one TalkBack element still need acceptance. | User performs the audible/device checks; engineering fixes failures. Tone playback is T7d and is not implemented by this shell. |
+| D1-T7b — Android app shell | **Yes** | APK builds, installs and launches. User confirmed the spoken denial message, settings navigation, grant/return to the black session screen and single TalkBack session element. ADB corroborates granted permission, resumed activity and enabled TalkBack. See docs/evals/day1-app-shell.md. | No task gap; camera tracking and tone playback remain T7c/T7d. |
 | D1-T7c — camera/fingertip | **No: not started** | Hand-landmarker asset/checksum record, CameraX pipeline, tracker, overlay and frame-rate/inference measurements are absent. Requires T7b completion first. | Engineering implementation, then real-device fingertip and performance checks (at least 25 fps and at most 25 ms inference). |
 | D1-T7d — tone prototype | **No: not started** | ToneSynth, playback wiring, ramp/pan behavior and audible latency/click tests are absent. Requires T7c completion first. | Engineering implementation and device listening/TalkBack checks. |
 | D1-T8 — CI/tester documents | **No: 0/6 steps complete** | Dependabot config, tester protocol, consent, outreach drafts and tester tracking file are absent. Overall CI is red. T7b and the CI sequencing issue below must be resolved. | Engineering writes documents and fixes the dependency order; human confirms contact details and performs outreach. |
@@ -101,7 +101,6 @@ The Day 3 plan explicitly requires Day 2 completion. All 11 tasks below are unim
 
 ## What is needed from the user
 
-- Finish the current Android shell checks: spoken denial message, settings navigation, permission grant/return and single TalkBack session element. Report any failure instead of marking the task complete.
 - Make a tablet available for the simulator's actual acceptance checks.
 - Confirm the human account/credit/cloud setup, name checks and budget configuration; place credentials only in the ignored local environment or approved secret store.
 - Supply at least 10 local panel photos without faces, payment details or other personal information. Raw images must remain outside commits; fix T5 output handling first.
