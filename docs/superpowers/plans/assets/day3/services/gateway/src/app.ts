@@ -9,6 +9,7 @@ import { mockModels } from './models/mock/mock-models.ts';
 import { mockAsr } from './models/mock/mock-asr.ts';
 import { createSessionController, type AsrFactory } from './session/controller.ts';
 import { SimEventBody, SimRegistry } from './sim/registry.ts';
+import { safeEqual } from './util/safe-equal.ts';
 import { ChallengeStore } from './auth/challenges.ts';
 import { registerAuthRoutes, type AuthDeps } from './auth/routes.ts';
 import { verifySessionToken } from './auth/tokens.ts';
@@ -47,8 +48,10 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
   if (cfg.DEBUG_TOKEN) registerLatencyRoute(app, models, cfg.DEBUG_TOKEN);
 
-  app.post('/v1/sim/events', async (req, reply) => {
-    if (cfg.SIM_TOKEN && req.headers['x-sim-token'] !== cfg.SIM_TOKEN) return reply.code(401).send({ error: 'bad sim token' });
+  // Simulator touches: open in mock/dev; in live mode only when SIM_TOKEN is set (fail closed).
+  if (!live || cfg.SIM_TOKEN) app.post('/v1/sim/events', async (req, reply) => {
+    const got = req.headers['x-sim-token'];
+    if (cfg.SIM_TOKEN && !safeEqual(typeof got === 'string' ? got : undefined, cfg.SIM_TOKEN)) return reply.code(401).send({ error: 'bad sim token' });
     const body = SimEventBody.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid sim event' });
     return { delivered: sims.publish(body.data) };

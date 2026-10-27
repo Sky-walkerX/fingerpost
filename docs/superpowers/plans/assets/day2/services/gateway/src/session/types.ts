@@ -5,6 +5,8 @@ export type Tier = 'hardware' | 'software';
 export interface SessionClaims { uid: string; keyId: string; tier: Tier; }
 export type StartResult = { ok: true; tasksLeft: number } | { ok: false; code: 'quota_exhausted' | 'cloud_paused' };
 export interface QuotaPort {
+  /** Global kill switch (cached). Checked for every task, authenticated or not. */
+  cloudEnabled(): Promise<boolean>;
   /** Once per new goal, before its first locate. */
   startTask(uid: string, tier: Tier): Promise<StartResult>;
   /** After every billed model call; returns the day's total in µ$. */

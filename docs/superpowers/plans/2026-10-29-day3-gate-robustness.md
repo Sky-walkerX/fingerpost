@@ -21,7 +21,7 @@
 - `docs/design.md` §4.5–§4.7.
 
 **Assets:** `assets/day3/`. Planning verified that the Day 3 starting state typechecks and compiles, that only Day 3 tests fail, and that the finished reference passes:
-- gateway 97;
+- gateway 104;
 - Kotlin guidance 81;
 - Kotlin protocol 41;
 - web 20;
@@ -279,7 +279,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
   - Returns the total.
 - **`utcDay(ms)`:** `new Date(ms).toISOString().slice(0, 10)`.
 
-- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 97 pass.
+- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 104 pass.
 - [ ] **Step 2: Firestore rules.** Create `infra/firestore.rules`:
   ```
   rules_version = '2';
@@ -362,5 +362,5 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 - Gate result recorded (D3-T0).
 - With the tablet PIN pad, the gateway logs **no** upload (D3-T2).
 - Single-target guide and verify work end to end on Cloud Run **with auth and quota** (D3-T9).
-- Gateway CI shows 97 tests green.
+- Gateway CI shows 104 tests green.
 - The Day 4–7 plans get written tonight from these results (see `docs/progress.md`).

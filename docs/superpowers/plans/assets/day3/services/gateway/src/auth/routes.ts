@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { verifyAttestation, type AttestationPolicy } from './attestation.ts';
 import type { ChallengeStore } from './challenges.ts';
 import { issueSessionToken, TOKEN_TTL_S } from './tokens.ts';
+import { FixedWindowLimiter } from './rate-limit.ts';
 
 export interface AuthDeps {
   challenges: ChallengeStore;
@@ -11,6 +12,8 @@ export interface AuthDeps {
   policy: AttestationPolicy;
   secret: Uint8Array;
   now?: () => number;
+  /** Per client IP per hour. Defaults: 60 challenges, 20 attests. */
+  limits?: { challengesPerHour?: number; attestsPerHour?: number };
 }
 
 const AttestBody = z.object({

@@ -36,6 +36,16 @@ test('a challenge can be used once', async () => {
   expect((await attest()).statusCode).toBe(200);
   expect((await attest()).statusCode).toBe(401);
 });
+test('challenges and attests are rate-limited per client IP', async () => {
+  const app = Fastify();
+  registerAuthRoutes(app, { challenges: new ChallengeStore(), policy: { trustedRoots: [], packageName: 'p', signatureDigests: [], allowSoftware: false }, secret, verifyFirebaseIdToken: async () => null, limits: { challengesPerHour: 2, attestsPerHour: 1 } });
+  const codes = [];
+  for (let i = 0; i < 3; i++) codes.push((await app.inject({ method: 'POST', url: '/v1/auth/challenge' })).statusCode);
+  expect(codes).toEqual([200, 200, 429]);
+  const attest = () => app.inject({ method: 'POST', url: '/v1/auth/attest', payload: {} });
+  expect([(await attest()).statusCode, (await attest()).statusCode]).toEqual([400, 429]);
+});
+
 test('bad firebase token → 401; bad body → 400; untrusted root → 403', async () => {
   expect((await (await setup()).attest({ firebaseIdToken: 'nope' })).statusCode).toBe(401);
   expect((await (await setup()).attest({ chain: [] })).statusCode).toBe(400);

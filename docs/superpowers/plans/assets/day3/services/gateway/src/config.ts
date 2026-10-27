@@ -16,13 +16,17 @@ const Env = z
     SESSION_SECRET: z.string().min(32).optional(),
     /** Comma-separated lowercase hex SHA-256 of the app signing certificates (release, and debug in dev). */
     SIGNING_DIGESTS: z.string().regex(/^[0-9a-f]{64}(,[0-9a-f]{64})*$/).optional(),
-    ALLOW_SOFTWARE_ATTESTATION: bool.default(true),
+    /** Software (non-TEE) attestations are forgeable; allowed by default only in mock/dev. */
+    ALLOW_SOFTWARE_ATTESTATION: bool.optional(),
+    /** Escape hatch for the pre-auth dev deploys (Days 1–3) only. Never set it in prod. */
+    ALLOW_UNAUTHENTICATED_LIVE: bool.default(false),
     DAILY_CAP_USD: z.coerce.number().positive().default(12),
     FIREBASE_PROJECT_ID: z.string().min(1).optional(),
   })
-  .transform((e) => ({ ...e, AUTH_REQUIRED: e.AUTH_REQUIRED ?? e.MODEL_MODE === 'live' }))
+  .transform((e) => ({ ...e, AUTH_REQUIRED: e.AUTH_REQUIRED ?? e.MODEL_MODE === 'live', ALLOW_SOFTWARE_ATTESTATION: e.ALLOW_SOFTWARE_ATTESTATION ?? e.MODEL_MODE !== 'live' }))
   .superRefine((e, ctx) => {
     if (e.MODEL_MODE === 'live' && !e.META_API_KEY) ctx.addIssue({ code: 'custom', path: ['META_API_KEY'], message: 'META_API_KEY is required when MODEL_MODE=live' });
+    if (e.MODEL_MODE === 'live' && !e.AUTH_REQUIRED && !e.ALLOW_UNAUTHENTICATED_LIVE) ctx.addIssue({ code: 'custom', path: ['AUTH_REQUIRED'], message: 'AUTH_REQUIRED=false in live mode needs ALLOW_UNAUTHENTICATED_LIVE=true (dev deploys only)' });
     if (e.AUTH_REQUIRED && !e.SESSION_SECRET) ctx.addIssue({ code: 'custom', path: ['SESSION_SECRET'], message: 'SESSION_SECRET (32+ chars) is required when AUTH_REQUIRED' });
     if (e.AUTH_REQUIRED && !e.SIGNING_DIGESTS) ctx.addIssue({ code: 'custom', path: ['SIGNING_DIGESTS'], message: 'SIGNING_DIGESTS is required when AUTH_REQUIRED' });
   });

@@ -2,9 +2,15 @@
 FROM node:24-slim AS build
 RUN npm install -g pnpm@11.10.0
 WORKDIR /repo
-COPY . .
-RUN pnpm install --frozen-lockfile --filter "@fingerpost/gateway..." \
- && pnpm --filter "@fingerpost/gateway..." build \
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
+COPY packages/protocol/package.json packages/protocol/
+COPY services/gateway/package.json services/gateway/
+COPY apps/web/package.json apps/web/
+COPY evals/package.json evals/
+RUN pnpm install --frozen-lockfile --filter @fingerpost/gateway...
+COPY packages/protocol packages/protocol
+COPY services/gateway services/gateway
+RUN pnpm --filter @fingerpost/gateway... build \
  && pnpm --filter @fingerpost/gateway deploy --legacy --prod /out
 
 FROM node:24-slim

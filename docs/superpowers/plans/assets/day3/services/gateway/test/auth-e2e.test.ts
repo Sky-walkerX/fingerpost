@@ -70,3 +70,31 @@ test('config: AUTH_REQUIRED defaults to true in live mode and then needs a secre
   expect(() => loadConfig({ MODEL_MODE: 'live', META_API_KEY: 'x' })).toThrow(/SESSION_SECRET.*SIGNING_DIGESTS|SIGNING_DIGESTS.*SESSION_SECRET/s);
   expect(loadConfig({}).AUTH_REQUIRED).toBe(false);
 });
+
+test('config fails closed: live + AUTH_REQUIRED=false needs the explicit dev escape hatch', () => {
+  expect(() => loadConfig({ MODEL_MODE: 'live', META_API_KEY: 'x', AUTH_REQUIRED: 'false' })).toThrow(/ALLOW_UNAUTHENTICATED_LIVE/);
+  expect(loadConfig({ MODEL_MODE: 'live', META_API_KEY: 'x', AUTH_REQUIRED: 'false', ALLOW_UNAUTHENTICATED_LIVE: 'true' }).AUTH_REQUIRED).toBe(false);
+});
+
+test('config: software attestation is off by default in live mode, on in mock', () => {
+  expect(loadConfig({ MODEL_MODE: 'live', META_API_KEY: 'x', SESSION_SECRET: SECRET, SIGNING_DIGESTS: 'ab'.repeat(32) }).ALLOW_SOFTWARE_ATTESTATION).toBe(false);
+  expect(loadConfig({}).ALLOW_SOFTWARE_ATTESTATION).toBe(true);
+});
+
+test('unauthenticated (dev) sessions still obey the kill switch', async () => {
+  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { quotaStore: new MemoryQuotaStore(), flagStore: new MemoryFlagStore(false) });
+  await app.ready();
+  const ws = await app.injectWS('/v1/session');
+  const msgs: any[] = [];
+  ws.on('message', (d: Buffer) => msgs.push(JSON.parse(d.toString())));
+  ws.send(JSON.stringify(hello)); ws.send(JSON.stringify(goal)); ws.send(kf('k1'));
+  for (let i = 0; i < 200 && !msgs.some((m) => m.type === 'error'); i++) await new Promise((r) => setTimeout(r, 5));
+  expect(msgs.find((m) => m.type === 'error')).toMatchObject({ code: 'cloud_paused' });
+  ws.terminate();
+});
+
+test('live mode without SIM_TOKEN does not expose the sim route', async () => {
+  app = await buildApp(cfg({ MODEL_MODE: 'live', META_API_KEY: 'x' }), { auth: { policy } });
+  const r = await app.inject({ method: 'POST', url: '/v1/sim/events', payload: { runId: 'r', screenId: 's', x: 0, y: 0, u: 0, v: 0, elementId: null, ts: 1 } });
+  expect(r.statusCode).toBe(404);
+});

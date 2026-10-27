@@ -74,3 +74,20 @@ test('the flag is cached for 30 s', async () => {
 test('every error code has a spoken message', () => {
   expect(Object.keys(SPOKEN_ERRORS).sort()).toEqual([...ErrorCode.options].sort());
 });
+
+import { FixedWindowLimiter } from '../src/auth/rate-limit.ts';
+import { safeEqual } from '../src/util/safe-equal.ts';
+
+test('fixed-window limiter allows N per window per key, then resets', () => {
+  let now = T0;
+  const l = new FixedWindowLimiter(2, 1000, () => now);
+  expect([l.hit('a'), l.hit('a'), l.hit('a'), l.hit('b')]).toEqual([true, true, false, true]);
+  now += 1000;
+  expect(l.hit('a')).toBe(true);
+});
+
+test('safeEqual compares in constant time and handles missing values', () => {
+  expect(safeEqual('secret-123', 'secret-123')).toBe(true);
+  expect(safeEqual('secret-12', 'secret-123')).toBe(false);
+  expect(safeEqual(undefined, 'secret-123')).toBe(false);
+});

@@ -53,6 +53,10 @@ Agents and people both update this file. Keep each line short. Status values are
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
 
+## Open security follow-ups (from the automated review of 8af4b1c)
+- Fixed in Day 3 assets: live config fails closed (AUTH_REQUIRED=false needs ALLOW_UNAUTHENTICATED_LIVE=true); software attestation off by default in live; challenge/attest rate-limited per IP; sim route disabled in live without SIM_TOKEN, timing-safe compare; kill switch also applies to unauthenticated sessions.
+- **Still open:** the Day 2 `app.ts` asset compares SIM_TOKEN with `!==` and leaves the sim route open in live without a token. Before deploying Day 2 live, set SIM_TOKEN; Day 3 replaces the file anyway.
+
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
