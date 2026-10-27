@@ -10,7 +10,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T0 | Accounts, Android Studio, photos, tester outreach (human) | all | – | todo | |
 | D1-T1 | Monorepo root | – | – | done | Codex |
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
-| D1-T3 | Gateway: config, hub, app, container | B | T2 | todo | |
+| D1-T3 | Gateway: config, hub, app, container | B | T2 | doing | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | todo | |
