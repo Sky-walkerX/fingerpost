@@ -1,0 +1,92 @@
+import { expect, test } from 'vitest';
+import type { Keyframe, ServerMessage } from '@fingerpost/protocol';
+import { MOCK_LAYOUT, mockModels } from '../src/models/mock/mock-models.ts';
+import type { ModelPort } from '../src/models/port.ts';
+import { labelJaccard, layoutFingerprint, SessionPipeline, simMatches } from '../src/session/pipeline.ts';
+import { describePosition, listLabels } from '../src/resolve/describe.ts';
+
+const kf = (purpose: Keyframe['purpose'], id = 'k1'): Keyframe => ({ type: 'keyframe', id, ts: 1, kind: 'screen', imageSize: { w: 1000, h: 500 }, ocrTokens: [], purpose });
+const jpeg = new Uint8Array([0xff, 0xd8]);
+const run = (models: ModelPort = mockModels()) => { const sent: ServerMessage[] = []; return { p: new SessionPipeline({ models, send: (m) => sent.push(m), now: () => 42 }), sent }; };
+
+test('goal → goal.ack with intent guide', () => {
+  const { p, sent } = run();
+  p.onGoal('press start');
+  expect(sent).toEqual([expect.objectContaining({ type: 'goal.ack', goal: 'press start', intent: 'guide', ts: 42 })]);
+});
+
+test('locate: layout first, then a SAM-refined target with a spoken position', async () => {
+  const { p, sent } = run();
+  p.onGoal('press start'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent.map((m) => m.type)).toEqual(['layout', 'target']);
+  const t = sent[1] as Extract<ServerMessage, { type: 'target' }>;
+  expect(t.elementId).toBe('e5');
+  expect(t.say).toBe('Found Start, bottom right.');
+  expect(t.polygon[0]!.u).toBeCloseTo(0.6 + 0.3 * 0.02, 6); // mock SAM shrinks the box by 2%
+});
+
+test('locate with nothing matching → ask listing what is there', async () => {
+  const { p, sent } = run();
+  p.onGoal('defrost'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent[1]).toMatchObject({ type: 'ask', question: "I can't find that. I see Timer, Power, Stop and Start. What do you want to press?", options: ['Timer', 'Power', 'Stop', 'Start'] });
+});
+
+test('ambiguous goal → ask which one', async () => {
+  const twoStarts = { ...MOCK_LAYOUT, elements: [...MOCK_LAYOUT.elements, { ...MOCK_LAYOUT.elements[4]!, id: 'e6', label: 'Start', textNorm: 'start' }] };
+  const { p, sent } = run(mockModels(twoStarts));
+  p.onGoal('start'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent[1]).toMatchObject({ type: 'ask', question: 'I see Start and Start. Which one?' });
+});
+
+test('verify with an unchanged layout → nochange', async () => {
+  const { p, sent } = run();
+  p.onGoal('start'); await p.onKeyframe(kf('locate'), jpeg); sent.length = 0;
+  await p.onKeyframe(kf('verify', 'k2'), jpeg);
+  expect(sent[1]).toMatchObject({ type: 'verify', re: 'k2', result: 'nochange' });
+});
+
+test('verify after a matching sim touch → ok; after a different element → wrong with actualElementId', async () => {
+  const a = run();
+  a.p.onGoal('start'); await a.p.onKeyframe(kf('locate'), jpeg);
+  a.p.onSimTouch('start'); a.sent.length = 0;
+  await a.p.onKeyframe(kf('verify', 'k2'), jpeg);
+  expect(a.sent[1]).toMatchObject({ type: 'verify', result: 'ok', say: 'Done.' });
+
+  const b = run();
+  b.p.onGoal('start'); await b.p.onKeyframe(kf('locate'), jpeg);
+  b.p.onSimTouch('timer'); b.sent.length = 0;
+  await b.p.onKeyframe(kf('verify', 'k3'), jpeg);
+  expect(b.sent[1]).toMatchObject({ type: 'verify', result: 'wrong', actualElementId: 'timer' });
+});
+
+test('verify when the screen changed → ok', async () => {
+  let call = 0;
+  const base = mockModels();
+  const changing: ModelPort = { ...base, parseScreen: async (i, o) => (call++ === 0 ? base.parseScreen(i, o) : { ...(await base.parseScreen(i, o)), layout: { ...MOCK_LAYOUT, elements: MOCK_LAYOUT.elements.slice(0, 1) } }) };
+  const { p, sent } = run(changing);
+  p.onGoal('start'); await p.onKeyframe(kf('locate'), jpeg); sent.length = 0;
+  await p.onKeyframe(kf('verify', 'k2'), jpeg);
+  expect(sent[1]).toMatchObject({ result: 'ok' });
+});
+
+test('model failure propagates so the hub can turn it into model_unavailable', async () => {
+  const broken: ModelPort = { ...mockModels(), parseScreen: async () => { throw new Error('503'); } };
+  await expect(run(broken).p.onKeyframe(kf('locate'), jpeg)).rejects.toThrow('503');
+});
+
+test('helpers: fingerprint is order-independent; jaccard; position words; label lists; sim id matching', () => {
+  const els = MOCK_LAYOUT.elements;
+  expect(layoutFingerprint(els)).toBe(layoutFingerprint([...els].reverse()));
+  expect(layoutFingerprint(els)).toMatch(/^sh64:[0-9a-f]{16}$/);
+  expect(labelJaccard(els, els)).toBe(1);
+  expect(labelJaccard(els, els.slice(0, 1))).toBeCloseTo(0.2);
+  expect(describePosition([{ u: 0.1, v: 0.1 }, { u: 0.2, v: 0.2 }])).toBe('top left');
+  expect(describePosition([{ u: 0.5, v: 0.5 }])).toBe('middle');
+  expect(describePosition([{ u: 0.5, v: 0.9 }])).toBe('bottom');
+  expect(listLabels(els)).toBe('Timer, Power, Stop and Start');
+  expect(simMatches('pay-card', { ...els[0]!, label: 'Pay by card' })).toBe(true);
+  expect(simMatches('cancel', { ...els[0]!, label: 'Pay by card' })).toBe(false);
+});

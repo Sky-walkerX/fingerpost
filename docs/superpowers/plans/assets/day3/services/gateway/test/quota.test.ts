@@ -1,0 +1,76 @@
+import { expect, test } from 'vitest';
+import { ChallengeStore } from '../src/auth/challenges.ts';
+import { issueSessionToken, TOKEN_TTL_S, verifySessionToken } from '../src/auth/tokens.ts';
+import { costMicros } from '../src/quota/cost.ts';
+import { MemoryFlagStore, MemoryQuotaStore } from '../src/quota/ports.ts';
+import { DEFAULT_QUOTA, QuotaService, utcDay } from '../src/quota/service.ts';
+import { SPOKEN_ERRORS } from '../src/errors/spoken.ts';
+import { ErrorCode } from '@fingerpost/protocol';
+
+const secret = new TextEncoder().encode('x'.repeat(32));
+const T0 = Date.UTC(2026, 9, 27, 10, 0, 0);
+
+test('session token round-trips and expires after 15 minutes', async () => {
+  const t = await issueSessionToken(secret, { uid: 'u1', keyId: 'k1', tier: 'hardware' }, T0);
+  expect(await verifySessionToken(secret, t, T0 + 60_000)).toEqual({ uid: 'u1', keyId: 'k1', tier: 'hardware' });
+  expect(await verifySessionToken(secret, t, T0 + (TOKEN_TTL_S + 1) * 1000)).toBeNull();
+  expect(await verifySessionToken(new TextEncoder().encode('y'.repeat(32)), t, T0)).toBeNull();
+  expect(await verifySessionToken(secret, 'garbage', T0)).toBeNull();
+});
+
+test('challenges are single use and expire after 5 minutes', () => {
+  let now = T0;
+  const s = new ChallengeStore(() => now);
+  const a = s.issue(), b = s.issue();
+  expect(a.nonce).toHaveLength(32);
+  expect(s.take(a.challengeId)).toEqual(a.nonce);
+  expect(s.take(a.challengeId)).toBeNull();
+  now += 5 * 60_000 + 1;
+  expect(s.take(b.challengeId)).toBeNull();
+});
+
+test('costMicros matches the price table', () => {
+  expect(costMicros({ kind: 'spark', inputTokens: 1600, outputTokens: 200 })).toBe(2850);
+  expect(costMicros({ kind: 'sam_image', images: 2 })).toBe(5000);
+  expect(costMicros({ kind: 'sam_video', frames: 10 })).toBe(10_000); // 50-frame minimum
+  expect(costMicros({ kind: 'asr', seconds: 30.9 })).toBe(1500);
+});
+
+test('tasks: 30/day for hardware, 10 for software, reset at the UTC day boundary', async () => {
+  let now = T0;
+  const q = new QuotaService(new MemoryQuotaStore(), new MemoryFlagStore(), DEFAULT_QUOTA, () => now);
+  for (let i = 29; i >= 0; i--) expect(await q.startTask('u', 'hardware')).toEqual({ ok: true, tasksLeft: i });
+  expect(await q.startTask('u', 'hardware')).toEqual({ ok: false, code: 'quota_exhausted' });
+  for (let i = 0; i < 10; i++) await q.startTask('s', 'software');
+  expect(await q.startTask('s', 'software')).toEqual({ ok: false, code: 'quota_exhausted' });
+  now = Date.UTC(2026, 9, 28, 0, 0, 1);
+  expect(utcDay(now)).toBe('2026-10-28');
+  expect(await q.startTask('u', 'hardware')).toEqual({ ok: true, tasksLeft: 29 });
+});
+
+test('reaching the daily spend cap flips the kill switch; new tasks get cloud_paused', async () => {
+  const flags = new MemoryFlagStore();
+  const q = new QuotaService(new MemoryQuotaStore(), flags, { ...DEFAULT_QUOTA, dailyCapMicros: 10_000 }, () => T0);
+  await q.recordUsage({ kind: 'sam_image', images: 3 });
+  expect(flags.enabled).toBe(true);
+  await q.recordUsage({ kind: 'sam_image', images: 1 });
+  expect(flags.enabled).toBe(false);
+  expect(flags.reason).toMatch(/daily cap/);
+  expect(await q.startTask('u', 'hardware')).toEqual({ ok: false, code: 'cloud_paused' });
+});
+
+test('the flag is cached for 30 s', async () => {
+  let now = T0;
+  const flags = new MemoryFlagStore();
+  const q = new QuotaService(new MemoryQuotaStore(), flags, DEFAULT_QUOTA, () => now);
+  await q.cloudEnabled(); await q.cloudEnabled();
+  expect(flags.reads).toBe(1);
+  flags.enabled = false; now += 29_999;
+  expect(await q.cloudEnabled()).toBe(true);
+  now += 2;
+  expect(await q.cloudEnabled()).toBe(false);
+});
+
+test('every error code has a spoken message', () => {
+  expect(Object.keys(SPOKEN_ERRORS).sort()).toEqual([...ErrorCode.options].sort());
+});

@@ -16,6 +16,14 @@ We need to stop scripts from draining the shared API budget. Firebase App Check'
 4. The gateway issues a 15-minute JWT bound to the Firebase anonymous uid and the key.
 5. Software-only attestation still gets a token, with a lower quota. This keeps emulators and older devices working.
 
+## Roots
+`services/gateway/certs/google-roots.pem` holds the root certificates published at https://developer.android.com/privacy-and-security/security-key-attestation#root_certificate.
+Their fingerprints are recorded here on Day 3 (task D3-T5), and a human checks them against that page:
+
+| Root | SHA-256 fingerprint |
+|---|---|
+| _(fill in)_ | _(fill in)_ |
+
 ## Consequences
 - It's free and needs no Play listing. It isn't bulletproof (rooted devices with leaked keys), so per-uid and per-IP limits and the spend kill switch stay in place.
 - The attestation code needs ASN.1 parsing (`pkijs`/`asn1js`) and tests with recorded chains.

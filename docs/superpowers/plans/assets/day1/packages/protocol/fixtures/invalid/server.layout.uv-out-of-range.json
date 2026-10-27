@@ -1,0 +1,1 @@
+{"type":"layout","id":"x","ts":1,"fingerprint":"f","screenType":"menu","rotation":0,"language":"en","sensitivity":"none","elements":[{"id":"e1","label":"Start","role":"button","confidence":0.9,"polygon":[{"u":-0.1,"v":0.1},{"u":0.5,"v":0.1},{"u":0.5,"v":0.2}]}],"source":"model"}

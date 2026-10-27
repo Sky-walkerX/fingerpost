@@ -686,6 +686,11 @@ The user floats across lanes, unblocking and integrating. Each day ends with dem
 14. **Sim touches:** the sim posts to the gateway (`POST /v1/sim/events`), which writes to Firestore and relays `sim.touch` to the linked session.
 15. **Kiosk memory:** independence measured by salted attested-key hashes; repeat visits served from the on-device cache.
 16. **Mode choice:** `hello.mode` defaults to `auto`, and the server infers guide/task/explore from the goal. An explicit user choice wins.
+17. **Kill-switch flag location:** stored in the Firestore document `config/runtime.cloudEnabled` instead of Remote Config. It's simpler for the server to write, it's read with a 30-second cache, and the budget-alert job writes the same document.
+18. **Quota tiers:** hardware-attested devices get 30 tasks per UTC day; software-attested devices (emulators, very old phones) get 10.
+19. **Session identity:** the Firebase anonymous uid. The JWT also carries the attested key id, and quotas are keyed by uid.
+20. **Pinned dependency ages:** every pinned npm version is at least 4 days old (pnpm 11 rejects anything published within 24 h by default). `openai` is pinned to 7.32.0 for this reason, and `vite` 8.3.5 is the youngest at 6 days.
+21. **Plan assets:** configs, schemas, fixtures, tests and algorithms ship verified in `docs/superpowers/plans/assets/`. Ordinary logic ships as skeletons that agents fill in (Sonnet-level plans, per the user).
 
 ## 11. Still open (not blocking Day 1)
 - Teammates' names and individual strengths, so lanes can be assigned.

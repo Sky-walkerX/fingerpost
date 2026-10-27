@@ -1,507 +1,522 @@
-# Day 1 (Tue Oct 27) Foundations Implementation Plan
+# Day 1 (Tue Oct 27): Foundations Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Read `AGENTS.md` first.
 
-**Goal:** Stand up the monorepo and kill Day 1's unknowns. By tonight we have:
-- a live fingertip dot on Android;
-- a real Spark + SAM 3.1 parse of a real panel photo, with latency and cost numbers;
-- the kiosk simulator v0 running on the tablet;
+**Goal:** Stand up the monorepo and remove Day 1's unknowns. Tonight's exit checks:
+- a live fingertip dot on the Android phone;
+- a real Spark and SAM 3.1 parse of a real panel photo, with latency and cost numbers;
+- kiosk simulator v0 running on the tablet;
 - CI green.
 
-**Architecture:** A pnpm monorepo of TS packages (`packages/protocol`, `services/gateway`, `apps/web`) plus a Gradle project (`apps/android`). The protocol package is the contract: zod schemas plus golden JSON fixtures that both TS and Kotlin tests parse. The gateway talks to the Meta Model API through the OpenAI SDK, and SAM output is parsed with `@meta-sam/parser`.
+**Architecture:**
+- A pnpm monorepo of TypeScript packages (`packages/protocol`, `services/gateway`, `apps/web`) plus a Gradle project (`apps/android`).
+- `packages/protocol` is the contract: zod schemas and golden JSON fixtures, which the Kotlin tests also parse from Day 2.
+- The gateway calls the Meta Model API through the OpenAI SDK and parses SAM output with `@meta-sam/parser`.
 
-**Tech Stack:**
-- **TS side:** Node 24.18, pnpm, TypeScript 7.0.2, zod 4.6.7, Fastify 5.12.7, @fastify/websocket 11.3.4, openai 7.45.0, @meta-sam/parser 0.1.0, vitest 5.0.5, vite 8.3.5, pino 10.4.0, ulid 3.0.2.
-- **Android side:** AGP 9.4.1, Gradle 9.8.2, Kotlin 2.4.21, Compose BOM 2026.09.00, activity-compose 1.13.0, CameraX 1.6.2, MediaPipe tasks-vision 1.1.1, JUnit 6.1.3.
+**Tech stack:** exactly the versions in `AGENTS.md` §6. Every `package.json`, `libs.versions.toml` and Gradle file is a plan asset with the versions pinned.
 
-**Spec:**
-- `docs/design.md` (§4, §5, §7 Day 1)
-- `docs/guidance-spec.md`
-- `docs/protocol.md`
-- `docs/adr/`
+**Spec:** `docs/design.md` (§4, §5, §7 Day 1), `docs/guidance-spec.md`, `docs/protocol.md`, `docs/adr/`.
 
-Lanes are parallel: Tasks 2–5 belong to lane B, Task 6 to C, Task 7 to A. Tasks 1 and 8 are shared.
+**How assets work:** `docs/superpowers/plans/assets/day1/` mirrors the repo.
+- `docs/superpowers/plans/assets/apply.sh 1 <path>` copies an asset to the same path in the repo.
+- **Skeleton** files contain real signatures and doc comments, with bodies that `throw new Error('TODO(D1-Tn) …')` (TS) or `TODO("D1-Tn …")` (Kotlin). You write those bodies; the tests are already written.
+- All other assets are finished and verified. Don't edit them unless a step says so.
+- Planning verified the whole TypeScript side and the pure-Kotlin modules with these exact files. With the skeletons in place everything typechecks and compiles, and only this day's tests fail.
+
+**Lanes:** they run in parallel. T2–T5 are lane B, T6 and T8 lane C, T7a–T7d lane A. T0 and T1 are shared and come first.
 
 ## Global Constraints
-- **License:** Apache-2.0. Every source file needs no header; the root `LICENSE` covers it.
-- **Package/app id:** `io.github.fingerpost`, minSdk 29, target/compile SDK 36.
-- **Protocol:** id `fp.v1`. Binary frame `[u32 big-endian headerLen][UTF-8 JSON header][payload]`.
-- **Message limits:**
-  - text ≤ 16 KB;
-  - keyframe payload ≤ 400 KB;
-  - header ≤ 16 KB.
+- **License:** Apache-2.0 (root `LICENSE`, already committed).
+- **App id / package:** `io.github.fingerpost`, minSdk 29, target/compile SDK 36.
+- **Protocol:**
+  - `fp.v1`; binary frame `[u32 BE headerLen][UTF-8 JSON header][payload]`.
+  - Limits: text ≤ 16 384 B, header ≤ 16 384 B, keyframe payload ≤ 409 600 B.
 - **Meta API:**
-  - base URL `https://api.meta.ai/v1`;
-  - models `muse-spark-1.3` and `sam-3.1`;
-  - Voice Transcribe `wss://api.meta.ai/v1/asr/realtime`.
-  - **Standard mode only**: never a `-contributor` model id.
-- **Coordinates:**
-  - Spark grounding returns a 0–1000 grid (it may exceed it, so clamp).
-  - Screen space is normalized `u, v ∈ [0,1]`.
-  - Polygons have at most 32 points.
-- **Secrets:** `META_API_KEY` never in git and never in the APK. Local `.env` is gitignored. Cloud Run reads it from Secret Manager secret `meta-api-key`.
-- **Logs:** never log image bytes, audio, transcripts or OCR text. Only ids, sizes, latencies and outcomes.
-- **Privacy:** Day 1 smoke images are team-captured appliance photos only.
+  - base `https://api.meta.ai/v1`; models `muse-spark-1.3`, `sam-3.1`.
+  - **Never** use a `-contributor` id.
+  - Spark grounding uses a 0–1000 grid (it may overshoot, so clamp).
+- **Geometry:** screen coordinates are `u, v ∈ [0,1]`; polygons have 3–32 points.
+- **Secrets:**
+  - `META_API_KEY` only in `.env` (gitignored) or Secret Manager `meta-api-key`.
+  - The APK never contains a key.
+- **Logs:** ids, sizes, latencies and outcomes only. No image bytes, audio, transcripts or OCR text.
+- **Test data:** team-captured photos only. Photos with faces or personal data go in `evals/datasets/private/` (gitignored).
 
 ## Review Focus
-1. **Spark boxes outside 0–1000 or with min > max** should be clamped and re-ordered, never thrown. Covered by Task 4, `normalizeSparkBox`.
-2. **SAM returns zero objects (empty `output_text`) or several objects for one box prompt.** The result should be `null`, or the highest-confidence/largest object, without crashing. Covered by Task 4, `pickPrimaryMask`.
-3. **A malformed binary frame** (headerLen > buffer, non-UTF-8 header, payload over 400 KB) should be rejected with `bad_message` while the socket stays usable. Covered by Tasks 2 and 3.
-4. **Unknown message `type` or extra fields from a newer peer:**
-   - The client parse returns `{kind:'unknown'}`, which callers ignore.
-   - The server answers an unknown client type with `bad_message`.
-   - Covered by Tasks 2 and 3.
-5. **Sim touches on gaps between buttons, multi-touch, and rapid double-taps** are each logged, with `elementId: null` for misses. None are dropped. Covered by Task 6, `hitTest` and `recordTouch`.
+These are the inputs most likely to break things for a real user. Each is pinned by tests:
+
+1. **Spark boxes outside 0–1000, or with min > max.** They are clamped and reordered, never thrown. Tested in `test/geometry.test.ts` (normalizeSparkBox) and `test/spark-parse.test.ts`.
+2. **SAM returns zero objects, or several for one box.** The result is `null`, or the highest-confidence mask (ties go to the larger area), with no crash. Tested in `test/sam.test.ts`.
+3. **Malformed binary frames:**
+   - `headerLen` larger than the buffer;
+   - a non-UTF-8 header;
+   - a keyframe over 400 KB;
+   - a keyframe sent as text.
+
+   Each gets `bad_message`, and the socket stays usable. Tested in `packages/protocol/test/frame.test.ts` and `services/gateway/test/session.test.ts`.
+4. **A peer on a newer protocol version.** The client ignores unknown server types; the server answers unknown client types with `bad_message` and an old `hello` protocol with `version_unsupported`. Tested in `fixtures.test.ts` and `session.test.ts`.
+5. **Sim taps on gaps, multi-touch and rapid double taps.** Each one is logged, with `elementId: null` for misses. Tested in `apps/web/test/sim.test.ts`.
 
 ---
 
-### Task 0 (human, all three, first two hours): accounts and tooling
-These steps need the user's credentials or downloads. Claude can generate a step-by-step wizard script for them (the `wizard` skill).
+### Task D1-T0 (human; all three; first two hours): accounts and tooling
+Needs people, credentials or money. Agents mark dependent tasks `blocked` until it's done.
 
-- [ ] **Android tooling:**
-  - `brew install --cask android-studio`; open it once and install SDK Platform 36 plus Build-Tools.
-  - `brew install gradle` (only to generate the wrapper).
-  - Verify: `~/Library/Android/sdk/platform-tools/adb version` prints a version, and `"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java" -version` prints 21.
+- [ ] **Android Studio:** run `brew install --cask android-studio`. Open it once, then install SDK Platform 36, Build-Tools, and Platform-Tools.
+  - **Check:** `~/Library/Android/sdk/platform-tools/adb version` prints a version.
+  - Add to `~/.zshrc`, then run `source ~/.zshrc`:
+    - `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
+    - `export ANDROID_HOME="$HOME/Library/Android/sdk"`
+  - Gradle comes from the committed wrapper, so there's no separate Gradle install.
 - [ ] **Meta Model API:**
-  - Create a key and claim the $150 credits.
-  - Put it in `fingerpost/.env` as `META_API_KEY=...`.
-  - Verify: `curl -s https://api.meta.ai/v1/models -H "Authorization: Bearer $META_API_KEY" | head -c 300` lists `muse-spark-1.3`.
-- [ ] **Modal:** claim the credits (first 1,000 people). Also apply to Baseten as a backup.
+  - Create a key at dev.meta.ai and claim the $150 credits.
+  - In the repo root: `printf 'META_API_KEY=%s\n' '<key>' > .env`
+  - **Check:** `set -a; source .env; set +a; curl -s https://api.meta.ai/v1/models -H "Authorization: Bearer $META_API_KEY" | head -c 400` lists `muse-spark-1.3`.
+- [ ] **Partner credits:** claim Modal credits (first 1,000 people only); apply to Baseten as a backup.
 - [ ] **GCP:**
-  - `gcloud projects create fingerpost-dev` and `fingerpost-prod`, then link billing.
-  - Enable `run`, `cloudbuild`, `artifactregistry`, `secretmanager`, `firestore`.
-  - Add Firebase to both projects.
-  - Budget alerts at $1, $5 and $10.
-  - Verify: `gcloud projects list | grep fingerpost` shows both.
-- [ ] **GitHub:**
-  - Create the org or repo `fingerpost` (public). `gh` is logged in as `Sky-walkerX`.
-  - Verify: `gh repo view <owner>/fingerpost`.
-- [ ] **Name checks:** the X handle (@fingerpost, or @fingerpostapp), and the package id `io.github.fingerpost`. The package id works only if the GitHub org is `fingerpost`. Otherwise use `io.github.<owner>.fingerpost` and update Global Constraints.
-- [ ] **Tester outreach:** send the messages from Task 8 to 10 or more groups. Log them in `docs/testers.md` (no personal data in git: names as initials only).
+  - Create `fingerpost-dev` and `fingerpost-prod`: `gcloud projects create fingerpost-dev`, then the same for `fingerpost-prod`.
+  - Link billing in the console.
+  - On both projects: `gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com firestore.googleapis.com --project <id>`
+  - Add Firebase to both projects (console → Add project → pick the existing GCP project).
+  - Budget alerts at $1, $5 and $10 (console → Billing → Budgets).
+  - **Check:** `gcloud projects list | grep fingerpost` shows both.
+- [ ] **Artifact Registry**, on dev: `gcloud artifacts repositories create fp --repository-format=docker --location=asia-south1 --project fingerpost-dev`. Repeat with `--location=us-central1`.
+- [ ] **Name checks:**
+  - an X handle (`@fingerpost` or `@fingerpostapp`);
+  - package id `io.github.fingerpost`. If GitHub won't give us that namespace, keep the id anyway: Android doesn't require domain ownership.
+- [ ] **Test photos:** photograph at least 10 appliance panels (microwave, induction cooktop, washing machine, AC remote screen). Use varied angles and light, with no faces or reflections of people.
+  - Save as JPEG in `evals/datasets/day1/`.
+  - Put one 1024×576 crop in `services/gateway/test/fixtures/latency-sample.jpg`, replacing the 4-byte placeholder.
+- [ ] **Testers:** send outreach (texts from D1-T8) to 10 or more groups. Log each in `docs/testers.md`.
 
-### Task 1: Monorepo root
-
-**Files:**
-- Create: `LICENSE` (Apache-2.0 full text), `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1)
-- Create: `.gitignore` (node_modules, dist, .env*, *.keystore, local.properties, .gradle, build, .idea, evals/datasets/private/**)
-- Create: `.editorconfig`, `.nvmrc` (`24`)
-- Create: `pnpm-workspace.yaml` (`packages/*`, `services/*`, `apps/web`, `evals`)
-- Create: `package.json` (private; scripts `typecheck`, `test`, `build` running `pnpm -r`)
-- Create: `tsconfig.base.json` (strict, `module`/`moduleResolution` `nodenext`, `target es2024`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
+### Task D1-T1: monorepo root
+**Files:** copy assets `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `.nvmrc`, `.dockerignore` and `.github/workflows/ci.yml`. Create `SECURITY.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
 
 **Interfaces:**
-- Produces: workspace layout that later tasks drop packages into, and `tsconfig.base.json`, which every TS package extends.
+- **Produces:** the workspace (`packages/*`, `services/*`, `apps/web`, `evals`) and the `source` export condition.
+  - Every TS package's `exports` maps `"source"` to `./src/index.ts`, so tests and `node --conditions=source` run straight from source.
+  - Builds use `dist/`.
 
-- [ ] **Step 1: Create the files.** The README holds the one-liner, a status badge placeholder, the repo map from design §6, and links to docs. SECURITY.md gives a contact email placeholder plus "do not file public issues for vulnerabilities".
-- [ ] **Step 2: Verify.** Run `pnpm install && pnpm -r test`. Expected: exit 0 ("No projects matched" is fine).
-- [ ] **Step 3: Commit.**
-  `git add -A && git commit -m "chore: monorepo root, Apache-2.0, workspace config"`
-- [ ] **Step 4: Push.**
-  `git remote add origin git@github.com:<owner>/fingerpost.git && git push -u origin main` (after Task 0).
+- [ ] **Step 1: Copy the root assets.**
+  `docs/superpowers/plans/assets/apply.sh 1 package.json pnpm-workspace.yaml tsconfig.base.json .nvmrc .dockerignore .github`
+- [ ] **Step 2: Write the three docs.**
+  - `SECURITY.md`: report vulnerabilities privately to the maintainers' email (placeholder `security@fingerpost.invalid` until a real address exists). Don't open public issues for them.
+  - `CONTRIBUTING.md`: points to `AGENTS.md` §3–§8.
+  - `CODE_OF_CONDUCT.md`: the Contributor Covenant 2.1 text, with the same contact.
+- [ ] **Step 3: Verify.** Run `pnpm install && pnpm -r test`. It should exit 0 ("No projects matched" is fine at this point).
+- [ ] **Step 4: Commit and push.**
+  `git add -A && git commit -m "chore: workspace root, CI workflow, community docs" && git push`
 
-### Task 2: `packages/protocol`: zod schemas, binary framing, fixtures
+### Task D1-T2: `packages/protocol`, the fp.v1 contract
+**Files (all from assets):** `packages/protocol/**`.
+- Skeletons:
+  - `src/frame.ts` (`encodeFrame`, `decodeFrame`);
+  - `src/parse.ts` (`parseClientMessage`, `parseServerMessage`).
+- Finished: `src/common.ts`, `src/client.ts`, `src/server.ts`, `src/index.ts`, `scripts/export-json-schema.ts`, `fixtures/valid/*` (24), `fixtures/invalid/*` (9), `test/fixtures.test.ts`, `test/frame.test.ts`.
 
-**Files:**
-- Create: `packages/protocol/package.json` (name `@fingerpost/protocol`, `type: module`, exports `./dist/index.js`; build `tsc -b`)
-- Create: `packages/protocol/src/common.ts`
-  - `Point = {x,y}` (image px);
-  - `UV = {u,v}`, each a 0–1 float with an 0.15 overshoot allowed only on `UV`, not on polygons;
-  - `Polygon = UV[]` of length 3–32;
-  - `Locale = 'en'|'hi'|'es'`;
-  - `Priority`.
-- Create: `packages/protocol/src/client.ts`. `ClientMessage` is a discriminated union on `type` covering every client→server row in `docs/protocol.md`, each with an `id` (ULID string) and `ts` (int).
-- Create: `packages/protocol/src/server.ts`. `ServerMessage` covers every server→client row and the `ErrorCode` enum from `docs/protocol.md`.
-- Create: `packages/protocol/src/frame.ts`. Binary framing.
-- Create: `packages/protocol/src/index.ts`. Re-exports, plus `PROTOCOL = 'fp.v1'` and `LIMITS = {textBytes: 16384, headerBytes: 16384, keyframeBytes: 409600}`.
-- Create: `packages/protocol/scripts/export-json-schema.ts`. Writes `schema/client.json` and `schema/server.json` via `z.toJSONSchema`.
-- Create: `packages/protocol/fixtures/valid/*.json`. At least one file per message type, named `<direction>.<type>.json`, e.g. `server.layout.json` with 3 elements, one of them `role: "pay"`.
-- Create: `packages/protocol/fixtures/invalid/*.json`:
-  - `client.keyframe.no-imageSize.json`
-  - `server.target.polygon-too-long.json` (33 points)
-  - `server.layout.bad-screenType.json`
-  - `client.hello.wrong-protocol.json`
-- Test: `packages/protocol/test/fixtures.test.ts`, `packages/protocol/test/frame.test.ts`
+**Interfaces (Produces):**
+- `encodeFrame(header: object, payload: Uint8Array): Uint8Array`
+- `decodeFrame(buf: Uint8Array): { ok: true; header: unknown; payload: Uint8Array } | { ok: false; error: 'short' | 'header_too_large' | 'header_not_utf8' | 'header_not_json' }`
+- `parseClientMessage(json: unknown): { ok: true; msg: ClientMessage } | { ok: false; error: string }`
+  - Unknown types and invalid input → `ok:false`. Extra fields are stripped.
+- `parseServerMessage(json: unknown): { kind: 'ok'; msg } | { kind: 'unknown'; type } | { kind: 'invalid'; error }`
+  - Returns `unknown` when `type` is a string that isn't in `SERVER_TYPES`.
+- Constants `PROTOCOL`, `LIMITS`, `CLIENT_TYPES` and `SERVER_TYPES`, plus all schema and type exports from `common/client/server.ts`.
 
-**Interfaces:**
-- **Produces:**
-  - `parseClientMessage(json: unknown): {ok: true, msg: ClientMessage} | {ok: false, error: string}`. Unknown `type` → `ok:false`.
-  - `parseServerMessage(json: unknown): {kind: 'ok', msg: ServerMessage} | {kind: 'unknown', type: string} | {kind: 'invalid', error: string}`. Unknown `type` → `unknown`. Unknown fields are stripped, not rejected.
-  - `encodeFrame(header: object, payload: Uint8Array): Uint8Array`
-  - `decodeFrame(buf: Uint8Array): {ok: true, header: unknown, payload: Uint8Array} | {ok: false, error: 'short'|'header_too_large'|'header_not_utf8'|'header_not_json'}`
-  - Types `ClientMessage`, `ServerMessage`, `Layout`, `LayoutElement`, `ElementRole`, `ScreenType`, `ErrorCode`.
-
-- [ ] **Step 1: Write the failing tests.**
-
-```ts
-// test/fixtures.test.ts
-import { readdirSync, readFileSync } from 'node:fs';
-const load = (d: string) => readdirSync(`fixtures/${d}`).map(f => [f, JSON.parse(readFileSync(`fixtures/${d}/${f}`, 'utf8'))] as const);
-test.each(load('valid'))('valid %s parses and round-trips', (name, json) => {
-  const r = name.startsWith('client.') ? parseClientMessage(json) : parseServerMessage(json);
-  expect('ok' in r ? r.ok : r.kind).toBe(name.startsWith('client.') ? true : 'ok');
-  const msg = 'msg' in r ? r.msg : undefined;
-  expect(JSON.parse(JSON.stringify(msg))).toEqual(msg);
-});
-test.each(load('invalid'))('invalid %s is rejected', (name, json) => {
-  const r = name.startsWith('client.') ? parseClientMessage(json) : parseServerMessage(json);
-  expect('ok' in r ? r.ok : r.kind).toBe(name.startsWith('client.') ? false : 'invalid');
-});
-test('every message type has a valid fixture', () => { /* compare union discriminants to fixture names */ });
-test('unknown server type is ignorable', () => {
-  expect(parseServerMessage({ type: 'future.thing', id: 'x', ts: 1 })).toEqual({ kind: 'unknown', type: 'future.thing' });
-});
-test('extra fields are stripped from server messages', () => { /* add field "zzz" to say fixture → ok, msg has no zzz */ });
-```
-
-```ts
-// test/frame.test.ts
-test('round-trips header and payload', () => {
-  const f = encodeFrame({ type: 'keyframe', id: 'a', ts: 1 }, new Uint8Array([1, 2, 3]));
-  const d = decodeFrame(f);
-  expect(d.ok && [...d.payload]).toEqual([1, 2, 3]);
-});
-test('headerLen larger than buffer → short', () => { expect(decodeFrame(new Uint8Array([0, 0, 1, 0, 123]))).toEqual({ ok: false, error: 'short' }); });
-test('header over 16384 bytes → header_too_large', () => { /* u32 = 16385 */ });
-test('non-UTF-8 header → header_not_utf8', () => { /* bytes 0xff 0xfe */ });
-test('buffer under 4 bytes → short', () => { expect(decodeFrame(new Uint8Array([0, 0]))).toEqual({ ok: false, error: 'short' }); });
-```
-
-- [ ] **Step 2: Run them and confirm they fail.** `pnpm --filter @fingerpost/protocol test`. Expected: FAIL (modules not found).
-- [ ] **Step 3: Implement the schemas, `parse*`, and `encodeFrame`/`decodeFrame`.**
-  - Use `z.discriminatedUnion('type', [...])`.
-  - Decode with `new TextDecoder('utf-8', {fatal: true})`.
-  - Payload size limits are enforced by the gateway (Task 3), not by `decodeFrame`.
-- [ ] **Step 4: Write the fixtures** so they mirror `docs/protocol.md` examples exactly.
-- [ ] **Step 5: Run the tests and confirm they pass.** `pnpm --filter @fingerpost/protocol test`. Expected: PASS.
-- [ ] **Step 6: Export the JSON Schema.** Run `pnpm --filter @fingerpost/protocol exec tsx scripts/export-json-schema.ts`. Expected: `schema/client.json` and `schema/server.json` exist.
+- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 packages/protocol && pnpm install`
+- [ ] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/protocol test`. Expected: 45 failed, 1 passed (every test that touches the skeletons throws TODO).
+- [ ] **Step 3: Implement `src/frame.ts`.**
+  - Big-endian u32 length via `DataView.setUint32(0, len, false)`.
+  - Check the order exactly as the tests require:
+    1. under 4 bytes → `short`;
+    2. len > `LIMITS.headerBytes` → `header_too_large`;
+    3. buffer shorter than 4 + len → `short`;
+    4. `new TextDecoder('utf-8', { fatal: true })` throws → `header_not_utf8`;
+    5. `JSON.parse` throws → `header_not_json`.
+  - Use `buf.byteOffset` when making the DataView (a test passes a subarray).
+- [ ] **Step 4: Implement `src/parse.ts`.**
+  - Both functions use `safeParse` on the union.
+  - `parseServerMessage` first reads `type`. If `type` is a string not in `SERVER_TYPES`, return `{kind:'unknown', type}`.
+  - Non-objects → `invalid`.
+- [ ] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/protocol test && pnpm --filter @fingerpost/protocol typecheck`. Expected: 46 passed, no type errors.
+- [ ] **Step 6: Export the JSON Schema.** Run `pnpm --filter @fingerpost/protocol schema`. Expected: `wrote schema/client.json and schema/server.json`. The `schema/` directory is a build output; add it to `.gitignore` if it isn't already.
 - [ ] **Step 7: Commit.**
-  `git commit -am "feat(protocol): fp.v1 schemas, binary framing, golden fixtures"` (after `git add packages/protocol`)
+  `git add packages/protocol .gitignore && git commit -m "feat(protocol): fp.v1 schemas, binary framing, golden fixtures"`
 
-### Task 3: `services/gateway` skeleton: config, health, session hello/ready, container
-
-**Files:**
-- Create: `services/gateway/package.json` (name `@fingerpost/gateway`; deps fastify, @fastify/websocket, zod, pino, ulid, `@fingerpost/protocol: workspace:*`)
-- Create: `services/gateway/src/config.ts`. Env schema:
-  - `PORT` default 8080;
-  - `MODEL_MODE` `mock|live`, default `mock`;
-  - `META_API_KEY`, required when `live`;
-  - `DEBUG_TOKEN`, optional;
-  - `GIT_SHA`, default `dev`.
-- Create: `services/gateway/src/app.ts`.
-- Create: `services/gateway/src/session/hub.ts`.
-- Create: `services/gateway/src/server.ts` (listen).
-- Create: `services/gateway/Dockerfile`. Multi-stage on `node:24-slim`; the build context is **the repo root**; uses `pnpm deploy --filter @fingerpost/gateway --prod /out`; runs as non-root `node`; `CMD ["node","dist/server.js"]`.
-- Create: `.dockerignore` (repo root).
-- Test: `services/gateway/test/app.test.ts`, `services/gateway/test/session.test.ts`
+### Task D1-T3: gateway skeleton (config, session hub, app, container)
+**Files:** copy the whole Day 1 gateway: `docs/superpowers/plans/assets/apply.sh 1 services/gateway`. This brings the T4 files too, so imports resolve.
+- **Skeletons for this task:**
+  - `src/config.ts` (`loadConfig`);
+  - `src/session/hub.ts` (all `SessionHub` methods).
+- **Finished:**
+  - `src/app.ts`, `src/server.ts`, `src/debug/latency.ts`;
+  - `src/models/{meta-client,port}.ts`, `src/models/mock/mock-models.ts`;
+  - `prompts/parse-screen.v1.md`, `Dockerfile`;
+  - `test/app.test.ts`, `test/session.test.ts`.
 
 **Interfaces:**
-- **Consumes:** `parseClientMessage`, `decodeFrame` and `LIMITS` from Task 2.
+- **Consumes:** `decodeFrame`, `parseClientMessage`, `LIMITS`, `PROTOCOL` and types from D1-T2.
 - **Produces:**
-  - `loadConfig(env: NodeJS.ProcessEnv): Config`. Throws a readable error listing the missing keys.
-  - `buildApp(cfg: Config): Promise<FastifyInstance>`.
-  - Route `GET /healthz` → `{status:'ok', version: cfg.GIT_SHA, protocol:'fp.v1'}`.
-  - WS route `/v1/session`.
-  - `handleClientText(session: Session, raw: string): ServerMessage[]`
-  - `handleClientBinary(session: Session, buf: Uint8Array): ServerMessage[]`
-  - On Day 1 `hello` → `ready{sessionId, quota:{tasksLeft:30}, flags:{cloudEnabled:true, privateAvailable:false}}`; anything else → `error{code:'bad_message'}` or a no-op.
-- **Logging:** pino, with `redact: ['req.headers.authorization']`. The hub logs only `type`, `bytes` and `sessionId`.
+  - `loadConfig(env): Config`. Throws `Invalid gateway config: <path>: <message>; …`. Defaults: `PORT 8080`, `MODEL_MODE mock`, `GIT_SHA dev`, `LOG_LEVEL info`.
+  - `class SessionHub`:
+    - `new SessionHub({ send, handlers?, now? })`;
+    - `id`, `locale`, `simRunId`;
+    - `onText(raw: string): Promise<void>` and `onBinary(buf: Uint8Array): Promise<void>`.
+  - `HubHandlers { onHello?(hello); onMessage?(msg, payload: Uint8Array | null) }`. Day 2 plugs the brain in here.
+- **`SessionHub` rules (tests pin each one):**
+  1. Text over `LIMITS.textBytes` (UTF-8 bytes) → `error{code:'bad_message'}`.
+  2. Unparseable JSON → `bad_message`.
+  3. `{type:'hello'}` with `protocol !== 'fp.v1'` → `error{code:'version_unsupported', say:'Please update Fingerpost to keep using it.'}`. This check runs **before** schema validation.
+  4. Schema-invalid or unknown type → `bad_message`.
+  5. `keyframe` or `audio` without a binary payload → `bad_message`; keyframe payload over `LIMITS.keyframeBytes` → `bad_message`.
+  6. Any message before hello → `bad_message`.
+  7. hello:
+     - store `locale` and `caps.simRunId`;
+     - call `handlers.onHello`;
+     - send `ready{sessionId: hub.id, quota:{tasksLeft:30}, flags:{cloudEnabled:true, privateAvailable:false}}`.
+  8. Everything else goes to `handlers.onMessage(msg, payload)`. If it throws, send `error{code:'model_unavailable', retryable:true, say:"I couldn't reach the reading service. Try again in a moment."}`.
 
-- [ ] **Step 1: Write the failing tests.**
+  Every `error` has `retryable:false` unless rule 8 says otherwise; the default `say` is `Something went wrong talking to the server.` `id` comes from `ulid()` and `ts` from `now()`.
 
-```ts
-// test/app.test.ts
-test('healthz reports protocol', async () => {
-  const app = await buildApp(loadConfig({ MODEL_MODE: 'mock' }));
-  const r = await app.inject('/healthz');
-  expect(r.json()).toMatchObject({ status: 'ok', protocol: 'fp.v1' });
-});
-test('live mode without META_API_KEY fails with a readable error', () => {
-  expect(() => loadConfig({ MODEL_MODE: 'live' })).toThrow(/META_API_KEY/);
-});
-```
+- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 services/gateway && pnpm install`
+- [ ] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- app session`. The session and app tests fail with TODO(D1-T3).
+- [ ] **Step 3: Implement `loadConfig`.**
+  - `Env.safeParse(env)`. On failure, throw `new Error('Invalid gateway config: ' + issues.map(i => \`${i.path.join('.')}: ${i.message}\`).join('; '))`.
+  - Keep the `Env` schema exactly as given.
+- [ ] **Step 4: Implement `SessionHub`.** Follow rules 1–8 above, plus `private now()` and `private error(code, say?)`.
+- [ ] **Step 5: Confirm green.** Run `pnpm --filter @fingerpost/gateway test -- app session && pnpm --filter @fingerpost/gateway typecheck`. Expected: `app` 4 passed, `session` 10 passed.
+- [ ] **Step 6: Run it locally.**
+  - `pnpm --filter @fingerpost/gateway dev`, then in another shell `curl -s localhost:8080/healthz`.
+  - Expected: `{"status":"ok","version":"dev","protocol":"fp.v1"}`.
+- [ ] **Step 7: Build the container.** Needs Docker Desktop running; if it isn't, mark this step `blocked`.
+  - `docker build -f services/gateway/Dockerfile -t fp-gateway . && docker run --rm -d -p 8080:8080 --name fpg fp-gateway && sleep 2 && curl -s localhost:8080/healthz; docker rm -f fpg`
+  - Expected: the same JSON.
+  - The Dockerfile itself wasn't run during planning (no Docker daemon), but its exact pnpm steps were (filtered install, build, `deploy --legacy`, then `node dist/server.js` answering /healthz). Record any fix in progress.md.
+- [ ] **Step 8: Commit.**
+  `git add services/gateway && git commit -m "feat(gateway): config, session hub, health, container"`
 
-```ts
-// test/session.test.ts  (pure handler tests, no socket)
-test('hello → ready', () => { const out = handleClientText(newSession(), JSON.stringify(helloFixture)); expect(out[0]?.type).toBe('ready'); });
-test('unknown client type → bad_message, session stays open', () => { /* {type:'nope'} → error.code === 'bad_message' */ });
-test('text over 16384 bytes → bad_message', () => { /* 'x'.repeat(16385) */ });
-test('binary with headerLen > buffer → bad_message', () => {});
-test('keyframe payload over 409600 bytes → bad_message', () => {});
-test('message before hello → bad_message', () => {});
-```
-
-- [ ] **Step 2: Run them and confirm they fail.** `pnpm --filter @fingerpost/gateway test`. Expected: FAIL.
-- [ ] **Step 3: Implement** `loadConfig` (zod over env), `buildApp`, and the hub handlers.
-  - The WS route calls the handlers and `socket.send`s each reply. Binary replies are never sent on Day 1.
-  - `Session` has `{id, helloed: boolean, locale?}`.
-- [ ] **Step 4: Run the tests and confirm they pass.** `pnpm --filter @fingerpost/gateway test`. Expected: PASS.
-- [ ] **Step 5: Verify the container.**
-  - `docker build -f services/gateway/Dockerfile -t fp-gateway . && docker run -d -p 8080:8080 --name fpg fp-gateway`
-  - `curl -s localhost:8080/healthz`. Expected: `{"status":"ok",...}`.
-  - `docker rm -f fpg`.
-- [ ] **Step 6: Commit.**
-  `git add services/gateway .dockerignore && git commit -m "feat(gateway): config, healthz, session hello/ready, container"`
-
-### Task 4: Meta model adapters: Spark screen parse, SAM box/text segment, mask→polygon
-
+### Task D1-T4: Meta adapters (Spark screen parse, SAM 3.1 segmentation)
 **Files:**
-- Create: `services/gateway/src/models/meta-client.ts`. `createMetaClient(apiKey: string): OpenAI` with `baseURL 'https://api.meta.ai/v1'`.
-- Create: `services/gateway/src/parse/spark-parse.ts`
-- Create: `services/gateway/src/parse/sam.ts`
-- Create: `services/gateway/src/parse/geometry.ts`
-- Create: `services/gateway/prompts/parse-screen.v1.md`. The system prompt for screen parsing.
-  - Lists the roles and screenTypes from the protocol.
-  - Instructs: boxes on the 0–1000 grid; label exactly as printed; `labelLocal` in the requested locale; mark pay/confirm/submit roles; `pin_pad` when a 0–9 keypad dominates.
-- Create: `services/gateway/test/fixtures/` with:
-  - `spark-parse.response.json`: a recorded or handwritten Chat Completions response;
-  - `sam-box.events.json`: an array of Responses stream events, with output text in the README format and 2 objects;
-  - `sam-empty.events.json`.
-- Test: `services/gateway/test/geometry.test.ts`, `services/gateway/test/spark-parse.test.ts`, `services/gateway/test/sam.test.ts`
+- **Skeletons:**
+  - `src/parse/sam.ts`: `pickPrimaryMask`, `maskToPolygon`, `run`, `segmentByBox`, `segmentByText`;
+  - `src/parse/spark-parse.ts`: `normalizeLabel`, `toLayout`, `parseScreen`.
+- **Finished:**
+  - `src/parse/geometry.ts`, which has the contour tracing, Douglas–Peucker and `normalizeSparkBox`. Don't rewrite it.
+  - The `SparkScreen` schema, `SPARK_SCREEN_JSON_SCHEMA` and `prompts/parse-screen.v1.md`.
+  - Tests: `test/{geometry,sam,spark-parse}.test.ts`, `test/fixtures/sam-*.events.json`, `test/fixtures/spark-parse.response.json`.
 
 **Interfaces:**
-- **Consumes:** `Layout`, `LayoutElement`, `Polygon` and `ScreenType` types from Task 2.
-- **Produces:**
-  - `normalizeSparkBox(b: {x_min:number,y_min:number,x_max:number,y_max:number}): {u:number,v:number,w:number,h:number}`. Clamps each value to [0,1000], swaps min and max if reversed, divides by 1000.
-  - `parseScreen(client: OpenAI, image: {bytes: Uint8Array, mime: 'image/jpeg'}, opts: {locale: Locale, goal?: string}): Promise<{layout: Omit<Layout,'fingerprint'|'source'>, usage: {inputTokens:number, outputTokens:number}, latencyMs:number}>`
-    - Calls Chat Completions on `muse-spark-1.3` with `response_format: {type:'json_schema', json_schema:{name:'screen_layout', strict:true, schema}}`, where the schema comes from `z.toJSONSchema` of a Spark-side zod schema.
-    - The image goes as a data URL in `image_url`.
-    - Element polygons are the 4 corners of the normalized box.
-  - `segmentByBox(client, image: {bytes, width, height}, box: {left,top,right,bottom} /*px*/): Promise<{polygon: Polygon|null, confidence: number|null, latencyMs: number}>`
-    - Calls Responses with `model:'sam-3.1'`, `stream:true`, and input `[{role:'user', content:[{type:'input_text', text: buildObjectPrompt({size, objects:[{id:1, prompts:[{box}]}]})}, {type:'input_image', image_url: dataUrl}]}]`.
-    - Parsed with `parseImageStream(stream).finalResult`, then `pickPrimaryMask`, then `rasterToPolygon`, then normalized by image size.
-  - `segmentByText(client, image, phrase: string): Promise<...same>`. Takes a noun phrase, e.g. `"touchscreen display"`.
-  - `pickPrimaryMask(records): MaskRecord|null`. Highest box confidence `c`; ties go to the largest area; null if there are none.
-  - `rasterToPolygon(raster: Uint8Array, w: number, h: number): Array<{x:number,y:number}>`. Outer contour of the largest 4-connected component, by Moore-neighbour tracing; `[]` if the raster is empty.
-  - `simplifyPolygon(pts, maxPoints = 32): pts`. Douglas–Peucker, starting at ε = 0.5 px and doubling ε until the length is ≤ maxPoints. Always ≥ 3 points when the input has ≥ 3.
+- **Consumes:** `OpenAI` (openai 7.32.0); `@meta-sam/parser` exports `parseImageStream`, `recordsOfKind`, `decodeMaskToRaster`, `buildObjectPrompt` and types `SegmentationRecord`, `SegmentationMaskRecord`, `SegmentationBoxRecord`; geometry functions.
+- **`sam.ts`, produces:**
+  - `pickPrimaryMask(records)`:
+    - highest confidence wins, using the mask's own `confidence`, else its box's (same `objectId`);
+    - ties go to the larger bounds area;
+    - `null` if there are no masks.
+  - `maskToPolygon(mask, imageW, imageH)`:
+    - The raster is **local to `mask.bounds`**: an image pixel is `(bounds.left + col, bounds.top + row)`.
+    - Steps: `decodeMaskToRaster(m.mask)` → `rasterToPolygon(raster, m.mask.width, m.mask.height)` → `simplifyPolygon` → offset by bounds → `toUV`.
+    - Fewer than 3 points → `null`.
+  - `segmentByBox(client, image, box, events?)`:
+    - Floor and clamp `left/top` to `[0, size−1]`; ceil and clamp `right/bottom` to `[left+1, size]`.
+    - Build the prompt with `buildObjectPrompt({ size: {width, height}, objects: [{ id: 1, prompts: [{ box }] }] })`.
+  - `segmentByText(client, image, phrase, events?)`: throws `SAM noun phrase must be 1–60 letters/digits/spaces: "<phrase>"` unless `/^[\p{L}\p{N} '-]{1,60}$/u` matches.
+  - **The request** (the test pins this shape):
+    ```ts
+    client.responses.create({
+      model: 'sam-3.1', stream: true,
+      input: [{ role: 'user', content: [
+        { type: 'input_text', text },
+        { type: 'input_image', image_url: toDataUrl(image.bytes), detail: 'high' },
+      ] }],
+    })
+    ```
+    The returned stream is passed to `parseImageStream(stream).finalResult`.
+    When `events` is given, use it instead of calling the client, and don't touch `client`.
+  - **Result:** `{ polygon, confidence, latencyMs }`, with `latencyMs` rounded from `performance.now()` deltas.
+- **`spark-parse.ts`, produces:**
+  - `normalizeLabel(s)`: NFKC → lowercase → replace `/[\p{P}\p{S}]+/gu` with a space → collapse whitespace → trim. For example `'  ＰＡＹ — by Card! '` becomes `'pay by card'`.
+  - `toLayout(SparkScreen)`:
+    - Drop elements whose normalized box has `w` or `h` equal to 0, and elements with an empty trimmed label.
+    - Ids are `e1, e2, …` in Spark's order, counting kept elements only.
+    - The polygon is the 4 box corners TL, TR, BR, BL, each clamped to ≤ 1.
+    - Confidence is clamped to [0,1].
+    - Set `labelLocal` and `state` only when non-null; `textNorm = normalizeLabel(label)` when non-empty.
+    - `language` is truncated to 16 characters, or `'und'` if empty.
+  - `parseScreen(client, image, { locale, goal? })`:
+    - **Request:**
+      - `client.chat.completions.create({ model: 'muse-spark-1.3', messages, response_format: { type: 'json_schema', json_schema: { name: 'screen_layout', strict: true, schema: SPARK_SCREEN_JSON_SCHEMA } } })`.
+      - `messages` = a system message with the prompt file, then a user message with two parts:
+        1. text: `` `Locale for label_local: ${locale}.` `` plus `` ` The user wants to: ${goal}` `` when a goal is given;
+        2. `{ type: 'image_url', image_url: { url: toDataUrl(bytes, mime) } }`.
+    - Empty content → throw `Spark returned no content`. Then `SparkScreen.parse(JSON.parse(content))`.
+    - Returns `{ layout: toLayout(...), usage: { inputTokens: prompt_tokens ?? 0, outputTokens: completion_tokens ?? 0 }, latencyMs, promptId: 'parse-screen.v1' }`.
 
-- [ ] **Step 1: Write the failing tests.**
-
-```ts
-// test/geometry.test.ts
-test('normalizeSparkBox clamps and reorders', () => {
-  expect(normalizeSparkBox({ x_min: 1010, y_min: 500, x_max: 900, y_max: -5 })).toEqual({ u: 0.9, v: 0, w: 0.1, h: 0.5 });
-});
-test('rasterToPolygon of a filled 10×10 square inside 20×20 has ~4 corners after simplify', () => {
-  const r = squareRaster(20, 20, 5, 5, 10); const p = simplifyPolygon(rasterToPolygon(r, 20, 20));
-  expect(p.length).toBeGreaterThanOrEqual(4); expect(p.length).toBeLessThanOrEqual(8);
-});
-test('rasterToPolygon keeps the largest component only', () => { /* two blobs, assert bbox of result == bigger blob */ });
-test('rasterToPolygon of empty raster is []', () => { expect(rasterToPolygon(new Uint8Array(400), 20, 20)).toEqual([]); });
-test('simplifyPolygon never exceeds 32 points', () => { /* circle raster r=200 → ≤32 */ });
-```
-
-```ts
-// test/sam.test.ts — feed recorded events through the same code path via an injected event source
-test('two objects → picks the higher-confidence one', async () => {});
-test('empty output → polygon null, no throw', async () => {});
-// test/spark-parse.test.ts
-test('recorded response → layout with normalized polygons and screenType', async () => {});
-test('pay-role element survives parsing', async () => {});
-```
-
-Testability: `segmentByBox` and `segmentByText` take an optional `events?: AsyncIterable<ResponsesEvent>` override. `parseScreen` takes a `client` that the test stubs with `{chat:{completions:{create: async () => fixture}}}`.
-
-- [ ] **Step 2: Run them and confirm they fail.** `pnpm --filter @fingerpost/gateway test -- geometry spark sam`. Expected: FAIL.
-- [ ] **Step 3: Implement** `geometry.ts`, then `sam.ts`, then `spark-parse.ts` (in that order).
-- [ ] **Step 4: Run the tests and confirm they pass.** Same command. Expected: PASS.
+- [ ] **Step 1: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- sam spark-parse geometry`. Geometry should pass (15); sam and spark-parse fail with TODO(D1-T4).
+- [ ] **Step 2: Implement `sam.ts`.**
+- [ ] **Step 3: Implement `spark-parse.ts`.**
+- [ ] **Step 4: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 43 passed in total.
 - [ ] **Step 5: Commit.**
-  `git add services/gateway && git commit -m "feat(gateway): Spark screen parse + SAM 3.1 box/text segmentation adapters"`
+  `git add services/gateway && git commit -m "feat(gateway): Spark screen parse + SAM 3.1 segmentation adapters"`
 
-### Task 5: Live smoke, Cloud Run deploy, latency matrix (ADR-0003)
+### Task D1-T5 (needs T0 keys and photos): live smoke, Cloud Run deploy, region latency (ADR-0003)
+**Files:** everything is finished: `services/gateway/scripts/smoke-meta.ts`, `scripts/latency-matrix.ts`, `src/debug/latency.ts`. Create `infra/deploy-gateway.sh` (below). Modify `docs/adr/0003-cloud-run-region.md`.
 
+- [ ] **Step 1: Run the smoke test.** Run `set -a; source .env; set +a; pnpm --filter @fingerpost/gateway smoke` (costs about $0.01 per image).
+  - Expected: `wrote docs/evals/day1-smoke.md` plus `docs/evals/day1/*.svg` overlays.
+  - The tables give Spark, SAM box and SAM text p50/p95, tokens per parse and cost per image.
+- [ ] **Step 2: Inspect the overlays.** Open each SVG in a browser. Blue is Spark boxes, green is the SAM target.
+  - Note in the report how many images have the green polygon on the right button. The goal is 8 of 10 or more.
+  - If **Spark** is the problem (wrong boxes), write down the pattern. Don't edit the prompt today; Day 2 evals measure prompt changes.
+- [ ] **Step 3: Create `infra/deploy-gateway.sh`** (bash, `set -euo pipefail`). Args: `<project> <region>`. It runs:
+  ```bash
+  SHA=$(git rev-parse --short HEAD)
+  IMAGE="$2-docker.pkg.dev/$1/fp/gateway:$SHA"
+  gcloud builds submit --project "$1" --region "$2" --tag "$IMAGE" --file services/gateway/Dockerfile .
+  gcloud run deploy fingerpost-gateway --project "$1" --region "$2" --image "$IMAGE" \
+    --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 3 --allow-unauthenticated \
+    --set-secrets META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest \
+    --set-env-vars MODEL_MODE=live,GIT_SHA="$SHA",AUTH_REQUIRED=false
+  ```
+  Then `chmod +x infra/deploy-gateway.sh`.
+  - `AUTH_REQUIRED=false` holds only until Day 3 turns auth on. Day 1 and 2 configs simply ignore the variable.
+  - `gcloud builds submit --file` needs a recent gcloud. If it rejects `--file`, use a `cloudbuild.yaml` with `docker build -f services/gateway/Dockerfile` and record the change.
+- [ ] **Step 4: Create the secrets** (dev project):
+  ```bash
+  printf %s "$META_API_KEY" | gcloud secrets create meta-api-key --data-file=- --project fingerpost-dev
+  openssl rand -hex 24 | tr -d '\n' | gcloud secrets create debug-token --data-file=- --project fingerpost-dev
+  ```
+  Grant the default compute service account **Secret Manager Secret Accessor** on both secrets.
+- [ ] **Step 5: Deploy to both candidate regions.**
+  `infra/deploy-gateway.sh fingerpost-dev asia-south1 && infra/deploy-gateway.sh fingerpost-dev us-central1`
+  Expected: two service URLs, and `curl <url>/healthz` returns ok on both.
+- [ ] **Step 6: Measure.**
+  `DEBUG_TOKEN=$(gcloud secrets versions access latest --secret debug-token --project fingerpost-dev) pnpm --filter @fingerpost/gateway latency <asiaUrl> <usUrl> --n 20`
+  Expected: rtt and rtt+model p50/p95 for each region.
+- [ ] **Step 7: Record the choice.** Fill in the Result table in ADR-0003 (the region with the lowest p50 rtt+spark wins). Set Status to accepted and delete the losing service with `gcloud run services delete fingerpost-gateway --region <loser> --project fingerpost-dev`.
+- [ ] **Step 8: Commit.**
+  `git add infra docs/evals docs/adr && git commit -m "feat: live Meta smoke, Cloud Run deploy, region decision (ADR-0003)"`
+
+### Task D1-T6: kiosk simulator v0 (`apps/web`)
+**Files:** copy `apps/web`.
+- **Skeletons:**
+  - `src/sim/hit.ts` (`hitTest`);
+  - `src/sim/log.ts` (`newRun`, `currentScreen`, `applyTouch`, `exportRun`, `labelsFor`).
+- **Finished:**
+  - `src/sim/{model,rng,layout,main}.ts` and `src/sim/scenes/{fastfood,pinpad}.ts`. Scenes and the RNG are fixed so eval labels are reproducible.
+  - `index.html`, `sim/index.html`, `vite.config.ts`, `test/sim.test.ts`.
+
+**Interfaces (Produces):**
+- `hitTest(elements, x, y)`:
+  - Scan from the **last** element to the first.
+  - Skip `role === 'text'`.
+  - A hit is `x ≥ rect.x && x < rect.x + rect.w`, and the same for y.
+  - Returns the element or `null`.
+- `newRun(runId, scene) → { runId, scene, screenId: scene.start, events: [] }`
+- `currentScreen(state)`: the screen whose id is `state.screenId`.
+- `applyTouch(state, {x, y, pointerId, ts}) → TouchEvent`:
+  - always appends the event;
+  - `u = clamp(x / CANVAS.w, 0, 1)`, and `v` likewise;
+  - `elementId` is the hit's id or `null`;
+  - then, if the hit's id is in `screen.next`, sets `state.screenId` to the target.
+- `exportRun(state)`: `JSON.stringify({ runId, scene: scene.id, seed: scene.seed, events }, null, 2)`.
+- `labelsFor(screen)`: `{id, label, role, u: x/CANVAS.w, v: y/CANVAS.h, w: w/CANVAS.w, h: h/CANVAS.h}` per element. This is the eval ground-truth format.
+
+- [ ] **Step 1: Copy and confirm red.** Run `docs/superpowers/plans/assets/apply.sh 1 apps/web && pnpm install && pnpm --filter @fingerpost/web test`. Expected: 7 failed, 7 passed.
+- [ ] **Step 2: Implement `hit.ts` and `log.ts`.**
+- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/web test && pnpm --filter @fingerpost/web build`. Expected: 14 passed; the build writes `dist/index.html` and `dist/sim/index.html`.
+- [ ] **Step 4: Check on the tablet.**
+  - Run `pnpm --filter @fingerpost/web dev` and open `http://<laptop-LAN-IP>:5173/sim/?scene=fastfood&seed=1` on the Android tablet.
+  - The first tap requests fullscreen.
+  - Walk home → menu → Drinks → Medium → Pay by card → done.
+  - A 3-finger hold for 1.5 s opens the export panel. Check there's one event per tap, with element ids.
+  - Also open `?scene=pinpad&layout=scrambled&seed=3`.
+  - Record this in progress.md.
+- [ ] **Step 5: Commit.**
+  `git add apps/web && git commit -m "feat(web): kiosk simulator v0 (fast-food, PIN pad) with touch log and labels"`
+
+### Task D1-T7a: Android Gradle project + `core:guidance` cue math
+**Files:** copy `apps/android`. This brings the wrapper, `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `core/guidance/**`, `app/build.gradle.kts` and `app/src/main/AndroidManifest.xml`.
+- **Skeleton:** `core/guidance/.../Cues.kt` (`toneFrequencyHz`, `tonePan`, `magnitudeWord`).
+- **Finished:** `OneEuroFilter.kt`, `CuesTest.kt`, `OneEuroFilterTest.kt`.
+- **Not compiled in planning:** `app/build.gradle.kts` and the manifest (there was no SDK).
+
+**Interfaces (Produces, guidance-spec §5 and §7):**
+- `toneFrequencyHz(e) = 220 · 2^(3·(1 − min(max(e,0)/0.5, 1)))`
+- `tonePan(ex) = clamp(ex / 0.3, −1, 1)`
+- `magnitudeWord(e)`: `> 0.30 → A_LOT`; `≥ 0.10 → NONE`; `≥ 0.03 → A_LITTLE`; else `null`.
+
+- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 apps/android && chmod +x apps/android/gradlew`
+- [ ] **Step 2: Confirm red.** Run `cd apps/android && ./gradlew :core:guidance:test --console=plain`. Expected: 7 failures (CuesTest); OneEuroFilterTest passes.
+  - If Gradle can't find a JDK 21, check `JAVA_HOME` (D1-T0).
+  - `gradle.properties` turns on configure-on-demand, so this task doesn't configure `:app`.
+- [ ] **Step 3: Implement `Cues.kt`.**
+- [ ] **Step 4: Confirm green.** Run `./gradlew :core:guidance:test`. Expected: 12 tests pass.
+- [ ] **Step 5: Commit.**
+  `git add apps/android && git commit -m "feat(android): gradle project, core:guidance cue math"`
+
+### Task D1-T7b: app shell (Compose, TalkBack, camera permission)
+**Files:** create the four files below. All are your code; they follow the snippets and must compile against the D1 `app/build.gradle.kts`.
+- `app/src/main/kotlin/io/github/fingerpost/MainActivity.kt`
+- `app/src/main/kotlin/io/github/fingerpost/ui/SessionScreen.kt`
+- `app/src/main/kotlin/io/github/fingerpost/ui/Theme.kt`
+- `app/src/main/res/values/strings.xml`
+
+**Requirements:**
+- `MainActivity : ComponentActivity`. It calls `enableEdgeToEdge()` and `setContent { FingerpostTheme { SessionScreen(...) } }`.
+- It requests `Manifest.permission.CAMERA` with `rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission())`. If permission is denied:
+  - show a full-screen message "Fingerpost needs the camera to see the screen you want to press.";
+  - add a button "Open settings" that launches `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` with `Uri.fromParts("package", packageName, null)`;
+  - announce it with `view.announceForAccessibility(...)`.
+- **Theme:** dark, high contrast (background `#000000`, text `#FFFFFF`, accent `#FFD400`), with large type (body 22 sp).
+- **`SessionScreen` accessibility:** the whole screen is **one** TalkBack element:
+  - `Modifier.fillMaxSize().semantics(mergeDescendants = true) { contentDescription = "Fingerpost camera. Double-tap to start or stop the tone." }.clickable { onToggle() }`.
+- Strings live in `strings.xml`: `app_name`, `camera_needed`, `open_settings`, `session_description`.
+
+- [ ] **Step 1: Write the files** from the requirements.
+- [ ] **Step 2: Build.** Run `./gradlew :app:assembleDebug --console=plain`. Expected: BUILD SUCCESSFUL.
+  - If AGP or Kotlin complain about the plugin setup, check AGENTS.md (built-in Kotlin: no `kotlin-android` plugin). Record any fix to `app/build.gradle.kts` under Deviations.
+- [ ] **Step 3: Check on the device.** Run `./gradlew :app:installDebug` with the phone connected and USB debugging on.
+  - The app opens and asks for the camera.
+  - Deny → the settings message is spoken with TalkBack on.
+  - Allow → a black screen (the camera comes in T7c).
+- [ ] **Step 4: Commit.**
+  `git commit -am "feat(android): Compose shell, TalkBack single action, camera permission"` (after `git add apps/android/app`)
+
+### Task D1-T7c: CameraX + MediaPipe fingertip overlay + fps
 **Files:**
-- Create: `services/gateway/scripts/smoke-meta.ts`.
-  - **Input:** `evals/datasets/day1/*.jpg`, which are the team's photos, kept in git only if they contain no faces or personal data. Otherwise they go in `evals/datasets/private/`.
-  - **Per image:** `parseScreen` → for the first `button` element, `segmentByBox` → `segmentByText('touchscreen display')`.
-  - **Writes** `docs/evals/day1-smoke.md`:
-    - a table per image: elements found, screenType, Spark latency, SAM latencies, input/output tokens;
-    - p50/p95 for each call;
-    - cost per parse, at $1.25/M input, $4.25/M output and $0.0025 per SAM image;
-    - an SVG overlay per image (`docs/evals/day1/<name>.svg`) with polygons drawn on a downscaled base64 thumbnail, only for images under `day1/`.
-- Create: `services/gateway/src/debug/latency.ts`.
-  - Route `POST /v1/debug/latency`, only when `DEBUG_TOKEN` is set and the `x-debug-token` header matches.
-  - Runs one `parseScreen` and one `segmentByBox` on a bundled 1024 px sample, and returns `{sparkMs, samMs}`.
-- Create: `infra/deploy-gateway.sh <project> <region>`:
-  - `gcloud builds submit --tag <region>-docker.pkg.dev/<project>/fp/gateway:<sha> --file services/gateway/Dockerfile .`
-  - `gcloud run deploy fingerpost-gateway --image … --region <region> --timeout 3600 --concurrency 40 --min-instances 0 --set-secrets META_API_KEY=meta-api-key:latest --set-env-vars MODEL_MODE=live,GIT_SHA=<sha>,DEBUG_TOKEN=<random>`
-- Create: `services/gateway/scripts/latency-matrix.ts <urlA> <urlB> --n 20`.
-  - Measures `GET /healthz` RTT and `POST /v1/debug/latency` from the laptop (India).
-  - Prints p50/p95 of `rtt + sparkMs` and `rtt + samMs` per region.
-- Modify: `docs/adr/0003-cloud-run-region.md`. Fill in the Result table and the choice.
+- Create `app/src/main/kotlin/io/github/fingerpost/camera/CameraPipeline.kt`.
+- Create `app/src/main/kotlin/io/github/fingerpost/vision/HandTracker.kt`.
+- Modify `ui/SessionScreen.kt`.
+- Asset: download `app/src/main/assets/hand_landmarker.task` from `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`.
+  - SHA-256 **`fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1`**, 7 819 105 bytes.
+  - Record both in `apps/android/ASSETS.md`.
 
-**Interfaces:**
-- **Consumes:** `parseScreen`, `segmentByBox` and `segmentByText` (Task 4), and `buildApp` (Task 3).
+**Interfaces (Produces):**
+- `data class FingerSample(val tipX: Float, val tipY: Float, val dipX: Float, val dipY: Float, val presence: Float, val frameW: Int, val frameH: Int, val frameTsMs: Long, val inferenceMs: Long)`
+  - Coordinates are pixels in the **upright** analysis frame.
+- `class HandTracker(context: Context)`:
+  - `val samples: StateFlow<List<FingerSample>>`, empty when there's no hand;
+  - `fun submit(upright: Bitmap, tsMs: Long)`;
+  - `fun close()`.
+- `class CameraPipeline(context, lifecycleOwner, previewView: PreviewView, onFrame: (upright: Bitmap, tsMs: Long) -> Unit)`, with `start()` and `stop()`.
 
-- [ ] **Step 1: Run the smoke locally against live Meta.** `set -a; source .env; set +a; pnpm --filter @fingerpost/gateway exec tsx scripts/smoke-meta.ts`. Expected: `docs/evals/day1-smoke.md` exists, with ≥10 images and at least one target polygon per image.
-- [ ] **Step 2: Inspect.** Open the SVG overlays. Check that polygons sit on the real buttons in 8 or more of 10 images, and note the failures in the report.
-- [ ] **Step 3: Create the secret.** `printf %s "$META_API_KEY" | gcloud secrets create meta-api-key --data-file=- --project fingerpost-dev`
-- [ ] **Step 4: Deploy to both regions.** `infra/deploy-gateway.sh fingerpost-dev asia-south1 && infra/deploy-gateway.sh fingerpost-dev us-central1`. Expected: both `/healthz` return ok.
-- [ ] **Step 5: Run the matrix.** `pnpm --filter @fingerpost/gateway exec tsx scripts/latency-matrix.ts <urlAsia> <urlUs> --n 20`. Expected: a printed table.
-- [ ] **Step 6: Record the result** in ADR-0003. Delete the losing region's service: `gcloud run services delete fingerpost-gateway --region <loser>`.
-- [ ] **Step 7: Commit.**
-  `git add -A && git commit -m "feat: live Meta smoke, Cloud Run deploy script, region latency matrix (ADR-0003)"`
-
-### Task 6: `apps/web` kiosk simulator v0 (fast-food + PIN pad), touch logging
-
-**Files:**
-- Create: `apps/web/package.json` (vite, vitest, jsdom), `apps/web/index.html` (landing placeholder), `apps/web/sim/index.html`
-- Create: `apps/web/src/sim/model.ts`. Types:
-  - `SimElement {id, label, role: ElementRole, rect:{x,y,w,h} /*CSS px*/}`
-  - `SimScreen {id, title, elements: SimElement[], next?: Record<elementId, screenId>}`
-  - `SimScene {id, screens: SimScreen[], start: screenId}`
-- Create: `apps/web/src/sim/rng.ts`. `mulberry32(seed: number): () => number`.
-- Create: `apps/web/src/sim/scenes/fastfood.ts`. `buildFastFood(seed): SimScene`, with 4 screens:
-  1. `home` (Start order);
-  2. `menu` (Burgers, Drinks, Sides, Cart);
-  3. `drink-size` (Small, Medium, Large, Back);
-  4. `pay` (Total ₹149, Pay by card [role pay], Cancel).
-  Button positions are jittered by ±4% from the seed.
-- Create: `apps/web/src/sim/scenes/pinpad.ts`. `buildPinPad(seed, layout: 'phone'|'calculator'|'scrambled'): SimScene` with one screen: keys 0–9 [role key], Clear, OK [role confirm].
-- Create: `apps/web/src/sim/hit.ts`. `hitTest(elements, x, y): SimElement|null`.
-- Create: `apps/web/src/sim/log.ts`:
-  - `recordTouch(state: RunState, t: {x,y,pointerId,ts}): TouchEvent`;
-  - `exportRun(state): string` (JSON);
-  - `labelsFor(screen, viewport:{w,h}): Array<{id,label,role,u,v,w,h}>`.
-- Create: `apps/web/src/sim/main.ts`.
-  - Renders the scene from the URL params `?scene=fastfood|pinpad&seed=1&layout=scrambled&run=<id>`.
-  - Large high-contrast buttons; requests fullscreen on the first tap.
-  - `touch-action: none` and no zoom.
-  - A hidden 3-finger long-press opens the export panel (run JSON plus labels JSON, copyable).
-- Test: `apps/web/test/sim.test.ts`
-
-**Interfaces:**
-- **Produces:**
-  - Sim URL contract `?scene&seed&layout&run`.
-  - `TouchEvent {runId, screenId, x, y, u, v, elementId: string|null, pointerId, ts}`.
-  - `labelsFor` output: the eval ground-truth format, which Day 2 evals consume.
-  - Day 2 adds `POST /v1/sim/events` on the gateway. Day 1 keeps logs in memory, plus export.
-
-- [ ] **Step 1: Write the failing tests.**
-
-```ts
-test('mulberry32 is deterministic', () => { const a = mulberry32(7), b = mulberry32(7); expect([a(), a()]).toEqual([b(), b()]); });
-test('scrambled pin pad is a permutation of 0–9 and differs from phone layout for seed 1', () => {});
-test('same seed → identical fast-food layout; different seed → different', () => {});
-test('hitTest on a gap between buttons returns null', () => {});
-test('rapid double tap logs two events; second pointer of a multi-touch is logged too', () => {});
-test('labelsFor returns u,v,w,h within [0,1] for every element', () => {});
-test('pay screen has exactly one role=pay element', () => {});
-```
-
-- [ ] **Step 2: Run them and confirm they fail.** `pnpm --filter web test`. Expected: FAIL.
-- [ ] **Step 3: Implement** the model, rng, scenes, hit and log as pure modules; then `main.ts` (DOM).
-- [ ] **Step 4: Run the tests and confirm they pass.** `pnpm --filter web test`. Expected: PASS.
-- [ ] **Step 5: Check by hand on the tablet.**
-  - Run `pnpm --filter web dev --host`, then open `http://<laptop-ip>:5173/sim/?scene=fastfood&seed=1` on the Android tablet.
-  - Walk home → menu → drink-size → pay. Export the run JSON and confirm there's one event per tap, with element ids.
-- [ ] **Step 6: Commit.**
-  `git add apps/web && git commit -m "feat(web): kiosk simulator v0 (fast-food, PIN pad), touch log + labels export"`
-
-### Task 7: `apps/android` shell: Compose, CameraX, fingertip overlay, tone prototype, `core:guidance` math
-
-**Prerequisite:** Task 0's Android tooling.
-
-**Files:**
-- Create: `apps/android/settings.gradle.kts` (modules `:app` and `:core:guidance`), `apps/android/build.gradle.kts`, `apps/android/gradle/libs.versions.toml` (versions from Tech Stack)
-- Create the Gradle wrapper: `gradle wrapper --gradle-version 9.8.2`, run in `apps/android`.
-- Create: `apps/android/core/guidance/build.gradle.kts`. A pure Kotlin JVM module with the JUnit 6 platform.
-- Create: `apps/android/core/guidance/src/main/kotlin/io/github/fingerpost/guidance/OneEuroFilter.kt`
-- Create: `apps/android/core/guidance/src/main/kotlin/io/github/fingerpost/guidance/Cues.kt`
-- Test: `apps/android/core/guidance/src/test/kotlin/io/github/fingerpost/guidance/CuesTest.kt` and `OneEuroFilterTest.kt`
-- Create: `apps/android/app/build.gradle.kts` (namespace and applicationId `io.github.fingerpost`, minSdk 29, target 36)
-- Create: `apps/android/app/src/main/AndroidManifest.xml`. CAMERA permission; `screenOrientation` unspecified.
-- Create: `app/src/main/kotlin/io/github/fingerpost/MainActivity.kt`
-- Create: `app/src/main/kotlin/io/github/fingerpost/camera/CameraPipeline.kt`
-- Create: `app/src/main/kotlin/io/github/fingerpost/vision/HandTracker.kt`
-- Create: `app/src/main/kotlin/io/github/fingerpost/audio/ToneSynth.kt`
-- Create: `app/src/main/kotlin/io/github/fingerpost/ui/SessionScreen.kt`
-- Asset: `app/src/main/assets/hand_landmarker.task`, downloaded from `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`. Record its SHA-256 in `apps/android/ASSETS.md`.
-
-**Interfaces:**
-- **Produces (core:guidance, used from Day 2):**
-  - `class OneEuroFilter(minCutoff: Double = 1.0, beta: Double = 0.007, dCutoff: Double = 1.0) { fun filter(x: Double, tSeconds: Double): Double }`
-  - `fun toneFrequencyHz(errorMag: Double): Double`, which is `220 · 2^(3·(1 − min(e/0.5, 1)))` (guidance-spec §7)
-  - `fun tonePan(ex: Double): Double`, which is `clamp(ex/0.3, −1, 1)`
-  - `fun magnitudeWord(errorMag: Double): MagnitudeWord?`, with enum `A_LOT, NONE, A_LITTLE` and `null` below 0.03 (spec §5)
-- **Produces (app):**
-  - `HandTracker.results: StateFlow<FingerSample?>`, where `FingerSample(tipX: Float, tipY: Float, dipX: Float, dipY: Float, presence: Float, frameTsMs: Long, inferenceMs: Long)` in **image px** of the analysis frame.
-  - `ToneSynth.start()`, `stop()`, `setFrequency(hz: Double)`, `setPan(pan: Double)`.
-
-- [ ] **Step 1: Write the failing JVM tests.**
-
+**Implementation notes (APIs checked against MediaPipe 1.1.1 and CameraX 1.6):**
 ```kotlin
-class CuesTest {
-  @Test fun toneAtFarIs220() = assertEquals(220.0, toneFrequencyHz(0.5), 1e-9)
-  @Test fun toneAtZeroIs1760() = assertEquals(1760.0, toneFrequencyHz(0.0), 1e-9)
-  @Test fun toneClampsBeyondFar() = assertEquals(220.0, toneFrequencyHz(2.0), 1e-9)
-  @Test fun panClamps() { assertEquals(1.0, tonePan(0.9), 1e-9); assertEquals(-0.5, tonePan(-0.15), 1e-9) }
-  @Test fun magnitudeBuckets() {
-    assertEquals(MagnitudeWord.A_LOT, magnitudeWord(0.31)); assertEquals(MagnitudeWord.NONE, magnitudeWord(0.2))
-    assertEquals(MagnitudeWord.A_LITTLE, magnitudeWord(0.05)); assertNull(magnitudeWord(0.02))
-  }
+// CameraPipeline
+val analysis = ImageAnalysis.Builder()
+    .setResolutionSelector(ResolutionSelector.Builder().setResolutionStrategy(
+        ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)).build())
+    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+    .build()
+analysis.setAnalyzer(executor) { proxy ->
+    val rot = proxy.imageInfo.rotationDegrees
+    val bmp = proxy.toBitmap()                         // CameraX ≥ 1.3
+    val upright = if (rot == 0) bmp else Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, Matrix().apply { postRotate(rot.toFloat()) }, true)
+    onFrame(upright, proxy.imageInfo.timestamp / 1_000_000)
+    proxy.close()
 }
-class OneEuroFilterTest {
-  @Test fun constantSignalIsUnchanged() { val f = OneEuroFilter(); repeat(30) { assertEquals(0.4, f.filter(0.4, it / 30.0), 1e-9) } }
-  @Test fun reducesJitter() { /* alternating 0.4±0.01 at 30 Hz → output variance < 25% of input variance after 15 samples */ }
-}
+ProcessCameraProvider.getInstance(context).get().bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+
+// HandTracker
+val options = HandLandmarker.HandLandmarkerOptions.builder()
+    .setBaseOptions(BaseOptions.builder().setModelAssetPath("hand_landmarker.task").setDelegate(Delegate.GPU).build())
+    .setRunningMode(RunningMode.LIVE_STREAM)
+    .setNumHands(2)
+    .setMinHandDetectionConfidence(0.5f).setMinHandPresenceConfidence(0.5f).setMinTrackingConfidence(0.5f)
+    .setResultListener { result, _ -> /* result.landmarks()[i][8], [7]: normalized x(), y() → multiply by frameW/H */ }
+    .setErrorListener { e -> /* fall back to Delegate.CPU once */ }
+    .build()
+val landmarker = HandLandmarker.createFromOptions(context, options)
+// submit(): scale the upright frame to 640 px wide (keep aspect), then
+landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps must increase
 ```
+- **Presence:** comes from `result.handedness()[i][0].score()`.
+- **Fallback:** if GPU creation throws, recreate with `Delegate.CPU` and log once.
+- **Overlay:** a Compose `Canvas` over the `PreviewView` (`AndroidView`). Draw a 14 dp yellow circle at the tip of each sample, scaled from frame px to view px with the same `FILL_CENTER` math the preview uses.
+- **Debug text:** a top-left label `"%d fps · %d ms".format(fps, inferenceMs)`, where fps is a 1-second moving count of results. Mark it `invisibleToUser()` for TalkBack.
 
-- [ ] **Step 2: Run them and confirm they fail.** `cd apps/android && ./gradlew :core:guidance:test`. Expected: FAIL (unresolved references).
-- [ ] **Step 3: Implement** `Cues.kt` and `OneEuroFilter.kt`, following the standard One Euro algorithm (Casiez 2012).
-- [ ] **Step 4: Run the tests and confirm they pass.** `./gradlew :core:guidance:test`. Expected: PASS.
-- [ ] **Step 5: Implement the app shell.**
-  - `CameraPipeline`: Preview + ImageAnalysis at 1280×720, `STRATEGY_KEEP_ONLY_LATEST`, RGBA_8888 output.
-  - `HandTracker`: MediaPipe `HandLandmarker` in `RunningMode.LIVE_STREAM`, `Delegate.GPU`, `numHands 2`, fed a 640×480 downscale. Emits landmarks 8 and 7 scaled back to analysis px.
-  - `ToneSynth`: `AudioTrack` with `PERFORMANCE_MODE_LOW_LATENCY`, 48 kHz stereo float; a sine generator on its own thread with 5 ms parameter ramps.
-  - `SessionScreen`: the full-screen preview with an overlay dot on the tip and an fps/inference-ms label.
-    - The whole screen is one TalkBack element: contentDescription "Fingerpost camera. Double-tap to start or stop the tone."
-    - The tone frequency maps from the tip x position: `toneFrequencyHz(1 − tipX/width)`, for the prototype only.
-  - **Camera permission denied:** the screen says so via `announceForAccessibility`, plus a button to open app settings.
-- [ ] **Step 6: Install and check on the device.**
-  - `./gradlew :app:installDebug`, on the Android phone with USB debugging on.
-  - Expected: the dot follows the index fingertip, and the label shows ≥25 fps with inference ≤25 ms.
-  - The tone changes pitch as the finger moves left and right; with TalkBack on, double-tap toggles the tone.
-  - Record fps and inference ms in `docs/evals/day1-device.md`.
-- [ ] **Step 7: Commit.**
-  `git add apps/android && git commit -m "feat(android): Compose shell, CameraX, MediaPipe fingertip overlay, tone prototype, guidance cue math"`
+- [ ] **Step 1: Add the model asset** and check its checksum: `shasum -a 256 app/src/main/assets/hand_landmarker.task`.
+- [ ] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay.
+- [ ] **Step 3: Build and install.** Run `./gradlew :app:installDebug`.
+- [ ] **Step 4: Check on the device.**
+  - The dot follows the index fingertip.
+  - The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
+  - Record the phone model, fps and ms in `docs/evals/day1-device.md`.
+- [ ] **Step 5: Commit.**
+  `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`
 
-### Task 8: CI + lane-C docs (tester protocol, consent, outreach)
-
+### Task D1-T7d: tone prototype
 **Files:**
-- Create: `.github/workflows/ci.yml`. Three jobs:
-  - `ts`: pnpm/action-setup, setup-node 24, `pnpm install --frozen-lockfile`, `pnpm -r typecheck`, `pnpm -r test`.
-  - `android`: setup-java temurin 21, gradle/actions/setup-gradle, `./gradlew :core:guidance:test :app:assembleDebug`, run in `apps/android`.
-  - `web`: `pnpm --filter web build`.
-- Create: `.github/dependabot.yml` (npm, gradle, github-actions; weekly).
-- Create: `docs/tester-protocol.md`. The 45-minute session:
-  - onboarding, 5 min;
-  - 3 single-target tasks on the appliance and sim, 15 min;
-  - 1 multi-step sim task, 10 min (from Day 4);
-  - PIN-pad exploration on the sim, 5 min;
-  - interview, 10 min.
-  - The metrics captured automatically come from sim runs.
-  - Proxies must be labeled as proxies.
-- Create: `docs/consent-form.md`. Plain language in EN and HI, screen-reader friendly (headings, no tables):
-  - voluntary;
-  - stop anytime;
-  - no real payments;
-  - no face recording without a separate yes;
-  - quotes credited only if wanted.
-- Create: `docs/outreach.md`. Message templates in EN and HI: short DM, email, and a Reddit post (r/Blind). The target list is the one from design §7 Day 1, C.
-- Create: `docs/testers.md`. Outreach log: org, channel, date sent, status. No personal data.
+- Create `app/src/main/kotlin/io/github/fingerpost/audio/ToneSynth.kt`.
+- Modify `SessionScreen.kt`.
 
-- [ ] **Step 1: Write the files.**
-- [ ] **Step 2: Push and watch CI.** `git push && gh run watch`. Expected: all three jobs green.
-- [ ] **Step 3: Commit** (before pushing).
-  `git add .github docs && git commit -m "ci: ts/android/web pipelines; docs: tester protocol, consent, outreach"`
+**Interfaces (Produces):** `class ToneSynth` with:
+- `start()`, `stop()`, `release()`;
+- `setFrequency(hz: Double)` and `setPan(pan: Double)`. Both are thread-safe and take effect within 5 ms using a linear ramp.
+
+**Implementation notes:**
+```kotlin
+val track = AudioTrack.Builder()
+    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+    .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT).setSampleRate(48_000).setChannelMask(AudioFormat.CHANNEL_OUT_STEREO).build())
+    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+    .setTransferMode(AudioTrack.MODE_STREAM)
+    .setBufferSizeInBytes(AudioTrack.getMinBufferSize(48_000, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_FLOAT))
+    .build()
+```
+- **Generator thread:** writes 240-frame (5 ms) stereo `FloatArray` blocks with `track.write(buf, 0, buf.size, AudioTrack.WRITE_BLOCKING)`.
+- **Phase:** keep a phase accumulator, so changing the frequency doesn't click.
+- **Panning:** equal-power, with `l = cos((pan+1)·π/4)` and `r = sin((pan+1)·π/4)`.
+- **Amplitude:** 0.25.
+- **Prototype mapping:** `setFrequency(toneFrequencyHz(1.0 - tipX / frameW))` and `setPan(tonePan((tipX / frameW - 0.5) * 0.6))`. Double-tapping the screen (the TalkBack action) toggles start/stop.
+
+- [ ] **Step 1: Implement** `ToneSynth` and wire it into the screen.
+- [ ] **Step 2: Check on the device.**
+  - Pitch rises as the finger moves left and pans with it.
+  - No clicks.
+  - With TalkBack on, double-tap toggles the tone.
+  - Note the latency you feel in `docs/evals/day1-device.md`.
+- [ ] **Step 3: Commit.**
+  `git add apps/android && git commit -m "feat(android): low-latency tone prototype driven by the fingertip"`
+
+### Task D1-T8: CI green + lane-C docs
+**Files:**
+- `.github/workflows/ci.yml` (copied in T1).
+- Create `.github/dependabot.yml`, `docs/tester-protocol.md`, `docs/consent-form.md`, `docs/outreach.md`, `docs/testers.md`.
+
+- [ ] **Step 1: Write `dependabot.yml`.** Weekly updates for `npm` (directory `/`), `gradle` (`/apps/android`) and `github-actions` (`/`). Dependabot PRs still follow the version rules in AGENTS.md §6, so a reviewer must approve each one.
+- [ ] **Step 2: Write `docs/tester-protocol.md`.**
+  - **Format:** a 45-minute session, either in person or on a video call with the tester's own Android phone.
+  - **Agenda:**
+    - consent, 5 min;
+    - onboarding, 5 min;
+    - 3 single-target tasks on the appliance and sim, 15 min;
+    - from Day 4: a multi-step sim task, 10 min;
+    - PIN-pad exploration on the sim, 5 min;
+    - interview, 10 min.
+  - **What we record:** sim run ids (metrics come from those logs), interview notes, and quotes only with explicit consent.
+  - **Proxies:** blindfolded teammates are labeled `proxy` and never counted as blind-user results.
+- [ ] **Step 3: Write `docs/consent-form.md`.** Plain language in English and Hindi, screen-reader friendly (headings and short paragraphs, no tables). It says:
+  - taking part is voluntary, and you can stop at any time;
+  - no real payments are made;
+  - nothing is recorded unless you say yes separately;
+  - you're credited by name only if you want to be;
+  - a contact for questions.
+- [ ] **Step 4: Write `docs/outreach.md`.** In English and Hindi: a short DM (≤ 80 words), an email (≤ 200 words) and a Reddit r/Blind post (≤ 250 words, honest that it's a hackathon beta).
+  - Targets: NAB, NFB India, Saksham, XRCVC, Enable India, Mitra Jyothi, college disability cells, r/Blind, RNIB forums, NFB US.
+- [ ] **Step 5: Write `docs/testers.md`.** A table with columns org/channel, date sent, status and next step. No personal data; initials only.
+- [ ] **Step 6: Push and watch CI.** Run `git add -A && git commit -m "ci+docs: dependabot, tester protocol, consent, outreach" && git push && gh run watch`.
+  - Expected: `ts` and `android` jobs green.
+  - The `android` job needs T7b's app code; if T7b isn't merged yet, it fails on `:app:assembleDebug`. Re-run after T7b.
 
 ---
 
-## Day 1 exit check (23:00 IST)
-1. Task 7 Step 6: fingertip at ≥25 fps on the Android phone.
-2. Task 5 Step 2: a valid layout and target polygon for real panel photos.
-3. Task 5 Step 6: ADR-0003 filled in.
-4. Task 6 Step 5: sim runs on the tablet.
-5. Task 8 Step 2: CI green.
+## Day 1 exit check (23:00 IST): record results in `docs/progress.md`
+1. T7c: fingertip at 25 fps or more on the Android phone.
+2. T5 Step 2: correct target polygons on 8 or more of 10 real panel photos.
+3. T5 Step 7: ADR-0003 accepted.
+4. T6 Step 4: the sim runs on the tablet.
+5. T8 Step 6: CI green.
 
-Misses go into tomorrow's 10:00 stand-up for cut decisions (design §1, cut order).
+Anything missed goes to tomorrow's 10:00 stand-up for cut decisions (design §1 cut order).

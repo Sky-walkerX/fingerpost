@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "items": [
+    { "image": "panel-a.jpg", "imageSize": { "w": 1000, "h": 500 }, "screenType": "appliance",
+      "elements": [
+        { "label": "Timer", "role": "button", "box": { "u": 0.1, "v": 0.4, "w": 0.3, "h": 0.15 } },
+        { "label": "Power", "role": "button", "box": { "u": 0.6, "v": 0.4, "w": 0.3, "h": 0.15 } },
+        { "label": "Stop", "role": "cancel", "box": { "u": 0.1, "v": 0.7, "w": 0.3, "h": 0.18 } },
+        { "label": "Start", "role": "button", "box": { "u": 0.6, "v": 0.7, "w": 0.3, "h": 0.18 } },
+        { "label": "Light", "role": "button", "box": { "u": 0.42, "v": 0.88, "w": 0.16, "h": 0.1 } }
+      ],
+      "goals": [ { "goal": "press start", "label": "Start" }, { "goal": "light", "label": "Light" } ] },
+    { "image": "pin-a.jpg", "imageSize": { "w": 1000, "h": 500 }, "screenType": "pin_pad", "elements": [], "goals": [] }
+  ]
+}

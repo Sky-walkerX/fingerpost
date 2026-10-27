@@ -114,7 +114,7 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 | `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → VERIFYING | none (user-driven) |
 | `DONE` | Task finished | → IDLE after the speech ends | — |
 
-**Framing coach:** runs every 1.5 s while in FRAMING.
+**Framing coach:** runs every 1.5 s while in FRAMING. Checks run in this order: no quad; **too close** (quad area over 85%, checked first because such a quad always touches the 4% margin); cut off; too far (under 15%); off-centre (over 15%). This order was fixed during planning verification.
 - **Direction:** the screen quad's center offset from the image center gives the direction to move the phone.
 - **Distance:** quad area under 15% of the frame → "move closer"; over 85% → "move back".
 - **Partly out of view:** the cue names the edge that's cut off ("the screen's left edge is cut off, move the phone left").
@@ -128,7 +128,7 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 
 ### 10.1 Pre-upload gate (runs on every frame before it may be uploaded)
 The frame is **blocked** and PIN mode is entered if either holds:
-- **Digit grid:** on-device OCR finds at least 7 distinct single-character digit tokens (0–9) inside the screen quad, and their centers fall into a 3- or 4-row × 3-column grid. Row and column clustering use a tolerance of 0.6 × the median token height.
+- **Digit grid:** on-device OCR finds at least 7 distinct single-character digit tokens (0–9) inside the screen quad, and their centers fall into a 3- or 4-row × 3-column grid. Row clustering uses a tolerance of 0.6 × the median token height; column clustering uses 0.9 × the median token height.
 - **PIN text:** OCR text matches `/\b(PIN|enter pin|पिन|clave|NIP)\b/i`.
 
 The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for missed cases. The ≥98% recall release gate measures **local gate OR server**, and the local gate alone is reported too.
