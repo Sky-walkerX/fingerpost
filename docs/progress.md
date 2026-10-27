@@ -64,7 +64,6 @@ _(task id · exact command · last lines of output · what you tried)_
 
 - D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
 
-- D1-T7a · T0 tooling prerequisite unmet. `/home/Naman/Downloads/android-studio-rabbit1-linux/android-studio/jbr/bin/java -version` reports `openjdk version "25.0.3"`; system `/usr/lib/jvm` also contains only Java 25. `ls /home/Naman/Android/Sdk/platforms` reports `android-37.0`. Checked installed Studio, system JVMs and usual JDK directories; required JDK 21 (and Platform 36 for app tasks) unavailable. Android setup is a human task under D1-T0; no version substitutions made.
 - D1-T8 / CI · `gh run view 40523977390 --log-failed` reports `An error occurred trying to start process '/usr/bin/bash' with working directory '/home/runner/work/fingerpost/fingerpost/apps/android'. No such file or directory`. Root CI is present, not green; Android modules have not been implemented. Workflow not weakened to hide this.
 
 ## Deviations from the plan
@@ -79,6 +78,8 @@ _(task id · what changed · why · who approved)_
 
 - D1-T3 · Replaced the skeleton constructor parameter property with an explicit field assignment after `pnpm --filter @fingerpost/gateway dev` failed with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` under Node 24 strip-only execution. Public interface unchanged.
 
+- D1-T0 · User explicitly authorized laptop tooling setup on 2026-10-28. Installed checksum-verified Temurin JDK 21.0.13+9, official Android command-line tools and Platform 36; retained Build Tools 36.0.0 and existing SDK/Studio. Pinned pnpm 11.10.0 now persists under ~/.local/share/fingerpost/node-tools. Project launcher selects tools without changing Java for other apps.
+
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
@@ -92,3 +93,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T6 implementation complete after the expected 7 red/7 green baseline: all 14 tests pass; web production build and recursive typecheck pass. Desktop browser completes Start order → Drinks → Medium → Pay by card → done with no warnings/errors; scrambled PIN seed 3 renders all keys. Task remains blocked on the physical tablet check.
 - 2026-10-28: README audit corrected stale code/tooling status and separated accepted design/reference assets from working features. Verified accepted ADRs 0001/0002/0004/0005; ADR-0003 remains proposed. D1-T1 completion is valid for its root-workspace scope, not a claim that all CI or product functionality is complete.
 - 2026-10-28: Final baseline: protocol 46/46 and simulator 14/14 pass; gateway 31/43 pass with 12 D1-T4 TODO failures. `pnpm -r test` exits 1 as expected; all workspace typechecks and current package builds pass. CI run 40562763885 at 4512cdb is red; no claim of full application or CI completion.
+- 2026-10-28: Android tooling prerequisite resolved: java/javac 21.0.13 verified; official SDK CLI lists Platform 36 revision 2 and Build Tools 36.0.0. Added scripts/android.sh and docs/local-development.md. D1-T0 accounts/credits/photos/outreach remain pending.
