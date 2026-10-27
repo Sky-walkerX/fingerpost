@@ -18,7 +18,7 @@ Use the project launcher to select JDK 21 and the SDK without changing Java for 
 
 On another machine, set `FINGERPOST_JAVA_HOME` to its JDK 21 directory and `ANDROID_HOME` to its Android SDK directory. The launcher validates both before invoking the pinned Gradle wrapper.
 
-In Android Studio, open `apps/android`. Select `~/.local/share/fingerpost/jdk-21` as the project's **Gradle JDK** and `~/Android/Sdk` as its SDK location. Terminal builds use the launcher above. Local SDK/JDK paths and signing keys stay out of Git.
+In Android Studio, open `apps/android`. This laptop's ignored `.idea/gradle.xml` selects `GRADLE_LOCAL_JAVA_HOME`, and ignored `.gradle/config.properties` points it to JDK 21. Ignored `local.properties` selects `~/Android/Sdk`. On another machine, select its JDK 21 as the project's **Gradle JDK** and set its SDK location. Terminal builds use the launcher above. Local SDK/JDK paths and signing keys stay out of Git. See [Android's Gradle JDK documentation](https://developer.android.com/build/jdks).
 
 For device checks, connect the phone with USB debugging enabled and check `~/Android/Sdk/platform-tools/adb devices -l`. Builds can run without a connected phone; camera, fingertip, TalkBack and latency acceptance require the actual device specified in the plan.
 

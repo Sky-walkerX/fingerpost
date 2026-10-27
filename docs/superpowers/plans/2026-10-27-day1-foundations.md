@@ -62,7 +62,7 @@ These are the inputs most likely to break things for a real user. Each is pinned
 ### Task D1-T0 (human; all three; first two hours): accounts and tooling
 Needs people, credentials or money. Agents mark dependent tasks `blocked` until it's done.
 
-- [ ] **Android Studio:** run `brew install --cask android-studio`. Open it once, then install SDK Platform 36, Build-Tools, and Platform-Tools.
+- [x] **Android Studio:** **Linux laptop equivalent verified 2026-10-28: existing Studio, JDK 21, Platform 36, Build Tools 36.0.0 and Platform Tools; project launcher/IDE paths configured (see docs/local-development.md).** macOS instructions: run `brew install --cask android-studio`. Open it once, then install SDK Platform 36, Build-Tools, and Platform-Tools.
   - **Check:** `~/Library/Android/sdk/platform-tools/adb version` prints a version.
   - Add to `~/.zshrc`, then run `source ~/.zshrc`:
     - `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
