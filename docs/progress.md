@@ -15,7 +15,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | blocked | Codex |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
-| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | blocked | Codex |
+| D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | doing | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
 | D1-T7d | Tone prototype | A | T7c | todo | |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
