@@ -178,9 +178,9 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 
   Every `error` has `retryable:false` unless rule 8 says otherwise; the default `say` is `Something went wrong talking to the server.` `id` comes from `ulid()` and `ts` from `now()`.
 
-- [ ] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 services/gateway && pnpm install`
-- [ ] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- app session`. The session and app tests fail with TODO(D1-T3).
-- [ ] **Step 3: Implement `loadConfig`.**
+- [x] **Step 1: Copy.** `docs/superpowers/plans/assets/apply.sh 1 services/gateway && pnpm install`
+- [x] **Step 2: Confirm red.** Run `pnpm --filter @fingerpost/gateway test -- app session`. The session and app tests fail with TODO(D1-T3).
+- [x] **Step 3: Implement `loadConfig`.**
   - `Env.safeParse(env)`. On failure, throw `new Error('Invalid gateway config: ' + issues.map(i => \`${i.path.join('.')}: ${i.message}\`).join('; '))`.
   - Keep the `Env` schema exactly as given.
 - [ ] **Step 4: Implement `SessionHub`.** Follow rules 1–8 above, plus `private now()` and `private error(code, say?)`.
@@ -188,7 +188,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [ ] **Step 6: Run it locally.**
   - `pnpm --filter @fingerpost/gateway dev`, then in another shell `curl -s localhost:8080/healthz`.
   - Expected: `{"status":"ok","version":"dev","protocol":"fp.v1"}`.
-- [ ] **Step 7: Build the container.** Needs Docker Desktop running; if it isn't, mark this step `blocked`.
+- [ ] **Step 7: Build the container.** **Blocked: Docker unavailable (2026-10-28).** Needs Docker Desktop running; if it isn't, mark this step `blocked`.
   - `docker build -f services/gateway/Dockerfile -t fp-gateway . && docker run --rm -d -p 8080:8080 --name fpg fp-gateway && sleep 2 && curl -s localhost:8080/healthz; docker rm -f fpg`
   - Expected: the same JSON.
   - The Dockerfile itself wasn't run during planning (no Docker daemon), but its exact pnpm steps were (filtered install, build, `deploy --legacy`, then `node dist/server.js` answering /healthz). Record any fix in progress.md.

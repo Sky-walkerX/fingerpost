@@ -1,0 +1,15 @@
+{
+  "id": "chatcmpl-fixture-1",
+  "object": "chat.completion",
+  "created": 1761552004,
+  "model": "muse-spark-1.3",
+  "choices": [{
+    "index": 0,
+    "finish_reason": "stop",
+    "message": {
+      "role": "assistant",
+      "content": "{\"screen_type\":\"payment_entry\",\"sensitivity\":\"financial\",\"language\":\"en\",\"rotation\":0,\"elements\":[{\"label\":\"Total ₹149\",\"label_local\":null,\"role\":\"text\",\"state\":null,\"bbox\":{\"x_min\":100,\"y_min\":100,\"x_max\":600,\"y_max\":200},\"confidence\":0.95},{\"label\":\"Pay by card\",\"label_local\":\"कार्ड से भुगतान\",\"role\":\"pay\",\"state\":null,\"bbox\":{\"x_min\":550,\"y_min\":700,\"x_max\":1004,\"y_max\":880},\"confidence\":0.91},{\"label\":\"Cancel\",\"label_local\":\"रद्द करें\",\"role\":\"cancel\",\"state\":\"enabled\",\"bbox\":{\"x_min\":400,\"y_min\":880,\"x_max\":100,\"y_max\":700},\"confidence\":1.3},{\"label\":\"ghost\",\"label_local\":null,\"role\":\"button\",\"state\":null,\"bbox\":{\"x_min\":300,\"y_min\":300,\"x_max\":300,\"y_max\":360},\"confidence\":0.2}]}"
+    }
+  }],
+  "usage": { "prompt_tokens": 1612, "completion_tokens": 214, "total_tokens": 1826 }
+}
