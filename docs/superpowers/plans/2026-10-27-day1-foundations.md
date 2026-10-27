@@ -331,7 +331,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - A 3-finger hold for 1.5 s opens the export panel. Check there's one event per tap, with element ids.
   - Also open `?scene=pinpad&layout=scrambled&seed=3`.
   - Record this in progress.md.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.** Implementation committed as 4512cdb; tablet acceptance remains blocked.
   `git add apps/web && git commit -m "feat(web): kiosk simulator v0 (fast-food, PIN pad) with touch log and labels"`
 
 ### Task D1-T7a: Android Gradle project + `core:guidance` cue math

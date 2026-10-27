@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current day:** Day 1, Tue Oct 27 · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from that day's results (design.md §7 has the outline)
+**Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
@@ -14,7 +14,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T4 | Spark parse + SAM adapters | B | T3 | todo | |
 | D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | todo | |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
-| D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | todo | |
+| D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | blocked | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | todo | |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | todo | |
 | D1-T7d | Tone prototype | A | T7c | todo | |
@@ -55,7 +55,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
 - Fixed in Day 3 assets: live config fails closed (AUTH_REQUIRED=false needs ALLOW_UNAUTHENTICATED_LIVE=true); software attestation off by default in live; challenge/attest rate-limited per IP; sim route disabled in live without SIM_TOKEN, timing-safe compare; kill switch also applies to unauthenticated sessions.
-- Also fixed in Day 2 assets: the sim route fails closed in live mode and compares the token in constant time. Nothing is open.
+- Also fixed in Day 2 assets: the sim route fails closed in live mode and compares the token in constant time. These are asset fixes, not deployed protections; the associated runtime implementation and validation tasks remain pending.
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
@@ -63,6 +63,9 @@ _(task id · exact command · last lines of output · what you tried)_
 - D1-T3 · `docker version` → `/bin/bash: line 1: docker: command not found`. Container build/run cannot be verified; Docker is not installed.
 
 - D1-T6 · `adb devices -l` (outside the sandbox) returns only `List of devices attached`, with no devices. Browser fast-food flow and scrambled PIN scene verified; required physical tablet fullscreen/three-finger export checks remain unverified. No device results are inferred from unit tests.
+
+- D1-T7a · T0 tooling prerequisite unmet. `/home/Naman/Downloads/android-studio-rabbit1-linux/android-studio/jbr/bin/java -version` reports `openjdk version "25.0.3"`; system `/usr/lib/jvm` also contains only Java 25. `ls /home/Naman/Android/Sdk/platforms` reports `android-37.0`. Checked installed Studio, system JVMs and usual JDK directories; required JDK 21 (and Platform 36 for app tasks) unavailable. Android setup is a human task under D1-T0; no version substitutions made.
+- D1-T8 / CI · `gh run view 40523977390 --log-failed` reports `An error occurred trying to start process '/usr/bin/bash' with working directory '/home/runner/work/fingerpost/fingerpost/apps/android'. No such file or directory`. Root CI is present, not green; Android modules have not been implemented. Workflow not weakened to hide this.
 
 ## Deviations from the plan
 _(task id · what changed · why · who approved)_
@@ -87,3 +90,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T3 partial: copied assets and implemented config validation; 3 config/health tests pass and recursive typecheck passes. Hub remains blocked on conflicting size-limit error codes; remaining gateway tests are expected TODO failures, not a passing gateway.
 - 2026-10-28: D1-T3 session hub implemented after user clarification: 14 app/session tests, recursive typecheck and protocol/gateway builds pass. Dev server and isolated `deploy --legacy --prod` package both return the expected /healthz JSON. Task stays blocked solely on the required Docker build/run; D1-T4 adapters remain TODO.
 - 2026-10-28: D1-T6 implementation complete after the expected 7 red/7 green baseline: all 14 tests pass; web production build and recursive typecheck pass. Desktop browser completes Start order → Drinks → Medium → Pay by card → done with no warnings/errors; scrambled PIN seed 3 renders all keys. Task remains blocked on the physical tablet check.
+- 2026-10-28: README audit corrected stale code/tooling status and separated accepted design/reference assets from working features. Verified accepted ADRs 0001/0002/0004/0005; ADR-0003 remains proposed. D1-T1 completion is valid for its root-workspace scope, not a claim that all CI or product functionality is complete.
+- 2026-10-28: Final baseline: protocol 46/46 and simulator 14/14 pass; gateway 31/43 pass with 12 D1-T4 TODO failures. `pnpm -r test` exits 1 as expected; all workspace typechecks and current package builds pass. CI run 40562763885 at 4512cdb is red; no claim of full application or CI completion.

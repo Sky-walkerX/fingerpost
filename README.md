@@ -1,13 +1,13 @@
 # Fingerpost
 
-Fingerpost guides a blind or low-vision person's finger to the right spot on any touchscreen: appliance panels, kiosks, ticket machines and card terminals. You point an Android phone at the screen and say what you want. It guides you with speech, tones and vibration, checks that the press worked, and walks you through multi-step tasks. During PIN entry, nothing leaves the phone.
+Fingerpost is being built to guide a blind or low-vision person's finger to the right spot on a touchscreen: appliance panels, kiosks, ticket machines and card terminals. The planned Android app uses speech, tones and vibration, checks that a press worked, and walks through multi-step tasks. PIN entry must stay entirely on the phone. These end-to-end features are not implemented yet.
 
 We're building it for the Meta Global AI Developer Hackathon (Indie track), using Muse Spark, SAM 3.1, Voice Transcribe and Muse Glimmer. The build runs Oct 27 to Nov 2, 2026, and the submission is due Nov 5 at 07:30 IST.
 
-> **Status: planning done, code not started.** The repo holds the approved design and the Day 1 task plan. If you're picking this up, start at "Resume here" below.
+> **Status (2026-10-28): Day 1 foundations in progress.** Workspace and TypeScript protocol are complete. Gateway config/session handling and simulator code pass their targeted checks; Docker and tablet acceptance remain blocked. Android and live model integration are not ready. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
 
 ## Resume here
-1. **Read the design.** Start with [`docs/design.md`](docs/design.md). §1 has the locked decisions (don't re-open them), §4 the architecture, and §7 the 7-day plan with each lane's tasks and the exit criteria for every day.
+1. **Read the workflow and current state.** Start with [`AGENTS.md`](AGENTS.md), then [`docs/progress.md`](docs/progress.md) and the current implementation plan. [`docs/design.md`](docs/design.md) §1 has the locked decisions, §4 the architecture, and §7 the 7-day outline and exit criteria.
 2. **Pick your lane:**
    - **A:** the Android app and guidance. Read [`docs/guidance-spec.md`](docs/guidance-spec.md).
    - **B:** the gateway and AI pipeline. Read [`docs/protocol.md`](docs/protocol.md).
@@ -18,13 +18,20 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 ## Where things stand
 | Item | State |
 |---|---|
-| Design, guidance spec, protocol, ADRs 0001, 0002, 0004, 0005 | Done |
+| Design, guidance spec, protocol, ADRs 0001, 0002, 0004, 0005 | Written; listed ADRs accepted. This records decisions, not completed product behavior. |
 | ADR 0003 (Cloud Run region) | Pending: decided by Day 1's latency measurements |
-| Day 1 task plan | Done; how to run it (native or subagent-driven) not yet chosen |
-| Code | Not started |
-| Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Not done (Task 0) |
-| Lead's Mac | No JDK or Android SDK yet. Install Android Studio before any Android work. |
-| Testers | Outreach starts Day 1 |
+| Implementation plans | Days 1–3 written; executing the task checklists sequentially |
+| D1-T1: workspace root | Complete; pinned tooling, lockfile, CI workflow and community documents present |
+| D1-T2: TypeScript protocol | Complete; 46 tests, typecheck, build and JSON Schema export pass. Kotlin counterpart is D2-T1. |
+| D1-T3: gateway foundations | Config/session hub implemented; 14 targeted tests, typecheck, builds and local/production-package health checks pass. Docker verification blocked. |
+| D1-T4: Spark/SAM adapters | Supplied skeletons and tests only; 12 adapter tests still fail with TODOs. Depends on D1-T3 completion. |
+| D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
+| Android | Not started. Local Android Studio has JDK 25 and SDK Platform 37; required JDK 21 and Platform 36 are missing. No device connected. |
+| CI | Not green: adapter TODO tests fail; Android job requires modules not yet implemented. No checks disabled. |
+| Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
+| Testers | Outreach has no recorded completion; human-only task |
+
+The larger test counts in the planning log describe reference assets, not the implemented checkout. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
 
 ## Planned layout
 ```
