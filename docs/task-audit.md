@@ -4,7 +4,7 @@ This audit compares the implementation plans, actual runtime files, tests/builds
 
 The focused [Day 1 readiness audit](evals/day1-completion-audit.md) includes fixes at `5d4a5aa` and `d0a4ed3`: 8/12 original Day 1 tasks complete, plus the pulled-forward D2-T1 foundation; only 1/5 Day 1 exit checks passes. It separates freshly executed commands from historical device/container evidence and records fixed evaluation/privacy gaps and the remaining T5 live-measurement requirements.
 
-Of the 37 tasks written for Days 1–3, **11 meet their complete task checklists, 4 have partial implementation/setup, and 22 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; the user subsequently explicitly started Day 2 with Day 1 unfinished. D2-T2/T3 are now complete within their pure-logic scope; D2-T4 is blocked on a documented test/spec conflict. Later tasks remain unimplemented, and the user has since restored Day 1 completion as the priority. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
+Of the 37 tasks written for Days 1–3, **13 meet their complete task checklists, 4 have partial implementation/setup, and 20 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; the user subsequently explicitly started Day 2 with Day 1 unfinished. D2-T2–T4 are complete within their pure-logic scope, and D2-T5 target resolution is complete. The user resumed Day 2 coding while keeping Day 1 incomplete; later tasks remain pending. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -19,12 +19,12 @@ The focused audit above contains the latest command executions and their limits.
 | Check | Audited result |
 |---|---|
 | TypeScript protocol tests | 48 passed |
-| Gateway tests | 143 passed: original 94 retained plus 49 regional benchmark/probe/CLI cases |
+| Gateway tests | 160 passed: prior 143 retained plus 17 resolution/description cases |
 | Simulator tests | 14 passed |
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
 | All current TypeScript package builds | Pass |
-| Kotlin guidance tests | 85 passed; 0 failures/errors/skips (37 Day 1, 26 geometry/target/fingertip, 22 planner/speech) |
+| Kotlin guidance tests | 112 passed; 0 failures/errors/skips (previous 85 retained plus 27 state-machine/metadata cases) |
 | Kotlin protocol tests | 49 passed; 0 failed/skipped; shared fixtures and unsigned-length/UTF-8/type/privacy boundaries |
 | Numeric Android profiling CLI | 24 tests pass; shell transport, numeric-only retention/cleanup, early-EOF rejection and unchanged GPU/two-hand acceptance |
 | Deployment preparation | five synthetic command-stub tests and shell syntax pass; no real cloud calls |
@@ -70,17 +70,17 @@ One of five exit results passes: CI is green at audited revision 2480252. Finger
 
 The compile-SDK mismatch discovered during the first app build has already been resolved and documented: compile SDK 37 is required by the pinned libraries; minimum SDK 29 and target SDK 36 are retained.
 
-## Day 2: protocol, target geometry and speech core complete
+## Day 2: core logic and target resolution complete
 
-The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was already complete as a CI foundation; D2-T2/T3 now meet their documented pure-logic task checks. The remaining 11 tasks are unimplemented; D2-T4 is blocked before implementation on the DONE speech-completion/timer conflict. Reference assets do not count as implemented work.
+The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was already complete as a CI foundation; D2-T2–T4 meet their documented pure-logic checks and T5 target resolution is complete. The remaining nine tasks are pending. The user resolved DONE in favor of actual speech completion, with the plan/test corrected. Reference assets do not count as implemented work.
 
 | Task | Missing deliverable | Additional task prerequisites |
 |---|---|---|
 | D2-T1 — complete | Implemented Kotlin models, codec and shared-fixture tests; 49 JVM tests pass | Pulled forward as Day 1 CI foundation; not a network client |
 | D2-T2 — complete | Iso-space target zones/error, debouncing/reset and fingertip selection; 20 supplied +6 added tests pass | D1-T7a done; no app wiring claimed |
 | D2-T3 — complete | Cue planner retained; English phrases and speech queue implemented; 16 supplied +6 added tests pass | D2-T2 done; other locales and Android TTS wiring remain later work |
-| D2-T4 — blocked | DONE: plan/test returns to IDLE after a fixed 1.5 s; authoritative spec waits for speech completion. User choice pending | D2-T3 done; no state-machine code/test copied or implemented |
-| D2-T5 | Goal-to-element resolution | D1-T4 |
+| D2-T4 — complete | State transitions/retries/hysteresis and correlated terminal speech completion; 15 supplied +12 boundary cases pass | Pure JVM; Android TTS integration remains T10c |
+| D2-T5 — complete | Deterministic exact/fuzzy aliases, ambiguity, position words and lists; 17 cases pass | D1-T4 done; session wiring remains T6/T7 |
 | D2-T6 | Model-driven session pipeline | D2-T5 |
 | D2-T7 | Session controller, Voice Transcribe and simulator relay | D2-T6 |
 | D2-T8 | Eval harness, labels and measured baseline | D2-T7 |

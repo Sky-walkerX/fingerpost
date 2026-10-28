@@ -29,9 +29,11 @@ class GuidanceStateMachineTest {
         assertEquals(listOf(Effect.ToneOff, Effect.Haptic(HapticKind.ON_TARGET), Effect.Say(Prompts.TAP, Priority.STATE), Effect.SendTargetReached), onEffects)
         assertEquals(listOf(Effect.SendTapDetected(Evidence.SCREEN_CHANGE), Effect.SendKeyframe(KeyframePurpose.VERIFY)), s.handle(GEvent.PressDetected(3500, Evidence.SCREEN_CHANGE)))
         assertEquals(GState.VERIFYING, s.state)
-        s.handle(GEvent.VerifyArrived(4000, VerifyResult.OK, "Done."))
+        val done = s.handle(GEvent.VerifyArrived(4000, VerifyResult.OK, "Done.")).single() as Effect.Say
         assertEquals(GState.DONE, s.state)
-        s.handle(GEvent.Tick(5600)); assertEquals(GState.IDLE, s.state)
+        s.handle(GEvent.Tick(5600)); assertEquals(GState.DONE, s.state)
+        s.handle(GEvent.SpeechDone(5700, requireNotNull(done.completionId)))
+        assertEquals(GState.IDLE, s.state)
     }
 
     @Test fun quadStableSendsALocateKeyframe() {

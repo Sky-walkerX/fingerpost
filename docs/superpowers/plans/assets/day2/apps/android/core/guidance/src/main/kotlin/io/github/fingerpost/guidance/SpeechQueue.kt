@@ -2,7 +2,7 @@ package io.github.fingerpost.guidance
 
 enum class Priority(val rank: Int) { INFO(0), GUIDE(1), STATE(2), SAFETY(3) }
 
-data class Utterance(val text: String, val priority: Priority, val atMs: Long)
+data class Utterance(val text: String, val priority: Priority, val atMs: Long, val completionId: Long? = null)
 
 sealed interface SpeechAction {
     data class Speak(val u: Utterance) : SpeechAction

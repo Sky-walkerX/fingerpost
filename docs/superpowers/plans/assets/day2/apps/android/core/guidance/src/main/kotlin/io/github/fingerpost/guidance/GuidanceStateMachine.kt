@@ -16,13 +16,14 @@ sealed interface GEvent {
     data class TargetNotFound(override val nowMs: Long, val say: String) : GEvent
     data class PressDetected(override val nowMs: Long, val evidence: Evidence) : GEvent
     data class VerifyArrived(override val nowMs: Long, val result: VerifyResult, val say: String) : GEvent
+    data class SpeechDone(override val nowMs: Long, val completionId: Long) : GEvent
     data class Abort(override val nowMs: Long) : GEvent
     /** Timer tick, about every 100 ms. */
     data class Tick(override val nowMs: Long) : GEvent
 }
 
 sealed interface Effect {
-    data class Say(val text: String, val priority: Priority) : Effect
+    data class Say(val text: String, val priority: Priority, val completionId: Long? = null) : Effect
     data object OpenMic : Effect
     data object CloseMic : Effect
     data class SendKeyframe(val purpose: KeyframePurpose) : Effect

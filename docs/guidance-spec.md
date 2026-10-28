@@ -118,6 +118,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 | `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → VERIFYING | none (user-driven) |
 | `DONE` | Task finished | → IDLE after the speech ends | — |
 
+**DONE completion:** the final STATE utterance carries a completion id through the speech queue to the TTS adapter. Return to IDLE only when that utterance finishes; ignore stale or unrelated completion callbacks. Timer ticks do not substitute for speech completion.
+
 **Framing coach:** runs every 1.5 s while in FRAMING. Checks run in this order: no quad; **too close** (quad area over 85%, checked first because such a quad always touches the 4% margin); cut off; too far (under 15%); off-centre (over 15%). This order was fixed during planning verification.
 - **Direction:** the screen quad's center offset from the image center gives the direction to move the phone.
 - **Distance:** quad area under 15% of the frame → "move closer"; over 85% → "move back".

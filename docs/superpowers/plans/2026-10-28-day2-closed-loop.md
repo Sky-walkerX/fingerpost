@@ -146,7 +146,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(guidance): English phrases and speech queue cadence/priorities"`
 
 ### Task D2-T4: guidance state machine
-**Blocked before implementation (2026-10-28):** guidance-spec §8 requires DONE to wait for speech completion; the fixed 1.5-second transition below and `happyPathToDone` test contradict it. User decision pending under AGENTS.md §4. No state-machine asset/test copied or changed.
+**Conflict resolved by the user (2026-10-28):** follow guidance-spec §8 and wait for actual speech completion. Correct `happyPathToDone` to remain DONE after a timer tick and return to IDLE only on the matching terminal utterance completion. A completion id on `Say`/`Utterance` and `SpeechDone` prevents unrelated or stale callbacks from ending a later task. No guidance timing changes.
 
 **Files:**
 - `apply.sh 2` with `…/guidance/GuidanceStateMachine.kt` and `GuidanceStateMachineTest.kt`.
@@ -185,12 +185,12 @@ Everything in Day 1's list still applies, plus:
     - NOCHANGE, first time → ON_TARGET;
     - NOCHANGE, second time → `SendKeyframe(LOCATE)`, go to LOCATING.
   - Tick 4 s or more → treat as NOCHANGE with "The screen didn't change. Press a little firmer."
-- **DONE:** Tick 1.5 s or more after entering → IDLE.
+- **DONE:** only `SpeechDone` matching the final STATE utterance's completion id → IDLE. Tick/Frame and unrelated completions do nothing.
 
-- [ ] **Step 1: Copy, then confirm red** (16 tests fail).
-- [ ] **Step 2: Implement.** Keep it one `when (state)` block with small private helpers.
-- [ ] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`. Expected: 63 tests in the module pass.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Fifteen supplied and eleven additional boundary cases fail at TODO bodies; the queue metadata case already passes.
+- [x] **Step 2: Implement.** Keep it one `when (state)` block with small private helpers.
+- [x] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`. All 112 guidance cases pass; protocol check and app:test/assembleDebug also succeed.
+- [x] **Step 4: Commit.**
   `git commit -m "feat(guidance): guidance state machine (Day 2 subset of spec §8)"`
 
 ### Task D2-T5: gateway target resolution
@@ -463,7 +463,7 @@ Everything in Day 1's list still applies, plus:
 - **`TtsSpeaker`:**
   - `TextToSpeech(context) { … }` with `setAudioAttributes(USAGE_ASSISTANCE_ACCESSIBILITY)` and `setLanguage(Locale.forLanguageTag("en-IN"))`.
   - `Speak` → `speak(text, QUEUE_FLUSH, null, id)`; `Interrupt` → `stop()` then speak.
-  - `UtteranceProgressListener.onDone` → `speech.onDone()`.
+  - Preserve `Say.completionId` in `Utterance` and correlate it to the Android TTS utterance id. `UtteranceProgressListener.onDone` → `speech.onDone()` and, for that matching completed utterance, `GEvent.SpeechDone(now, completionId)`. Ignore callbacks from canceled/replaced utterances; do not synthesize completion from a timer.
 - **`Haptics`:**
   - `TICK` → `VibrationEffect.createPredefined(EFFECT_TICK)`.
   - `ON_TARGET` → `EFFECT_HEAVY_CLICK` twice, 120 ms apart.

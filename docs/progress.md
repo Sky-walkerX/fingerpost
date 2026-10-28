@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Twelve tasks are complete within their documented scope; four are partial and 21 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Thirteen tasks are complete within their documented scope; four are partial and 20 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
 
@@ -32,7 +32,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 |---|---|---|---|---|---|
 | D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
 | D2-T3 | Phrases, speech queue | A | D2-T2 | done | Codex |
-| D2-T4 | Guidance state machine | A | D2-T3 | doing | Codex |
+| D2-T4 | Guidance state machine | A | D2-T3 | done | Codex |
 | D2-T5 | Goal → element resolution | B | D1-T4 | done | Codex |
 | D2-T6 | Session pipeline | B | D2-T5 | todo | |
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | todo | |
@@ -65,8 +65,6 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
-
-- D2-T4 · Blocked before copying/implementation on a test/spec contradiction (AGENTS.md §4). Authoritative guidance-spec §8 says DONE leaves "after the speech ends". The Day 2 task says "DONE: Tick 1.5 s or more after entering → IDLE", and the supplied `happyPathToDone` test calls `VerifyArrived(4000, OK, "Done.")` then `Tick(5600)` and requires IDLE without a speech-completion event. No command was run against that contradictory skeleton and no test was changed or weakened. Asked the user whether to wait for actual speech completion (update plan/test) or explicitly retain the temporary 1.5-second prototype behavior. D2-T2/T3 are independently complete; further task progression waits for this decision.
 
 - D1-T7c · User resumed controlled profiling and supplied a comparison phone on 2026-10-28. Added fused crop/rotate/resize, callback-image cleanup, keep-awake and numeric diagnostics. Two valid comparison checks still fail: CPU/two hands with no hand visible: 11–14 fps / 45–61 ms, rolling max 67 ms; GPU/two hands with one pointing hand consistently detected: 10–12 fps / 43–86 ms, rolling max 87 ms. Required: ≥25 fps / ≤25 ms. Both full comparison runs reported thermal status 1, so an unthrottled comparison remains missing. Model-task latency remains high; callback queue delay is negligible. Production defaults remain GPU/two hands. Prior visual acceptance passed on the earlier build; fused-build visual regression and camera-screen TalkBack recheck remain pending. Further performance attempts stopped under AGENTS.md §9 after the two resumed budget failures. User explicitly deferred this unfinished task to allow T7d; subsequent Day 1 preparation did not waive its acceptance gate. Subsequent user-authorized USB reconnect: one authorized phone with the current APK; shell transport completed both new captures. GPU/one hand: 9–12 FPS / 52–109 ms; GPU/two hands: 5–8 FPS / 107–167 ms, rolling max 167 ms (exit 1). Both report thermal status 3; intermittent hand loss in the one-hand run prevents an isolated comparison. The user postponed the fused visual/TalkBack checks. Next T7c work: controlled unthrottled/native-task investigation and the deferred manual regression. See [profiling report](evals/day1-tracking-profile.md) and [device report](evals/day1-device.md). Original failed probes are retained below.
 
@@ -194,6 +192,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- D2-T4 · User resolved the DONE conflict: wait for actual speech completion. Corrected the plan and supplied happy-path test/asset, added correlated completion ids and a SpeechDone event, and retained all other expectations/timings. Pure JVM implementation only; Android TTS callback wiring remains T10c.
 - D1-T5 · User explicitly requested finishing the coding portion without live prerequisites. Added a private exact-label benchmark using existing fp.v1 messages, plus ASR connection probing with Node 24 native WebSocket. No public contract, dependency, model/version or Day 2 production pipeline was changed; real evaluation/deployment remains blocked.
 - D2-T3 · Clarified the plan's interruption rule using authoritative guidance-spec §5: the 700 ms gap applies even when GUIDE outranks current INFO. STATE/SAFETY speech can still interrupt immediately. Six boundary tests added; no supplied tests or timing values changed.
 _(task id · what changed · why · who approved)_
@@ -289,3 +288,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: Regional tooling implementation cd3aed5 pushed with the requested Git author; [CI run 40658914167](https://github.com/Sky-walkerX/fingerpost/actions/runs/40658914167) succeeds in both ts/android jobs, including the 205 TS cases, existing Python/JVM checks and app build. Working implementation is verified; no live measurement, new task completion or ADR acceptance claimed.
 
 - 2026-10-28: User explicitly resumed Day 2 coding with Day 1 unfinished. D2-T5 complete after seven supplied and ten additional boundary TODO failures: deterministic exact/fuzzy alias matching, ambiguity handling, position words and label lists implemented. All 160 gateway cases and recursive TS typecheck pass; existing localhost integration cases require socket permission. Original match tests unchanged; no dependency or public contract change. User also resolved D2-T4: wait for actual speech completion and correct the plan/test before implementation.
+
+- 2026-10-28: D2-T4 complete after 15 supplied TODO failures and 11 additional boundary TODO failures (queue metadata case already passed). Implemented the Day 2 state machine, retries, no-hand prompts, target hysteresis and verification; DONE waits for its correlated terminal speech callback and rejects stale completions. User-authorized plan/test correction replaces the contradictory fixed timer. All 112 guidance cases pass with zero failures/errors/skips; protocol check and app:test/assembleDebug succeed (app tests have no source cases). No device behavior or TTS wiring acceptance claimed.
