@@ -49,7 +49,6 @@ fun SessionScreen(onToggle: () -> Unit, trackingOptions: TrackingOptions = Track
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-            keepScreenOn = true
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             isClickable = false
             isFocusable = false

@@ -36,3 +36,11 @@ Only the app's numeric tracking logs were read. No camera screenshot, recording,
 - Confirm the added preview/debug content does not create extra TalkBack elements.
 - Resolve the performance shortfall, then rerun the documented build/test/install and device acceptance. Do not reduce the target, change pinned dependencies, or claim a faster phone is necessary without investigation.
 - The original two failed probes and two resumed comparison failures are recorded. AGENTS.md §9 requires stopping further attempts and task progression here. T7d remains unstarted.
+
+## Foreground keep-awake follow-up — 2026-10-28
+
+At the user's request, `MainActivity` now sets `FLAG_KEEP_SCREEN_ON` for its window. This covers both the camera session and the permission screen; the former preview-only setting was removed. Android applies this flag while the window is visible, so leaving the app restores normal sleep behavior. No wake-lock permission or system timeout change is needed.
+
+The guidance tests (25 passed, no failures/errors/skips), app unit-test task (no source cases), debug build and lint pass. Lint retains 0 errors and the same 4 advisories. The updated APK is installed on both connected test phones.
+
+On the comparison test phone, Fingerpost remained focused and awake for **125.2 seconds**, beyond the unchanged **120-second** system timeout. All sampled windows retained `KEEP_SCREEN_ON`; Android identified Fingerpost as the active screen-holding window. After Home and completion of the window transition, Fingerpost lost focus and released that screen hold. Reopening the app restored both. Only numeric power/window state was inspected; no camera content was exported. The broader T7c performance and accessibility/visual acceptance blockers above remain open.
