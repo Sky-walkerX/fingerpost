@@ -10,7 +10,8 @@
     "dev": "node --conditions=source --watch src/server.ts",
     "start": "node dist/server.js",
     "smoke": "node --conditions=source scripts/smoke-meta.ts",
-    "latency": "node --conditions=source scripts/latency-matrix.ts"
+    "latency": "node --conditions=source scripts/latency-matrix.ts",
+    "latency:region": "node --conditions=source scripts/region-latency.ts"
   },
   "dependencies": {
     "@fastify/websocket": "11.3.4",

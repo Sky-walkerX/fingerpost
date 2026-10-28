@@ -26,8 +26,8 @@ The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/1
 | D1-T1: workspace root | Complete; pinned tooling, lockfile, CI workflow and community documents present |
 | D1-T2: TypeScript protocol | Complete; 48 tests and typecheck pass, including new invalid-fixture coverage. Build/schema export previously verified. Kotlin counterpart is now implemented as the CI prerequisite below. |
 | D1-T3: gateway foundations | Complete; 14 targeted tests, typecheck, builds and actual container health/non-root checks pass under rootless Podman. |
-| D1-T4: Spark/SAM adapters | Implemented; the original 43 gateway tests remain passing in the expanded 94-test suite. Live model smoke is D1-T5 and still needs human setup. |
-| D1-T5: live evaluation/deployment | Partial: safe smoke reports/private overlays, input/HTTP/metric validation and offline-tested deployment script prepared (1/8 steps). Real model quality, GCP deployment, Voice Transcribe/total-flow measurements and ADR acceptance remain pending. |
+| D1-T4: Spark/SAM adapters | Implemented; the original 43 gateway tests remain passing in the expanded 143-test suite. Live model smoke is D1-T5 and still needs human setup. |
+| D1-T5: live evaluation/deployment | Partial: safe smoke reports/private overlays, input/HTTP/metric validation and offline-tested deployment script prepared (1/8 steps). ASR handshake and binary keyframe-to-target benchmark tooling is implemented and mock-tested; real model quality, GCP deployments, 20-sample live measurements and ADR acceptance remain pending. See [measurement tooling](docs/evals/day1-region-tooling.md). |
 | D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
 | D1-T7a: Android foundation | Complete; Gradle project and cue math implemented; the original 12 cue/filter tests pass within the current 85-test guidance suite. |
 | D1-T7b: Android shell | Complete; debug APK builds, installs and launches. User-confirmed spoken denial, settings return, black session screen and single TalkBack element; permission state corroborated through ADB. Camera tracking and tone acceptance are recorded separately in T7c/T7d. |
@@ -43,7 +43,7 @@ The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/1
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
-Most recently verified totals: 156 TypeScript tests, 85 Kotlin guidance tests, 49 Kotlin protocol tests and 29 tooling tests (24 tracking, five deployment) pass. The Day 2 changes pass the guidance suite and Android debug compatibility build; protocol tests and TypeScript checks remain passing. Prior Android lint/container checks are recorded separately; app unit-test tasks have no source cases. Day 2 T2/T3 are pure guidance components; the state machine, gateway closed loop, app wiring, authentication and PIN protection are not implemented yet.
+Most recently verified totals: 205 TypeScript tests, 85 Kotlin guidance tests, 49 Kotlin protocol tests and 29 tooling tests (24 tracking, five deployment) pass. The Day 2 changes pass the guidance suite and Android debug compatibility build; protocol tests and TypeScript checks remain passing. Prior Android lint/container checks are recorded separately; app unit-test tasks have no source cases. Day 2 T2/T3 are pure guidance components; the state machine, gateway closed loop, app wiring, authentication and PIN protection are not implemented yet.
 
 The development APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. Camera tracking is implemented but has not met its acceptance gate. The tone prototype has passed its device checks; end-to-end guidance is not implemented yet.
 

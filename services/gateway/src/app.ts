@@ -7,16 +7,22 @@ import { createMetaClient } from './models/meta-client.ts';
 import { liveModels, type ModelPort } from './models/port.ts';
 import { mockModels } from './models/mock/mock-models.ts';
 import { SessionHub } from './session/hub.ts';
+import { probeAsrConnection, type AsrTimings } from './debug/asr-probe.ts';
+import { registerRegionRoutes } from './debug/region.ts';
 
-export interface AppOverrides { models?: ModelPort; }
+export interface AppOverrides { models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; }
 
 export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: { level: cfg.LOG_LEVEL, redact: ['req.headers.authorization'] }, bodyLimit: 64 * 1024 });
+  const app = Fastify({ logger: { level: cfg.LOG_LEVEL, redact: ['req.headers.authorization', 'req.headers["x-debug-token"]'] }, bodyLimit: 64 * 1024 });
   await app.register(websocket, { options: { maxPayload: 512 * 1024 } });
   const models = o.models ?? (cfg.MODEL_MODE === 'live' ? liveModels(createMetaClient(cfg.META_API_KEY!)) : mockModels());
 
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
-  if (cfg.DEBUG_TOKEN) registerLatencyRoute(app, models, cfg.DEBUG_TOKEN);
+  if (cfg.DEBUG_TOKEN) {
+    registerLatencyRoute(app, models, cfg.DEBUG_TOKEN);
+    registerRegionRoutes(app, cfg, models, o.asrProbe ?? (cfg.MODEL_MODE === 'live'
+      ? () => probeAsrConnection(cfg.META_API_KEY!) : async () => ({ connectMs: 0, readyMs: 0 })));
+  }
 
   app.get('/v1/session', { websocket: true }, (socket, req) => {
     const hub = new SessionHub({ send: (m) => socket.send(JSON.stringify(m)) });

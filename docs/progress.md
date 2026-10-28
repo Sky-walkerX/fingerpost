@@ -16,7 +16,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | done | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | done | Codex |
-| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | doing | Codex |
+| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | blocked | Codex |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
@@ -188,12 +188,13 @@ After five logged warm-up windows:
 
 - D1-T0 · Only the tooling item is verified (1/8 top-level items). Account/credit/cloud/registry/name/photo/outreach requirements lack recorded completion evidence; local .env and Day 1 photo dataset are absent. Human-only setup remains required.
 - D1-T5 · Offline smoke/privacy and deployment preparation is verified. Live command `node --conditions=source services/gateway/scripts/smoke-meta.ts` exits 2: `META_API_KEY missing (configure the ignored local environment first)`. No local key or Day 1 JPEG dataset is available; gcloud is absent on PATH. T0 credentials/photos/cloud setup and actual live evaluation/deployment remain required. Deployment orchestration has local stub tests only.
-- D1-T5 / regional evidence · Step 7 now follows ADR-0003 total-flow selection; RTT+Spark alone cannot choose the region. The tool validates and reports fixed-box debug-request round trips, but Voice Transcribe connection timing and complete keyframe → target evidence remain unimplemented/unmeasured. Keep ADR-0003 proposed; no region chosen.
+- D1-T5 / regional evidence · Step 7 now follows ADR-0003 total-flow selection; RTT+Spark alone cannot choose the region. Both the fixed-box diagnostic and the new controlled binary-target/ASR handshake tooling are implemented and mock-tested. No real candidate deployments, accepted-handshake timings or 20-sample live binary-target evidence have been collected. Keep ADR-0003 proposed; no region chosen.
 - D1-T0 / outreach · T8 drafts and the private consent/session procedure are prepared. A human must verify contact routes and perform outreach; all tracker entries remain unsent. r/Blind currently excludes this recruitment and cannot count toward the 10-group requirement. The session agenda now totals 45 minutes.
 
 
 
 ## Deviations from the plan
+- D1-T5 · User explicitly requested finishing the coding portion without live prerequisites. Added a private exact-label benchmark using existing fp.v1 messages, plus ASR connection probing with Node 24 native WebSocket. No public contract, dependency, model/version or Day 2 production pipeline was changed; real evaluation/deployment remains blocked.
 - D2-T3 · Clarified the plan's interruption rule using authoritative guidance-spec §5: the 700 ms gap applies even when GUIDE outranks current INFO. STATE/SAFETY speech can still interrupt immediately. Six boundary tests added; no supplied tests or timing values changed.
 _(task id · what changed · why · who approved)_
 - D1-T5 · User-requested Day 1 audit/fixes prepared safe smoke inputs/outputs and deployment orchestration offline before the blocked live steps. Use the documented Cloud Build config fallback instead of unsupported builds-submit --file; keep real latency samples in ignored private storage. Align Step 7 with ADR-0003 total-flow selection without choosing a region or dropping Voice Transcribe evidence. No paid/cloud call or phase advancement.
@@ -228,7 +229,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Deployment preparation | five synthetic orchestration tests pass; no real cloud calls | scripts/test_deploy_gateway.py |
 | 2026-10-28 | TypeScript protocol tests | 48 passed, including two added invalid base-field fixtures | packages/protocol |
 | 2026-10-28 | Numeric profiling tool | 24 tests pass; shell transport, numeric-only capture/cleanup, EOF rejection and unchanged GPU acceptance | scripts/test_profile_android_tracking.py |
-| 2026-10-28 | TypeScript tests | 156 passed (protocol 48, gateway 94, web 14) | pnpm -r test |
+| 2026-10-28 | TypeScript tests | 205 passed (protocol 48, gateway 143, web 14) | pnpm -r test |
 | 2026-10-28 | CI at protocol foundation a94f5de | ts and android jobs successful; original test/build steps retained | GitHub Actions run 40615429726 |
 | 2026-10-28 | CI at T8 implementation 9102c2c | ts and android jobs successful; frozen install, typecheck, all tests and app build pass | GitHub Actions run 40616176301 |
 | 2026-10-28 | CI at audit/fixes 2480252 | ts/android successful, including 27 Python tooling tests; all original checks retained | GitHub Actions run 40647979193 |
@@ -282,3 +283,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D2-T2 implementation 9a931c8 and D2-T3 caf62d0 are pushed using the requested author. Both exact-revision CI runs pass; latest [run 40653225580](https://github.com/Sky-walkerX/fingerpost/actions/runs/40653225580) confirms ts/android success. Final local checks: 85 guidance cases (0 failures/errors/skips), unchanged 49-case protocol check, Android debug compatibility build, recursive TS typecheck and all 156 TS cases pass. Finished Geometry/CuePlanner assets and all five supplied Day 2 test files match their originals. D2-T4 remains blocked before copying/implementation on the quoted DONE transition conflict; no later task or Day 1 completion claimed.
 
 - 2026-10-28: User restored Day 1 as the priority and asked for full completion before more Day 2 work. Retain completed T2/T3 without advancing further. Fresh readiness: zero authorized/unauthorized ADB devices; local .env absent, Meta key not present in the environment, zero Day 1 JPEGs, no private latency crop and no gcloud on PATH. Asked for device availability and human setup status; preparing the missing local Cloud CLI within T0 tooling scope. No live/device check or task completion claimed.
+
+- 2026-10-28: D1-T5 measurement coding complete after failing-first ASR/route/client/CLI and bounded-queue checks. Added gateway ASR upgrade/accepted-handshake timings, actual binary keyframe → validated target timing with exact-label selection/SAM and a two-candidate matrix. All 143 gateway and 205 TS cases, recursive typecheck/builds and two compiled-gateway mock exchanges pass. Native localhost integration sends no real image/audio and makes no external model call. Existing tests/pinned dependencies/public schemas are preserved. Live prerequisites and 20-sample evidence are still missing, so T5 stays blocked, Step 6/ADR remain unaccepted and Day 2 stays on hold. Earlier Cloud CLI download was interrupted; no completed Cloud CLI installation is claimed.

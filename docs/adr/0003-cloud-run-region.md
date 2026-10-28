@@ -17,6 +17,8 @@ Users and testers are in India. The location of the Meta Model API servers isn't
 _(fill in: table + choice)_
 
 ## Measurement readiness
-The Day 1 debug endpoint times a Spark parse followed by a fixed-box SAM prompt. The local matrix reports health RTT, each gateway phase and the actual debug-request round trip after checking HTTP status and numerical response validity. The private sample must be a 1024×576 JPEG within the 409,600-byte keyframe limit.
+The original `latency` command remains a fixed-box HTTP diagnostic. The additional `latency:region` command now measures a controlled, exact-label binary-keyframe-to-target benchmark and gateway-to-Meta Voice Transcribe upgrade/accepted-handshake timing. Both regions must finish all requested samples before a comparison is printed. No phase percentile is added to another to invent a total.
 
-These are diagnostic inputs, not the complete keyframe → target measurement. Voice Transcribe connection timing and the required total-flow evidence are still missing. Do not select a region from RTT+Spark alone or by adding independent percentile values. This ADR remains proposed until all 20-sample measurements above are recorded; no region has been chosen.
+The benchmark uses an approved nonsensitive 1024×576 rectified JPEG within 409,600 bytes and the same privately configured exact control label across candidates. It returns a validated target after Spark selection and SAM refinement, reporting mask fallbacks separately. It excludes JPEG preparation, socket/goal setup, transcription and Android guidance; the production Day 2 session pipeline remains unimplemented. See [tooling details and validation](../evals/day1-region-tooling.md).
+
+The code and mock/local transport checks are complete. **Live evidence is not:** no candidate deployment, 20-sample live comparison, matching-revision check or manual quality result has been recorded. Mock/short diagnostics cannot select a region. Keep this ADR proposed until all required evidence is recorded; no region has been chosen.

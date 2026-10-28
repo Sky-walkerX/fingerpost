@@ -19,7 +19,7 @@ export async function main(args = process.argv.slice(2), env: NodeJS.ProcessEnv 
         `  gateway Spark: ${timing(result.sparkMs)}\n  gateway SAM: ${timing(result.samMs)}\n` +
         `  parse-and-fixed-box-segmentation round trip: ${timing(result.parseAndSegmentRoundTripMs)}`);
     }
-    console.log('ADR-0003 remains pending: these diagnostics do not measure Voice Transcribe connect or the complete keyframe-to-target flow.');
+    console.log('ADR-0003 remains pending: these diagnostics do not measure Voice Transcribe connect or the complete keyframe-to-target flow. Use latency:region for the controlled binary target benchmark.');
     return 0;
   } catch {
     console.error('Latency measurement failed. Check URLs, the private 1024x576 JPEG sample, debug token and service availability locally.');
