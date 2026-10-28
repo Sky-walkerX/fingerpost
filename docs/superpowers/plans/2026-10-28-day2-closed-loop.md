@@ -263,10 +263,10 @@ Everything in Day 1's list still applies, plus:
          - polygon = SAM's polygon ?? the element's.
          - Send `target{elementId, polygon, confidence: min(el, sam ?? el), say: "Found ${label}, ${describePosition(polygon)}."}`.
 
-- [ ] **Step 1: Copy, then confirm red.** Run `pnpm --filter @fingerpost/gateway test -- pipeline`.
-- [ ] **Step 2: Implement.**
-- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test -- pipeline match`.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Run `pnpm --filter @fingerpost/gateway test pipeline`.
+- [x] **Step 2: Implement.**
+- [x] **Step 3: Confirm green.** All 20 pipeline and 17 match cases pass; recursive typecheck/build and full 242-case TS suite pass. Run `pnpm --filter @fingerpost/gateway test pipeline match`.
+- [x] **Step 4: Commit.**
   `git commit -m "feat(gateway): session pipeline: locate, ask, target, verify"`
 
 ### Task D2-T7: controller, Voice Transcribe relay, sim relay, Day 2 app

@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Thirteen tasks are complete within their documented scope; four are partial and 20 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Fourteen tasks are complete within their documented scope; four are partial and 19 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
 
@@ -34,7 +34,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D2-T3 | Phrases, speech queue | A | D2-T2 | done | Codex |
 | D2-T4 | Guidance state machine | A | D2-T3 | done | Codex |
 | D2-T5 | Goal → element resolution | B | D1-T4 | done | Codex |
-| D2-T6 | Session pipeline | B | D2-T5 | doing | Codex |
+| D2-T6 | Session pipeline | B | D2-T5 | done | Codex |
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | todo | |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | todo | |
 | D2-T9 | Sim scenes 2/4 + touch relay | C | D1-T6 | todo | |
@@ -290,3 +290,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: User explicitly resumed Day 2 coding with Day 1 unfinished. D2-T5 complete after seven supplied and ten additional boundary TODO failures: deterministic exact/fuzzy alias matching, ambiguity handling, position words and label lists implemented. All 160 gateway cases and recursive TS typecheck pass; existing localhost integration cases require socket permission. Original match tests unchanged; no dependency or public contract change. User also resolved D2-T4: wait for actual speech completion and correct the plan/test before implementation.
 
 - 2026-10-28: D2-T4 complete after 15 supplied TODO failures and 11 additional boundary TODO failures (queue metadata case already passed). Implemented the Day 2 state machine, retries, no-hand prompts, target hysteresis and verification; DONE waits for its correlated terminal speech callback and rejects stale completions. User-authorized plan/test correction replaces the contradictory fixed timer. All 112 guidance cases pass with zero failures/errors/skips; protocol check and app:test/assembleDebug succeed (app tests have no source cases). No device behavior or TTS wiring acceptance claimed.
+
+- 2026-10-28: D2-T6 complete after nine supplied plus ten boundary TODO failures and a separate null-confidence regression. Implemented layout fingerprints/Jaccard, goal/locale state, task gates/usage hooks, locate/clarify/SAM target and verify/touch consumption. Protocol-validated outputs bound long ask text/options; no new dependency or public wire change. All 180 gateway/242 total TS cases, recursive typecheck and production builds pass. Constructor uses an explicit field for Node 24 strip-only compatibility. Supplied tests and finished quota/error assets retained; production session wiring is T7, Android wiring is T10.
