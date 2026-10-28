@@ -21,7 +21,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
 | D1-T7d | Tone prototype | A | T7c | done | Codex |
 | D2-T1 (pulled forward) | Kotlin protocol foundation required by Day 1 CI | A | D1-T2, D1-T7a | done | Codex |
-| D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | todo | |
+| D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | doing | Codex |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
 The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. Its id and specification are retained; other Day 2 tasks still require the Day 1 exit gate.
