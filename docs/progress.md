@@ -14,7 +14,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T2 | packages/protocol | B | T1 | done | Codex |
 | D1-T3 | Gateway: config, hub, app, container | B | T2 | done | Codex |
 | D1-T4 | Spark parse + SAM adapters | B | T3 | done | Codex |
-| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | blocked | Codex |
+| D1-T5 | Live smoke, deploy, region (ADR-0003) | B | T0, T4 | doing | Codex |
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
