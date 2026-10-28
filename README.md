@@ -42,7 +42,7 @@ The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/1
 | D2-T7: session/ASR/sim wiring | Coding/local verification complete; 26 supplied/boundary/flow cases pass. Source and compiled mock voice→target→press→verify exchanges pass. Required live check and regional redeployment remain blocked. See [Day 2 coding evidence](docs/evals/day2-coding.md). |
 | D1-T8: CI and tester preparation | Complete; weekly Dependabot config, 45-minute session protocol, English/Hindi consent/outreach drafts and organization-only tracker checked. Both CI jobs pass at audit revision 2480252, including the new Python tooling checks. No invitations sent or testers booked. |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
-| CI | Both jobs green at [regional measurement implementation cd3aed5](https://github.com/Sky-walkerX/fingerpost/actions/runs/40658914167). Frozen install, typechecks, all TS/tooling/Kotlin tests and Android debug build pass. |
+| CI | Both jobs green at [Day 2 implementation c1be57e](https://github.com/Sky-walkerX/fingerpost/actions/runs/40664266695). Frozen install, typechecks, all TS/tooling/Kotlin tests and Android debug build pass. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 

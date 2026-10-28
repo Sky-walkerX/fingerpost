@@ -23,7 +23,7 @@ Failing-first checks confirmed 7 supplied +10 boundary T5 TODO failures; 15 supp
 - `./scripts/android.sh :core:protocol:test :app:test :app:assembleDebug --console=plain`: succeeds; protocol has 49 passing cases in its current report and app unit tests have no source cases. Android compatibility was checked after T4; subsequent gateway work changes no Android files.
 - A delayed-model WebSocket test verifies that an arriving verify cannot overtake locate. A separate mock voice→target→simulator press→verify test passes.
 - Both Node 24 source and compiled gateways complete that mock flow through real localhost HTTP/WebSocket connections. External model calls: **zero**. Local socket tests require permission to listen on loopback.
-- `git diff --check` passes. Remote implementation CI is checked after push and recorded in progress.md.
+- `git diff --check` passes. [CI at implementation c1be57e](https://github.com/Sky-walkerX/fingerpost/actions/runs/40664266695) passes both ts/android jobs, including frozen install, all TS/tooling/JVM tests and the Android debug build. Later documentation-only changes are not part of that run.
 
 ## Remaining gate
 
