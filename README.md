@@ -31,12 +31,13 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | D1-T7c: camera/fingertip | Implemented and installed; fused transforms and callback-image cleanup added. All 25 guidance tests, 18 diagnostic-tool tests, build and lint pass. Earlier visual following passed; fused-build visual/TalkBack regression pending. Comparison phone GPU/two-hand run still fails: 10–12 fps / 43–86 ms against ≥25 fps / ≤25 ms. See [`profiling report`](docs/evals/day1-tracking-profile.md). |
 | D1-T7d: tone prototype | Complete within prototype scope after the user explicitly deferred unfinished T7c. Twelve tone tests pass; user confirmed pitch/pan, click-free TalkBack toggling, no-hand/background silence and prompt perceived response. See [`tone report`](docs/evals/day1-tone.md). |
 | D2-T1: Kotlin protocol foundation | Complete; pulled forward to resolve Day 1 CI's missing-module dependency. All 49 JVM protocol tests and the 48 TS protocol tests pass on shared fixtures. The app's network client is still later work. |
+| D1-T8: tester preparation | Dependabot, 45-minute session protocol, English/Hindi consent/outreach drafts and organization-only tracker written and checked. Final T8 commit/CI verification pending; no invitations sent or testers booked. |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
-| CI | Kotlin guidance/protocol tests and app build pass locally. The former missing-module dependency is resolved; actual green CI is the next T8 check. No checks disabled. |
+| CI | Both jobs green at [protocol foundation a94f5de](https://github.com/Sky-walkerX/fingerpost/actions/runs/40615429726); final T8 document revision still to be checked. Original TS/Kotlin/app checks retained. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
-Current verified totals: 103 TypeScript tests, 37 Kotlin guidance tests and 18 synthetic diagnostic-tool tests pass; the app debug build and lint pass. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
+Current verified totals: 105 TypeScript tests, 37 Kotlin guidance tests, 49 Kotlin protocol tests and 18 synthetic diagnostic-tool tests pass; the app debug build passes and lint was previously verified. The larger test counts in the original planning log describe reference assets. Beyond the pulled-forward protocol foundation, Day 2–3 features, including authentication and PIN protection, are not implemented yet.
 
 The development APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. Camera tracking is implemented but has not met its acceptance gate. The tone prototype has passed its device checks; end-to-end guidance is not implemented yet.
 

@@ -498,8 +498,8 @@ val track = AudioTrack.Builder()
 - `.github/workflows/ci.yml` (copied in T1).
 - Create `.github/dependabot.yml`, `docs/tester-protocol.md`, `docs/consent-form.md`, `docs/outreach.md`, `docs/testers.md`.
 
-- [ ] **Step 1: Write `dependabot.yml`.** Weekly updates for `npm` (directory `/`), `gradle` (`/apps/android`) and `github-actions` (`/`). Dependabot PRs still follow the version rules in AGENTS.md §6, so a reviewer must approve each one.
-- [ ] **Step 2: Write `docs/tester-protocol.md`.**
+- [x] **Step 1: Write `dependabot.yml`.** Weekly updates for `npm` (directory `/`), `gradle` (`/apps/android`) and `github-actions` (`/`). YAML/schema fields checked; proposals still require human review under AGENTS.md's pinned-version rules.
+- [x] **Step 2: Write `docs/tester-protocol.md`.** Corrected agenda totals 45 minutes; prerequisites and actual simulator in-memory recording behavior are explicit.
   - **Format:** a 45-minute session, either in person or on a video call with the tester's own Android phone.
   - **Agenda:**
     - consent, 5 min;
@@ -510,15 +510,15 @@ val track = AudioTrack.Builder()
     - interview, 5 min (corrected from 10 so the full agenda totals 45).
   - **What we record:** sim run ids (metrics come from those logs), interview notes, and quotes only with explicit consent.
   - **Proxies:** blindfolded teammates are labeled `proxy` and never counted as blind-user results.
-- [ ] **Step 3: Write `docs/consent-form.md`.** Plain language in English and Hindi, screen-reader friendly (headings and short paragraphs, no tables). It says:
+- [x] **Step 3: Write `docs/consent-form.md`.** English and Hindi; headings/short paragraphs/no tables; separate participation, metrics, notes, quote and credit choices. Contact is a private reply to the human inviter, confirmed before enrollment; no personal contact details added to Git. It says:
   - taking part is voluntary, and you can stop at any time;
   - no real payments are made;
   - nothing is recorded unless you say yes separately;
   - you're credited by name only if you want to be;
   - a contact for questions.
-- [ ] **Step 4: Write `docs/outreach.md`.** In English and Hindi: a short DM (≤ 80 words), an email (≤ 200 words) and a Reddit r/Blind post (≤ 250 words, honest that it's a hackathon beta).
+- [x] **Step 4: Write `docs/outreach.md`.** English/Hindi DM: 71/75 words; email: 170/192; Reddit draft: 178/197. All within limits and explicit about unfinished features. Current r/Blind rules exclude this recruitment; draft retained but marked do not post. Nothing sent.
   - Targets: NAB, NFB India, Saksham, XRCVC, Enable India, Mitra Jyothi, college disability cells, r/Blind, RNIB forums, NFB US.
-- [ ] **Step 5: Write `docs/testers.md`.** A table with columns org/channel, date sent, status and next step. No personal data; initials only.
+- [x] **Step 5: Write `docs/testers.md`.** Organization/channel, date sent, status and next step only. All unsent; r/Blind marked blocked. No personal data or invented outreach/test results.
 - [ ] **Step 6: Push and watch CI.** Run `git add -A && git commit -m "ci+docs: dependabot, tester protocol, consent, outreach" && git push && gh run watch`.
   - Expected: `ts` and `android` jobs green.
   - The `android` job needs T7b's app code; if T7b isn't merged yet, it fails on `:app:assembleDebug`. Re-run after T7b.

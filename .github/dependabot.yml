@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Proposals require human review against AGENTS.md's pinned versions; no auto-merge.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: gradle
+    directory: /apps/android
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
