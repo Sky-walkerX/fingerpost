@@ -27,7 +27,7 @@ The TypeScript gateway validates WebSocket sessions and implements Spark/SAM ada
 | D1-T7b: app shell | **Complete within shell scope** | Permission request/denial announcement, app-settings intent, lifecycle permission refresh, accessible theme and single session action are implemented. Prior user/device acceptance covers all shell checks; debug build passes. | No original shell gap. That acceptance predates the camera changes; the fused camera/TalkBack regression remains explicitly open in T7c. |
 | D1-T7c: camera/fingertip | **Incomplete; performance fails** | CameraX, MediaPipe GPU/two-hand tracking with CPU fallback, overlay, fused transforms and numeric diagnostics are implemented. Model integrity and automated checks pass. Acceptance-tool gaps are fixed, but performance is unchanged. Earlier visual following was user-confirmed. | Required ≥25 result FPS and ≤25 ms task latency is unmet. Optimized portrait/landscape following/disappearance and single TalkBack element still need regression confirmation. Final task-completion step remains open. |
 | D1-T7d: tone prototype | **Complete within prototype scope** | AudioTrack output, thread-safe controls, phase-preserving generator and 5 ms generated ramps implemented. Twelve tone tests pass. User confirmed pitch/pan, click-free toggling, TalkBack operation, no-hand/background silence and prompt perceived response. | No prototype checklist gap. Acoustic latency and actual wall-clock control latency were not instrumentally measured; generated ramps and subjective response do not prove the complete guidance latency budget. |
-| D1-T8: CI/tester preparation | **Complete** | Three weekly Dependabot schedules, 45-minute session protocol, bilingual consent/outreach and unsent organization tracker checked. Required CI jobs passed at the prior recorded revision; the new fixes are awaiting their own remote run. | No T8 checklist gap. Drafts do not satisfy T0's human outreach or later tester booking/trial requirements. |
+| D1-T8: CI/tester preparation | **Complete** | Three weekly Dependabot schedules, 45-minute session protocol, bilingual consent/outreach and unsent organization tracker checked. Both CI jobs pass at audit revision 2480252; original checks and the new Python tooling suite are retained. | No T8 checklist gap. Drafts do not satisfy T0's human outreach or later tester booking/trial requirements. |
 | D2-T1: pulled-forward CI foundation | **Complete; additional prerequisite** | Kotlin models/codec and strict framing implemented; 49 JVM protocol tests pass against shared fixtures and added boundary cases. | No foundation gap. It is not an Android network client. |
 
 The user explicitly deferred unfinished T7c to permit T7d. That exception did not waive performance acceptance or complete Day 1. The CI prerequisite correction is recorded in both day plans and [progress](../progress.md#deviations-from-the-plan).
@@ -40,9 +40,9 @@ The user explicitly deferred unfinished T7c to permit T7d. That exception did no
 | Correct target polygons on at least 8/10 real panel photos | **Not executed** | No Day 1 JPEG dataset or live smoke/quality report. Adapter fixture tests do not establish this result. |
 | ADR-0003 accepted after regional measurement | **Not met** | ADR remains `proposed`, with an empty result section; no regional evidence recorded. |
 | Simulator verified on the Android tablet | **Not verified** | Required physical tablet acceptance has no recorded result. Desktop checks are insufficient. |
-| CI green | **Prior pass; new revision pending** | [Run 40616491789 at 5d002e7](https://github.com/Sky-walkerX/fingerpost/actions/runs/40616491789) passed both jobs. New local fixes retain all original checks and add Python tooling tests; their remote run remains to be checked. |
+| CI green | **Pass** | [Run 40647979193 at 2480252](https://github.com/Sky-walkerX/fingerpost/actions/runs/40647979193): both `ts` and `android` succeed, including the new Python tooling suite. All original checks remain. |
 
-**Exit tally: one previously verified CI pass, one measured tracking failure and three unfulfilled checks. New fixes need their own CI run before closure.**
+**Exit tally: one pass, one measured tracking failure and three unfulfilled checks.**
 
 ## Validation executed for this audit
 
@@ -57,6 +57,8 @@ pnpm --filter @fingerpost/protocol schema
 ./scripts/android.sh :core:guidance:test :core:protocol:test --rerun-tasks --console=plain
 python3 -m unittest discover -s scripts -p 'test_*.py' -v
 bash -n infra/deploy-gateway.sh
+gh run watch 40647979193 --interval 15 --exit-status
+gh run view 40647979193 --json jobs,conclusion,headSha,url
 ```
 
 | Check | Observed result and limit |
@@ -73,7 +75,7 @@ bash -n infra/deploy-gateway.sh
 | Local prerequisites | `.env` absent; no Meta key in the current environment; zero Day 1 JPEGs; gcloud absent on PATH. Sanitized ADB inventory reports zero connected devices. No credential values or device identifiers were retained. |
 | Secret-file check | No forbidden credential/keystore file paths are tracked. This is a filename check, not a comprehensive secret or security audit. No credential contents were read. |
 
-The prior CI result independently confirms its frozen-lockfile install, TS/JVM checks and debug APK assembly. Current local validation covers the fixes above; remote validation of those changes is pending. CI does not currently perform tablet/device acceptance, live model evaluation or app instrumentation tests.
+The exact-revision CI result independently confirms frozen-lockfile install, recursive TS checks, all 27 Python tooling tests, both JVM module tests and debug APK assembly at 2480252. The subsequent evidence update changes documentation only. CI does not currently perform tablet/device acceptance, live model evaluation or app instrumentation tests.
 
 The following evidence was reviewed, **not repeated**: shell acceptance in [day1-app-shell.md](day1-app-shell.md); camera/performance/keep-awake evidence in [day1-device.md](day1-device.md) and [day1-tracking-profile.md](day1-tracking-profile.md); listening acceptance in [day1-tone.md](day1-tone.md). Historical test counts in those reports describe their earlier builds.
 

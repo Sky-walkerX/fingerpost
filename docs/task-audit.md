@@ -33,9 +33,9 @@ The focused audit above contains the latest command executions and their limits.
 | Installed Android shell | Prior install/launch and device authorization verified; not rechecked in the readiness audit |
 | Device accessibility acceptance | User confirmed spoken denial and single session element; TalkBack enabled corroborated through device settings |
 | Camera/settings-return acceptance | User confirmed black session screen after grant/return; CAMERA granted=true and MainActivity resumed corroborated through ADB |
-| Latest verified CI | Both ts and android jobs pass at audited revision 5d002e7; all original checks retained |
+| Latest verified CI | Both ts and android jobs pass at audited revision 2480252; all original checks retained |
 
-CI evidence: [run at audited revision 5d002e7](https://github.com/Sky-walkerX/fingerpost/actions/runs/40616491789). This confirms that exact revision; subsequent documentation changes are not covered by that run.
+CI evidence: [run at audited revision 2480252](https://github.com/Sky-walkerX/fingerpost/actions/runs/40647979193). This confirms that exact revision; subsequent documentation changes are not covered by that run.
 
 ## Day 1: each task
 
@@ -56,7 +56,7 @@ CI evidence: [run at audited revision 5d002e7](https://github.com/Sky-walkerX/fi
 
 ## Day 1 exit gate
 
-One of five exit results passes: CI is green at audited revision 5d002e7. Fingertip performance has a measured failure; correct polygons on at least 8/10 real photos, an accepted region ADR and simulator tablet acceptance remain unfulfilled. A working app shell and green unit tests do not replace these checks.
+One of five exit results passes: CI is green at audited revision 2480252. Fingertip performance has a measured failure; correct polygons on at least 8/10 real photos, an accepted region ADR and simulator tablet acceptance remain unfulfilled. A working app shell and green unit tests do not replace these checks.
 
 ## Planning issues and resolutions
 
