@@ -20,7 +20,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
-| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
+| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | doing | Codex |
 | D1-T7d | Tone prototype | A | T7c | done | Codex |
 | D2-T1 (pulled forward) | Kotlin protocol foundation required by Day 1 CI | A | D1-T2, D1-T7a | done | Codex |
 | D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | done | Codex |
