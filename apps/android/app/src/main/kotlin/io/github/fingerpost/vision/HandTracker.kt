@@ -5,7 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
+import android.graphics.Rect
+import android.graphics.Matrix
 import android.os.SystemClock
 import android.util.Log
 import com.google.mediapipe.framework.image.BitmapImageBuilder
@@ -16,6 +17,8 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import io.github.fingerpost.BuildConfig
+import io.github.fingerpost.camera.AnalysisFrame
+import io.github.fingerpost.guidance.AnalysisFrameTransform
 import io.github.fingerpost.guidance.FrameTransform
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,7 +35,7 @@ data class FingerSample(
 data class TrackingPerformance(val fps: Int = 0, val inferenceMs: Long = 0)
 
 /** All GPU operations share one thread; one in-flight frame bounds bitmap/native memory. */
-class HandTracker(context: Context) {
+class HandTracker(context: Context, private val options: TrackingOptions = TrackingOptions()) {
     private val appContext = context.applicationContext
     private val executor = Executors.newSingleThreadExecutor()
     private val dispatchLock = Any()
@@ -46,7 +49,7 @@ class HandTracker(context: Context) {
     private val mutableUnavailable = MutableStateFlow(false)
     val unavailable: StateFlow<Boolean> = mutableUnavailable.asStateFlow()
     private var landmarker: HandLandmarker? = null
-    private var delegate = Delegate.GPU
+    private var delegate = options.delegate
     private var generation = 0
     private var lastTimestamp = -1L
     private var pending: PendingFrame? = null
@@ -56,7 +59,8 @@ class HandTracker(context: Context) {
 
     private data class PendingFrame(
         val width: Int, val height: Int,
-        val transform: FrameTransform, val timestamp: Long, val startedMs: Long,
+        val transform: FrameTransform, val timestamp: Long, val startedNs: Long,
+        val prepareNs: Long, var submitNs: Long = 0,
     )
 
     private class ModelInput {
@@ -82,12 +86,18 @@ class HandTracker(context: Context) {
             .setBaseOptions(BaseOptions.builder().setModelAssetPath("hand_landmarker.task")
                 .setDelegate(delegate).build())
             .setRunningMode(RunningMode.LIVE_STREAM)
-            .setNumHands(2)
+            .setNumHands(options.maxHands)
             .setMinHandDetectionConfidence(0.5f)
             .setMinHandPresenceConfidence(0.5f)
             .setMinTrackingConfidence(0.5f)
-            .setResultListener { result, _ ->
-                dispatch { if (token == generation) onResult(result) }
+            .setResultListener { result, outputImage ->
+                val callbackNs = SystemClock.elapsedRealtimeNanos()
+                // MediaPipe 1.1.1 creates a distinct bitmap for each callback and does not close it.
+                try {
+                    dispatch { if (token == generation) onResult(result, callbackNs) }
+                } finally {
+                    outputImage.close()
+                }
             }
             .setErrorListener {
                 dispatch { if (token == generation) fallbackToCpu() }
@@ -98,36 +108,65 @@ class HandTracker(context: Context) {
 
     /** Takes ownership even when dropping a frame. No camera bitmap leaves the device. */
     fun submit(upright: Bitmap, tsMs: Long) {
+        submit(AnalysisFrame(upright, Rect(0, 0, upright.width, upright.height), 0, tsMs))
+    }
+
+    /** Fuses crop, rotation and downscale without allocating a full-sized upright bitmap. */
+    fun submit(frame: AnalysisFrame) {
+        val bitmap = frame.bitmap
         synchronized(dispatchLock) {
             if (closed.get() || !busy.compareAndSet(false, true)) {
-                upright.recycle()
+                bitmap.recycle()
                 return
             }
             executor.execute {
+                val prepareStartNs = SystemClock.elapsedRealtimeNanos()
                 try {
                     val tracker = landmarker
                     if (closed.get() || tracker == null) {
                         busy.set(false)
                         return@execute
                     }
-                    val transform = FrameTransform.fitCenter(upright.width, upright.height, MODEL_WIDTH, MODEL_HEIGHT)
+                    val crop = frame.crop
+                    val geometry = AnalysisFrameTransform(crop.left, crop.top, crop.width(), crop.height(),
+                        frame.rotationDegrees, MODEL_WIDTH, MODEL_HEIGHT)
+                    val transform = geometry.letterbox
                     val input = modelInput ?: ModelInput().also { modelInput = it }
+                    val source = floatArrayOf(crop.left.toFloat(), crop.top.toFloat(),
+                        crop.right.toFloat(), crop.top.toFloat(), crop.left.toFloat(), crop.bottom.toFloat())
+                    val destination = FloatArray(6)
+                    for (index in 0..2) {
+                        val point = geometry.rawToModel(source[index * 2], source[index * 2 + 1])
+                        destination[index * 2] = point.x
+                        destination[index * 2 + 1] = point.y
+                    }
+                    val matrix = Matrix()
+                    check(matrix.setPolyToPoly(source, 0, destination, 0, 3))
                     // The single in-flight gate prevents mutation while MediaPipe still reads it.
                     input.canvas.apply {
                         drawColor(Color.BLACK)
-                        drawBitmap(upright, null, RectF(transform.offsetX, transform.offsetY,
-                            transform.offsetX + upright.width * transform.scale,
-                            transform.offsetY + upright.height * transform.scale), paint)
+                        val saved = save()
+                        try {
+                            clipRect(transform.offsetX, transform.offsetY,
+                                transform.offsetX + geometry.uprightWidth * transform.scale,
+                                transform.offsetY + geometry.uprightHeight * transform.scale)
+                            drawBitmap(bitmap, matrix, paint)
+                        } finally {
+                            restoreToCount(saved)
+                        }
                     }
-                    val timestamp = maxOf(tsMs, lastTimestamp + 1)
+                    val timestamp = maxOf(frame.timestampMs, lastTimestamp + 1)
                     lastTimestamp = timestamp
-                    pending = PendingFrame(upright.width, upright.height, transform, timestamp,
-                        SystemClock.elapsedRealtime())
+                    val startedNs = SystemClock.elapsedRealtimeNanos()
+                    val pendingFrame = PendingFrame(geometry.uprightWidth, geometry.uprightHeight, transform, timestamp,
+                        startedNs, startedNs - prepareStartNs)
+                    pending = pendingFrame
                     tracker.detectAsync(input.image, timestamp)
+                    pendingFrame.submitNs = SystemClock.elapsedRealtimeNanos() - startedNs
                 } catch (_: RuntimeException) {
                     fallbackToCpu()
                 } finally {
-                    upright.recycle()
+                    bitmap.recycle()
                 }
             }
         }
@@ -139,11 +178,12 @@ class HandTracker(context: Context) {
 
     fun isReady(): Boolean = !closed.get() && !busy.get() && !mutableUnavailable.value
 
-    private fun onResult(result: HandLandmarkerResult) {
+    private fun onResult(result: HandLandmarkerResult, callbackNs: Long) {
         val frame = pending ?: return
         if (result.timestampMs() != frame.timestamp || closed.get()) return
         val now = SystemClock.elapsedRealtime()
-        val inferenceMs = now - frame.startedMs
+        val inferenceMs = (callbackNs - frame.startedNs) / 1_000_000
+        val dispatchMs = (SystemClock.elapsedRealtimeNanos() - callbackNs) / 1_000_000
         mutableSamples.value = result.landmarks().mapIndexed { index, landmarks ->
             val tip = frame.transform.unmap(landmarks[8].x() * MODEL_WIDTH, landmarks[8].y() * MODEL_HEIGHT)
             val dip = frame.transform.unmap(landmarks[7].x() * MODEL_WIDTH, landmarks[7].y() * MODEL_HEIGHT)
@@ -154,8 +194,9 @@ class HandTracker(context: Context) {
         while (results.isNotEmpty() && results.first().first <= now - 1_000) results.removeFirst()
         mutablePerformance.value = TrackingPerformance(results.size, inferenceMs)
         if (BuildConfig.DEBUG && now - lastLogMs >= 1_000) {
-            Log.i(TAG, "delegate=$delegate fps=${results.size} inferenceMs=$inferenceMs " +
-                "maxMs=${results.maxOf { it.second }} hands=${mutableSamples.value.size}")
+            Log.i(TAG, "delegate=$delegate maxHands=${options.maxHands} fps=${results.size} inferenceMs=$inferenceMs " +
+                "maxMs=${results.maxOf { it.second }} hands=${mutableSamples.value.size} " +
+                "prepareMs=${frame.prepareNs / 1_000_000} submitMs=${frame.submitNs / 1_000_000} callbackMs=$dispatchMs")
             lastLogMs = now
         }
         releasePending()

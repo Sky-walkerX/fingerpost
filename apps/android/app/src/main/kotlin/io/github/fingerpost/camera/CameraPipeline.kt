@@ -5,9 +5,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -22,6 +25,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import io.github.fingerpost.BuildConfig
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -33,6 +37,7 @@ class CameraPipeline(
     private val onFrame: (upright: Bitmap, tsMs: Long) -> Unit,
     private val onError: () -> Unit = {},
     private val shouldAnalyze: () -> Boolean = { true },
+    private val onAnalysisFrame: ((AnalysisFrame) -> Unit)? = null,
 ) {
     private val appContext = context.applicationContext
     private val mainExecutor = ContextCompat.getMainExecutor(appContext)
@@ -44,6 +49,11 @@ class CameraPipeline(
     private var analysis: ImageAnalysis? = null
     private var generation = 0
     private var closed = false
+    private var windowStartMs = 0L
+    private var received = 0
+    private var converted = 0
+    private var conversionMaxNs = 0L
+    private var rotationMaxNs = 0L
 
     private val layoutListener = View.OnLayoutChangeListener { _, left, top, right, bottom,
         oldLeft, oldTop, oldRight, oldBottom ->
@@ -91,18 +101,32 @@ class CameraPipeline(
                         .build()
                     cameraPreview.setSurfaceProvider(previewView.surfaceProvider)
                     cameraAnalysis.setAnalyzer(executor) { proxy ->
+                        val arrivedNs = SystemClock.elapsedRealtimeNanos()
+                        if (windowStartMs == 0L) windowStartMs = arrivedNs / 1_000_000
+                        received++
                         var source: Bitmap? = null
                         var upright: Bitmap? = null
                         try {
                             if (running.get() && shouldAnalyze()) {
                                 source = proxy.toBitmap()
+                                val convertedNs = SystemClock.elapsedRealtimeNanos()
                                 val crop = proxy.cropRect
-                                val matrix = Matrix().apply { postRotate(proxy.imageInfo.rotationDegrees.toFloat()) }
-                                upright = Bitmap.createBitmap(source, crop.left, crop.top, crop.width(), crop.height(), matrix, true)
-                                if (source !== upright) source.recycle()
-                                source = null
-                                onFrame(upright, proxy.imageInfo.timestamp / 1_000_000)
-                                upright = null
+                                conversionMaxNs = maxOf(conversionMaxNs, convertedNs - arrivedNs)
+                                converted++
+                                val rawReceiver = onAnalysisFrame
+                                if (rawReceiver != null) {
+                                    rawReceiver(AnalysisFrame(source, Rect(crop), proxy.imageInfo.rotationDegrees,
+                                        proxy.imageInfo.timestamp / 1_000_000))
+                                    source = null
+                                } else {
+                                    val matrix = Matrix().apply { postRotate(proxy.imageInfo.rotationDegrees.toFloat()) }
+                                    upright = Bitmap.createBitmap(source, crop.left, crop.top, crop.width(), crop.height(), matrix, true)
+                                    rotationMaxNs = maxOf(rotationMaxNs, SystemClock.elapsedRealtimeNanos() - convertedNs)
+                                    if (source !== upright) source.recycle()
+                                    source = null
+                                    onFrame(upright, proxy.imageInfo.timestamp / 1_000_000)
+                                    upright = null
+                                }
                             }
                         } catch (_: RuntimeException) {
                             mainExecutor.execute {
@@ -115,6 +139,16 @@ class CameraPipeline(
                             upright?.recycle()
                             source?.takeUnless { it.isRecycled }?.recycle()
                             proxy.close()
+                            val nowMs = SystemClock.elapsedRealtime()
+                            if (BuildConfig.DEBUG && nowMs - windowStartMs >= 1_000) {
+                                Log.i("FingerpostCamera", "windowMs=${nowMs - windowStartMs} received=$received converted=$converted " +
+                                    "conversionMaxMs=${conversionMaxNs / 1_000_000} rotationMaxMs=${rotationMaxNs / 1_000_000}")
+                                windowStartMs = nowMs
+                                received = 0
+                                converted = 0
+                                conversionMaxNs = 0
+                                rotationMaxNs = 0
+                            }
                         }
                     }
                     provider = cameraProvider

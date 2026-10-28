@@ -390,6 +390,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 **Files:**
 - Create `app/src/main/kotlin/io/github/fingerpost/camera/CameraPipeline.kt`.
 - Create `app/src/main/kotlin/io/github/fingerpost/vision/HandTracker.kt`.
+- Performance follow-up: `camera/AnalysisFrame.kt`, `vision/TrackingOptions.kt`, JVM `AnalysisFrameTransform` + tests, and the optional `scripts/profile-android-tracking.py` diagnostic CLI + tests.
 - Modify `ui/SessionScreen.kt`.
 - Asset: download `app/src/main/assets/hand_landmarker.task` from `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`.
   - SHA-256 **`fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1`**, 7 819 105 bytes.
@@ -403,6 +404,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - `fun submit(upright: Bitmap, tsMs: Long)`;
   - `fun close()`.
 - `class CameraPipeline(context, lifecycleOwner, previewView: PreviewView, onFrame: (upright: Bitmap, tsMs: Long) -> Unit)`, with `start()` and `stop()`.
+  - Performance follow-up preserves this callback and adds optional raw `AnalysisFrame` delivery. The tracker can combine crop, clockwise rotation and downscale directly into 640×480 without a full-size rotated intermediate, then publish the same upright sample coordinates. Distinct MediaPipe callback output images are closed; the reusable input image is retained until teardown.
 
 **Implementation notes (APIs checked against MediaPipe 1.1.1 and CameraX 1.6):**
 ```kotlin
@@ -441,15 +443,17 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
 - **Debug text:** a top-left label `"%d fps · %d ms".format(fps, inferenceMs)`, where fps is a 1-second moving count of results. Mark it `invisibleToUser()` for TalkBack.
 
 - [x] **Step 1: Add the model asset** and check its checksum: `shasum -a 256 app/src/main/assets/hand_landmarker.task`. Verified pinned SHA-256 and 7,819,105 bytes on 2026-10-28; recorded in apps/android/ASSETS.md.
-- [x] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay. Uses guidance-spec §3's 640×480 aspect-preserving letterbox; six projection tests added red-first, then all 18 JVM tests pass. Build and lint pass.
-- [x] **Step 3: Build and install.** Run `./gradlew :app:installDebug`. Final optimized APK installed and launched successfully on 2026-10-28.
+- [x] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay. Uses guidance-spec §3's 640×480 aspect-preserving letterbox; six projection and seven fused-transform tests added red-first. All 25 JVM tests and 18 numeric-tool tests pass. Build and lint pass; visible camera preview keeps awake.
+- [x] **Step 3: Build and install.** Run `./gradlew :app:installDebug`. Final fused/keep-awake APK installed and launched successfully on the comparison test phone on 2026-10-28; multiple-device install used privately targeted adb.
 - [ ] **Step 4: Check on the device.**
-  - [x] The dot follows the index fingertip in portrait and landscape and disappears when the hand leaves view. User confirmed on 2026-10-28.
+  - [x] The original overlay follows the index fingertip in portrait and landscape and disappears when the hand leaves view. User confirmed on 2026-10-28. Fused-build regression confirmation remains pending below.
   - [ ] The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
   - [x] Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
-  - **Blocked (2026-10-28):** two GPU runs miss the target; optimized run 8–11 fps / 45–92 ms after warm-up. Visual/orientation acceptance passed; performance and camera-screen TalkBack recheck remain pending. See device report and progress Blocker; do not start T7d.
+  - [ ] Recheck visual following/disappearance in both orientations and the single TalkBack element after the fused-pipeline change.
+  - **Blocked (2026-10-28):** original runs missed the target. Resumed tests on a comparison phone still fail: CPU/two hands 11–14 fps / 45–61 ms with no hands; GPU/two hands 10–12 fps / 43–86 ms with a pointing hand consistently detected. Production stays GPU/two hands. See docs/evals/day1-tracking-profile.md and progress Blockers; do not start T7d.
 - [ ] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`
+  - Implementation and performance-investigation checkpoints are saved separately; this completion step remains open until device acceptance passes.
 
 ### Task D1-T7d: tone prototype
 **Files:**

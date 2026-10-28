@@ -1,0 +1,229 @@
+{
+  "date": "2026-10-28",
+  "note": "Numeric performance metadata only. Inference statistics summarize periodic log samples, not every frame. Failed/interrupted captures are excluded. No device identifiers or camera content.",
+  "tested_comparison_apk_sha256": "4d09555a0ea630bedb6d97ed7c6f1553e4c1836048083abdc2b67320252df901",
+  "profiles": [
+    {
+      "device_label": "original-test-phone",
+      "scene": "no hands; before fused transform",
+      "result": {
+        "actual_configuration": {
+          "delegate": "CPU",
+          "max_hands": 2
+        },
+        "budget_pass": null,
+        "camera": {
+          "conversion_max_ms": 5,
+          "converted_fps": {
+            "max": 8.595988538681949,
+            "median": 6.796116504854369,
+            "min": 5.774783445620789,
+            "p95": 8.595988538681949
+          },
+          "rotation_max_ms": 28,
+          "sample_count": 15,
+          "source_fps": {
+            "max": 20.833333333333332,
+            "median": 20.0,
+            "min": 19.41747572815534,
+            "p95": 20.833333333333332
+          }
+        },
+        "latency_sampling_note": "Logged latency samples are not per-frame distributions. maxMs is the maximum within each logged rolling one-second window; p95 uses nearest rank over the retained log samples.",
+        "measurement": {
+          "seconds": 15.0,
+          "warmup_seconds": 5.0
+        },
+        "thermal_status": {
+          "after": 1,
+          "before": 1
+        },
+        "tracker": {
+          "fps": {
+            "max": 10,
+            "min": 7
+          },
+          "observed_hand_counts": [
+            0
+          ],
+          "sample_count": 14,
+          "sampled_callback_ms": {
+            "max": 0,
+            "median": 0.0,
+            "min": 0,
+            "p95": 0
+          },
+          "sampled_inference_ms": {
+            "max": 110,
+            "median": 74.0,
+            "min": 55,
+            "p95": 110
+          },
+          "sampled_prepare_ms": {
+            "max": 12,
+            "median": 1.5,
+            "min": 1,
+            "p95": 12
+          },
+          "sampled_submit_ms": {
+            "max": 5,
+            "median": 2.0,
+            "min": 1,
+            "p95": 5
+          },
+          "window_inference_max_ms": 124
+        }
+      }
+    },
+    {
+      "device_label": "comparison-test-phone",
+      "scene": "no hands; fused transform and keep-awake",
+      "result": {
+        "actual_configuration": {
+          "delegate": "CPU",
+          "max_hands": 2
+        },
+        "awake_after": true,
+        "awake_before": true,
+        "budget_pass": false,
+        "camera": {
+          "conversion_max_ms": 14,
+          "converted_fps": {
+            "max": 14.880952380952381,
+            "median": 11.928429423459244,
+            "min": 9.980039920159681,
+            "p95": 14.880952380952381
+          },
+          "rotation_max_ms": 0,
+          "sample_count": 15,
+          "source_fps": {
+            "max": 30.18500486854917,
+            "median": 29.940119760479043,
+            "min": 29.693486590038315,
+            "p95": 30.18500486854917
+          }
+        },
+        "camera_sampling_note": "source_fps measures analyzer-delivery FPS, not sensor FPS. CameraX frame drops and RGBA conversion occur before analyzer delivery.",
+        "latency_sampling_note": "Logged latency samples are not per-frame distributions. maxMs is the maximum within each logged rolling one-second window; p95 uses nearest rank over the retained log samples.",
+        "measurement": {
+          "seconds": 15.0,
+          "warmup_seconds": 5.0
+        },
+        "thermal_status": {
+          "after": 1,
+          "before": 1
+        },
+        "tracker": {
+          "fps": {
+            "max": 14,
+            "min": 11
+          },
+          "observed_hand_counts": [
+            0
+          ],
+          "sample_count": 14,
+          "sampled_callback_ms": {
+            "max": 0,
+            "median": 0.0,
+            "min": 0,
+            "p95": 0
+          },
+          "sampled_inference_ms": {
+            "max": 61,
+            "median": 52.0,
+            "min": 45,
+            "p95": 61
+          },
+          "sampled_prepare_ms": {
+            "max": 9,
+            "median": 4.0,
+            "min": 2,
+            "p95": 9
+          },
+          "sampled_submit_ms": {
+            "max": 5,
+            "median": 1.0,
+            "min": 0,
+            "p95": 5
+          },
+          "window_inference_max_ms": 67
+        }
+      }
+    },
+    {
+      "device_label": "comparison-test-phone",
+      "scene": "one pointing hand; fused transform and keep-awake",
+      "result": {
+        "actual_configuration": {
+          "delegate": "GPU",
+          "max_hands": 2
+        },
+        "awake_after": true,
+        "awake_before": true,
+        "budget_pass": false,
+        "camera": {
+          "conversion_max_ms": 11,
+          "converted_fps": {
+            "max": 11.661807580174926,
+            "median": 10.65891472868217,
+            "min": 9.66183574879227,
+            "p95": 11.661807580174926
+          },
+          "rotation_max_ms": 0,
+          "sample_count": 15,
+          "source_fps": {
+            "max": 30.784508440913605,
+            "median": 29.893924783027966,
+            "min": 29.069767441860463,
+            "p95": 30.784508440913605
+          }
+        },
+        "camera_sampling_note": "source_fps measures analyzer-delivery FPS, not sensor FPS. CameraX frame drops and RGBA conversion occur before analyzer delivery.",
+        "latency_sampling_note": "Logged latency samples are not per-frame distributions. maxMs is the maximum within each logged rolling one-second window; p95 uses nearest rank over the retained log samples.",
+        "measurement": {
+          "seconds": 15.0,
+          "warmup_seconds": 5.0
+        },
+        "thermal_status": {
+          "after": 1,
+          "before": 1
+        },
+        "tracker": {
+          "fps": {
+            "max": 12,
+            "min": 10
+          },
+          "observed_hand_counts": [
+            1
+          ],
+          "sample_count": 14,
+          "sampled_callback_ms": {
+            "max": 0,
+            "median": 0.0,
+            "min": 0,
+            "p95": 0
+          },
+          "sampled_inference_ms": {
+            "max": 86,
+            "median": 59.0,
+            "min": 43,
+            "p95": 86
+          },
+          "sampled_prepare_ms": {
+            "max": 9,
+            "median": 4.0,
+            "min": 2,
+            "p95": 9
+          },
+          "sampled_submit_ms": {
+            "max": 3,
+            "median": 1.0,
+            "min": 0,
+            "p95": 3
+          },
+          "window_inference_max_ms": 87
+        }
+      }
+    }
+  ]
+}

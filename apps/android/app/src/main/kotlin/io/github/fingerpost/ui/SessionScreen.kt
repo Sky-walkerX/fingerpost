@@ -35,10 +35,11 @@ import io.github.fingerpost.R
 import io.github.fingerpost.camera.CameraPipeline
 import io.github.fingerpost.guidance.FrameTransform
 import io.github.fingerpost.vision.HandTracker
+import io.github.fingerpost.vision.TrackingOptions
 import java.util.Locale
 
 @Composable
-fun SessionScreen(onToggle: () -> Unit) {
+fun SessionScreen(onToggle: () -> Unit, trackingOptions: TrackingOptions = TrackingOptions()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val description = stringResource(R.string.session_description)
@@ -48,6 +49,7 @@ fun SessionScreen(onToggle: () -> Unit) {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            keepScreenOn = true
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             isClickable = false
             isFocusable = false
@@ -56,7 +58,7 @@ fun SessionScreen(onToggle: () -> Unit) {
     var tracker by remember { mutableStateOf<HandTracker?>(null) }
     var cameraUnavailable by remember { mutableStateOf(false) }
 
-    DisposableEffect(previewView, lifecycleOwner) {
+    DisposableEffect(previewView, lifecycleOwner, trackingOptions) {
         var pipeline: CameraPipeline? = null
         fun stop() {
             pipeline?.close()
@@ -68,11 +70,12 @@ fun SessionScreen(onToggle: () -> Unit) {
             when (event) {
                 Lifecycle.Event.ON_START -> {
                     cameraUnavailable = false
-                    val handTracker = HandTracker(context)
+                    val handTracker = HandTracker(context, trackingOptions)
                     tracker = handTracker
                     pipeline = CameraPipeline(context, lifecycleOwner, previewView, handTracker::submit,
                         onError = { cameraUnavailable = true },
-                        shouldAnalyze = handTracker::isReady).also { it.start() }
+                        shouldAnalyze = handTracker::isReady,
+                        onAnalysisFrame = handTracker::submit).also { it.start() }
                 }
                 Lifecycle.Event.ON_STOP -> stop()
                 else -> Unit

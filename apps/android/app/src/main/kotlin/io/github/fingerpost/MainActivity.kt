@@ -37,11 +37,13 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.fingerpost.ui.FingerpostTheme
 import io.github.fingerpost.ui.SessionScreen
+import io.github.fingerpost.vision.TrackingOptions
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val trackingOptions = TrackingOptions.fromIntent(intent)
         setContent {
             FingerpostTheme {
                 var cameraGranted by remember { mutableStateOf(hasCameraPermission()) }
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     if (cameraGranted) {
                         // D1-T7d connects this action to the tone output.
-                        SessionScreen(onToggle = {})
+                        SessionScreen(onToggle = {}, trackingOptions = trackingOptions)
                     } else {
                         Column(
                             modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),

@@ -2,14 +2,16 @@
 
 **D1-T7c is blocked, not complete.** Device label: connected Android test phone. No model or serial is recorded.
 
+**Latest update:** user resumed profiling and supplied a comparison test phone. Fused transforms, callback-image cleanup and camera keep-awake are installed; all 25 guidance tests and 18 diagnostic-tool tests pass. The valid comparison GPU/two-hand run detects one pointing hand but reaches only 10–12 FPS / 43–86 ms (rolling max 87 ms). See [resumed investigation](day1-tracking-profile.md) for complete measurements and limitations. Earlier acceptance below is retained as evidence for the earlier build; the fused build still needs a visual/TalkBack regression check.
+
 ## Implemented and verified
 
 - The public Hand Landmarker bundle matches the plan's SHA-256 and 7,819,105-byte size. Its copy inside the APK also matches. See [ASSETS.md](../../apps/android/ASSETS.md).
-- CameraX binds the rear-camera preview and RGBA analysis to the activity lifecycle, uses a shared viewport, crops/rotates into upright pixels, and closes each image proxy. Display/layout changes update rotation and viewport binding.
+- CameraX binds the rear-camera preview and RGBA analysis to the activity lifecycle, uses a shared viewport, and closes each image proxy. The optimized tracker fuses crop/rotation/downscale into its upright letterboxed input while preserving original upright sample dimensions. Display/layout changes update rotation and viewport binding.
 - HandLandmarker runs LIVE_STREAM on one GPU thread, tracks up to two hands, maps tip/DIP coordinates out of a 640×480 letterbox, and provides the planned sample fields. Initialization/runtime GPU errors attempt CPU fallback once per tracker. CPU fallback is implemented but was not triggered during these GPU runs.
 - A yellow 14 dp fingertip dot and debug FPS/latency label are rendered over the preview. Their children are hidden from accessibility; the session retains one TalkBack action. Camera-screen TalkBack acceptance after adding the preview still needs device confirmation.
 - Only one frame can be in flight. The optimized build reuses its model bitmap/MPImage and avoids camera bitmap conversion while the tracker is busy. Lifecycle stop closes the tracker and camera use cases.
-- `./scripts/android.sh :core:guidance:test :app:test :app:assembleDebug :app:lintDebug --console=plain` passes. Guidance: **18 tests, 0 failures/errors/skips**. App unit-test task has no source cases. Lint: 0 errors, 4 advisories (planned target SDK, backup metadata, launcher icon, bitmap KTX suggestion). No checks were disabled.
+- `./scripts/android.sh :core:guidance:test :app:test :app:assembleDebug :app:lintDebug --console=plain` passes. Guidance: **25 tests, 0 failures/errors/skips**. App unit-test task has no source cases. Lint: 0 errors, 4 advisories (planned target SDK, backup metadata, launcher icon, bitmap KTX suggestion). No checks were disabled.
 - `./scripts/android.sh :app:installDebug --console=plain` succeeds after USB reconnection. Launch returns `Status: ok`. Final optimized APK was installed and launched.
 - **Visual acceptance passed (2026-10-28):** the user confirmed that the yellow dot follows the index fingertip in portrait and landscape and disappears when the hand leaves view. This is direct on-device confirmation; no camera image was exported.
 
@@ -30,6 +32,7 @@ Only the app's numeric tracking logs were read. No camera screenshot, recording,
 
 ## Remaining acceptance and next action
 
+- Recheck visual following/disappearance in both orientations on the fused build. Earlier visual acceptance passed before this optimization.
 - Confirm the added preview/debug content does not create extra TalkBack elements.
 - Resolve the performance shortfall, then rerun the documented build/test/install and device acceptance. Do not reduce the target, change pinned dependencies, or claim a faster phone is necessary without investigation.
-- Two unsuccessful performance attempts are recorded. AGENTS.md §9 requires stopping further attempts and task progression here. T7d remains unstarted.
+- The original two failed probes and two resumed comparison failures are recorded. AGENTS.md §9 requires stopping further attempts and task progression here. T7d remains unstarted.

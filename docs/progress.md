@@ -18,7 +18,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T6 | Kiosk simulator v0 | C | T1 | blocked | Codex |
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
-| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | doing | Codex |
+| D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
 | D1-T7d | Tone prototype | A | T7c | todo | |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
 
@@ -62,7 +62,54 @@ Agents and people both update this file. Keep each line short. Status values are
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
-- D1-T7c · Device performance gate failed twice. GPU run 1 measured roughly 6–16 fps / 43–180 ms after startup. Reusing the model input bitmap, skipping conversion while inference is busy, and backgrounding the app between builds did not resolve it: run 2 measured 8–11 fps / 45–92 ms after five warm-up windows (worst window latency 96 ms). Required: ≥25 fps and ≤25 ms. Light thermal throttling was observed during run 1; its contribution is unproven. User confirmed visual fingertip following in both orientations and disappearance when the hand leaves view (2026-10-28); camera-screen TalkBack recheck remains pending. Stop further attempts/task progression under AGENTS.md §9; resume with a controlled device-performance investigation. Details: [device report](evals/day1-device.md).
+- D1-T7c · User resumed controlled profiling and supplied a comparison phone on 2026-10-28. Added fused crop/rotate/resize, callback-image cleanup, keep-awake and numeric diagnostics. Two valid comparison checks still fail: CPU/two hands with no hand visible: 11–14 fps / 45–61 ms, rolling max 67 ms; GPU/two hands with one pointing hand consistently detected: 10–12 fps / 43–86 ms, rolling max 87 ms. Required: ≥25 fps / ≤25 ms. Both full comparison runs reported thermal status 1, so an unthrottled comparison remains missing. Model-task latency remains high; callback queue delay is negligible. Production defaults remain GPU/two hands. Prior visual acceptance passed on the earlier build; fused-build visual regression and camera-screen TalkBack recheck remain pending. Stop further performance attempts/task progression under AGENTS.md §9 after the two resumed budget failures. Next: controlled cold/native-task investigation. See [profiling report](evals/day1-tracking-profile.md) and [device report](evals/day1-device.md). Original failed probes are retained below.
+
+<details>
+<summary>D1-T7c: resumed comparison commands and final 30 lines of GPU/two-hand output</summary>
+
+```bash
+python3 scripts/profile-android-tracking.py --serial-file /tmp/fingerpost-comparison-device --delegate CPU --hands 2 --warmup-seconds 5 --seconds 15 --check-budget > /tmp/fingerpost-profile-new-cpu2.json
+python3 scripts/profile-android-tracking.py --serial-file /tmp/fingerpost-comparison-device --delegate GPU --hands 2 --warmup-seconds 5 --seconds 15 --check-budget > /tmp/fingerpost-profile-new-gpu2-one-visible.json
+```
+
+Both exit 1 (`budget_pass: false`); complete numeric output is saved in docs/evals/day1-tracking-profile-data.json. Last 30 lines of the GPU/two-hand JSON:
+
+```text
+      1
+    ],
+    "sample_count": 14,
+    "sampled_callback_ms": {
+      "max": 0,
+      "median": 0.0,
+      "min": 0,
+      "p95": 0
+    },
+    "sampled_inference_ms": {
+      "max": 86,
+      "median": 59.0,
+      "min": 43,
+      "p95": 86
+    },
+    "sampled_prepare_ms": {
+      "max": 9,
+      "median": 4.0,
+      "min": 2,
+      "p95": 9
+    },
+    "sampled_submit_ms": {
+      "max": 3,
+      "median": 1.0,
+      "min": 0,
+      "p95": 3
+    },
+    "window_inference_max_ms": 87
+  }
+}
+```
+
+</details>
+
+- D1-T7c / diagnostic capture · `python3 scripts/profile-android-tracking.py --serial-file /tmp/fingerpost-comparison-device --delegate GPU --hands 1 --warmup-seconds 5 --seconds 15 > /tmp/fingerpost-profile-new-gpu1-one-visible.json` emitted `{"error": "App log stream ended before profiling completed"}` (exit 1). An earlier default-buffer capture had the same interruption; main-buffer selection helped but did not eliminate it. App remained running afterward. Interrupted captures are discarded; no valid one-hand result or proof of the repeated-palm-detection hypothesis. Resolve log capture reliability before further diagnostics. A separate asleep-phone attempt was discarded; visible-preview keep-awake and CLI awake preflight were added, and retained runs stayed awake.
 
 <details>
 <summary>D1-T7c: exact second-probe command and last 30 lines (all available)</summary>
@@ -160,16 +207,19 @@ _(task id · what changed · why · who approved)_
 - D1-T7b · First app build required compile SDK >=37 for pinned Compose/Core artifacts. Applied the task’s first-build config-fix provision: compileSdk 37, minimum SDK 29 and target SDK 36. Pinned dependencies and build checks retained; design technical default and launcher updated. Future asset applications must retain this correction.
 
 - D1-T7c · Followed authoritative guidance-spec §3's 640×480 input instead of the plan's fixed 640-pixel width: aspect-preserving letterbox and inverse mapping also handle portrait frames without stretching or exceeding that input size. Six JVM projection tests added test-first; detector defaults now recorded in the spec. No dependency changes.
+- D1-T7c · Resumed profiling adds an optional raw AnalysisFrame callback while preserving the planned upright Bitmap callback and sample coordinate space. Crop/rotation/downscale now share one draw, avoiding the measured full-resolution intermediate. Debug-only delegate/hand-count overrides support controlled comparisons; release overrides are ignored. Added an optional standard-library Python diagnostic tool, not an app/build dependency. No pinned versions, guidance thresholds or production hand limit changed.
 
 
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
-| 2026-10-28 | Kotlin guidance tests | 18 passed, 0 failures/skips (12 existing + 6 projection) | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | Kotlin guidance tests | 25 passed, 0 failures/skips (12 original + 6 projection + 7 fused-transform) | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | Numeric profiling tool | 18 synthetic tests pass; no device content/identifiers in output | scripts/test_profile_android_tracking.py |
 | 2026-10-28 | TypeScript tests | 103 passed (protocol 46, gateway 43, web 14) | pnpm -r test |
 | 2026-10-28 | Gateway container | expected health JSON; UID 1000 | rootless Podman build/run |
 | 2026-10-28 | Android shell | build/install/launch pass; permission and TalkBack device acceptance confirmed | apps/android/app/build/outputs/apk/debug/app-debug.apk |
 | 2026-10-28 | Android tracking, second GPU run | 8–11 fps; sampled inference 45–92 ms; worst window 96 ms; performance gate FAIL | docs/evals/day1-device.md |
+| 2026-10-28 | Comparison phone, optimized GPU/two hands | one pointing hand detected; 10–12 fps / 43–86 ms; rolling max 87 ms; gate FAIL | docs/evals/day1-tracking-profile.md |
 
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
@@ -192,3 +242,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T7b complete: user confirmed spoken denial, app-settings navigation, permission grant/return to the black session screen, and one TalkBack session element with the required description. ADB corroborates CAMERA granted=true, TalkBack enabled and MainActivity resumed. Current guidance/test/build commands pass; app unit-test task has no source cases. Evidence: docs/evals/day1-app-shell.md. D1-T7c has not started.
 - 2026-10-28: D1-T7c implemented and installed: pinned model checksum/size verified, CameraX lifecycle/rotation/crop pipeline, two-hand GPU tracker with CPU fallback, fingertip overlay and numeric debug telemetry. Six projection tests confirmed red before implementation; all 18 guidance tests, app:test (no source cases), assembleDebug and lintDebug pass. APK contains the verified model. Two GPU performance runs missed the gate; task blocked with exact probe/output above. Visual acceptance remains pending; T7d not started. No camera frames captured or uploaded.
 - 2026-10-28: D1-T7c visual acceptance passed: user confirmed the dot follows the index fingertip in portrait/landscape and disappears when the hand leaves view. Updated plan, device report, README and audit. Performance gate and camera-screen TalkBack recheck remain open; task stays blocked. Documentation-only update; no code or new performance measurements.
+- 2026-10-28: User resumed D1-T7c profiling and supplied a comparison phone. Implemented fused crop/rotate/letterbox, distinct callback-image cleanup, visible camera keep-awake, debug-only comparison options and bounded numeric profiling CLI with private device targeting. Red-first checks: 7 new geometry tests and profiling tests; all 25 JVM +18 Python tests pass; app:test (no source cases), assembleDebug and lintDebug pass. Final APK installed/opened on the comparison phone. Valid CPU/two-hand and GPU/two-hand pointing-hand captures miss the unchanged budget; interrupted streams and asleep-phone runs discarded. Source/driver/native-task cause remains unresolved. Evidence in docs/evals/day1-tracking-profile.md and sanitized JSON. Task blocked; T7d not started; no camera content exported.

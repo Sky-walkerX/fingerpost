@@ -28,13 +28,13 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
 | D1-T7a: Android foundation | Complete; Gradle project and cue math implemented; all 12 JVM guidance tests pass. |
 | D1-T7b: Android shell | Complete; debug APK builds, installs and launches. User-confirmed spoken denial, settings return, black session screen and single TalkBack element; permission state corroborated through ADB. Camera tracking and tone output come in T7c/T7d. |
-| D1-T7c: camera/fingertip | Implemented and installed; model checksum, 18 guidance tests, build and lint pass. User confirmed fingertip following in portrait/landscape and disappearance when the hand leaves view. Blocked: measured 8–11 fps / 45–92 ms after warm-up against ≥25 fps / ≤25 ms; camera-screen TalkBack recheck pending. See [`device report`](docs/evals/day1-device.md). |
+| D1-T7c: camera/fingertip | Implemented and installed; fused transforms and callback-image cleanup added. All 25 guidance tests, 18 diagnostic-tool tests, build and lint pass. Earlier visual following passed; fused-build visual/TalkBack regression pending. Comparison phone GPU/two-hand run still fails: 10–12 fps / 43–86 ms against ≥25 fps / ≤25 ms. See [`profiling report`](docs/evals/day1-tracking-profile.md). |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
 | CI | All 103 TypeScript tests pass locally. Android workflow still references `core:protocol`, scheduled for D2-T1; full CI remains pending. No checks disabled. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
-Current verified totals: 103 TypeScript tests and 18 Kotlin guidance tests pass; the app debug build and lint pass. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
+Current verified totals: 103 TypeScript tests, 25 Kotlin guidance tests and 18 synthetic diagnostic-tool tests pass; the app debug build and lint pass. The larger test counts in the original planning log describe reference assets. Days 2–3 assets, including authentication and PIN protection, are not runtime features yet.
 
 The development APK is generated locally at `apps/android/app/build/outputs/apk/debug/app-debug.apk`. Camera tracking is implemented but has not met its acceptance gate. Tone playback and end-to-end guidance are not implemented yet.
 
