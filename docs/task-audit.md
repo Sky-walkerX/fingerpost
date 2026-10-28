@@ -2,7 +2,7 @@
 
 This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. Updated with T7b acceptance, T7c implementation/device results and the user-authorized T7d prototype.
 
-Of the 37 tasks written for Days 1–3, **8 meet their complete task checklists, 4 have partial implementation/setup, and 25 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; all other Day 2–3 work remains unstarted. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
+Of the 37 tasks written for Days 1–3, **9 meet their complete task checklists, 3 have partial implementation/setup, and 25 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; all other Day 2–3 work remains unstarted. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -28,9 +28,9 @@ Previously completed tasks are assessed against their documented scope. For exam
 | Installed Android shell | Prior install/launch verified; device remains authorized |
 | Device accessibility acceptance | User confirmed spoken denial and single session element; TalkBack enabled corroborated through device settings |
 | Camera/settings-return acceptance | User confirmed black session screen after grant/return; CAMERA granted=true and MainActivity resumed corroborated through ADB |
-| Latest verified CI | Both ts and android jobs pass at protocol-foundation commit a94f5de; final T8 document revision pending |
+| Latest verified CI | Both ts and android jobs pass at T8 implementation 9102c2c; all original checks retained |
 
-CI evidence: [run at a94f5de](https://github.com/Sky-walkerX/fingerpost/actions/runs/40615429726). Documentation changes after that run do not constitute validation of a new revision.
+CI evidence: [run at T8 implementation 9102c2c](https://github.com/Sky-walkerX/fingerpost/actions/runs/40616176301). Documentation changes after that run do not constitute validation of a new revision.
 
 ## Day 1: each task
 
@@ -47,15 +47,15 @@ CI evidence: [run at a94f5de](https://github.com/Sky-walkerX/fingerpost/actions/
 | D1-T7b — Android app shell | **Yes** | APK builds, installs and launches. User confirmed the spoken denial message, settings navigation, grant/return to the black session screen and single TalkBack session element. ADB corroborates granted permission, resumed activity and enabled TalkBack. See docs/evals/day1-app-shell.md. | No task gap; camera tracking and tone playback remain T7c/T7d. |
 | D1-T7c — camera/fingertip | **Partial: implemented; device performance blocked** | Camera/tracker/overlay implemented; fused image transforms, callback cleanup, keep-awake and private numeric diagnostics added. All 25 tracking-related guidance +18 tool tests, app build and lint pass. Earlier visual acceptance passed; fused regression pending. A supplied comparison phone still fails: required GPU/two-hand mode with a pointing hand yields 10–12 fps / 43–86 ms, rolling max 87 ms; CPU/two-hand mode also misses. See docs/evals/day1-tracking-profile.md. | Resolve native-task/thermal performance and diagnostic-stream reliability after the two-attempt stop; finish fused visual/TalkBack regression and speed acceptance. User explicitly deferred this unfinished task to permit T7d. |
 | D1-T7d — tone prototype | **Yes, within prototype scope** | ToneSynth and playback wiring implemented; 12 signal/mapping tests and all 37 guidance tests pass; debug build/lint pass. User confirmed pitch/pan, no clicks, TalkBack toggling, no-hand/background silence and prompt perceived response. User authorized proceeding while T7c remains unfinished. See docs/evals/day1-tone.md. | No T7d checklist gap. Measured end-to-end guidance latency and T7c performance remain unverified. |
-| D1-T8 — CI/tester documents | **Partial: 5/6 steps complete** | Dependabot config, 45-minute tester protocol, English/Hindi consent/outreach drafts and unsent organization tracker exist. YAML, word limits, agenda and links pass. Both CI jobs pass at a94f5de; push/watch of the final T8 revision remains. | Engineering finishes final CI verification. Human confirms a private reply route and performs outreach afterward. |
+| D1-T8 — CI/tester documents | **Yes** | Weekly Dependabot config, 45-minute tester protocol, English/Hindi consent/outreach drafts and unsent organization tracker checked. Word counts, YAML, agenda, consent structure and links pass. Commit 9102c2c pushed; watched run 40616176301 passes both jobs. | No T8 checklist gap. Human confirms a private reply route and performs T0 outreach afterward; current r/Blind rules exclude this recruitment. |
 
 ## Day 1 exit gate
 
-CI is green at the protocol-foundation revision; the final T8 revision is still to be checked. The other four exit results remain unverified: live fingertip performance, correct polygons on at least 8/10 real photos, accepted region ADR and simulator tablet acceptance. A working app shell and green unit tests do not replace these checks.
+One of five exit results is verified: CI is green at T8 implementation 9102c2c. The other four remain unverified: live fingertip performance, correct polygons on at least 8/10 real photos, accepted region ADR and simulator tablet acceptance. A working app shell and green unit tests do not replace these checks.
 
-## Planning issues that must be resolved before progression
+## Planning issues and resolutions
 
-1. **CI forward dependency resolved:** the existing D2-T1 Kotlin protocol foundation was moved before D1-T8 and implemented with its original checklist. Both Kotlin suites and the app build pass locally. Remote CI still needs T8 verification; no check was removed.
+1. **CI forward dependency resolved:** the existing D2-T1 Kotlin protocol foundation was moved before D1-T8 and implemented with its original checklist. Both Kotlin suites, TS checks and the app build pass locally and in remote CI. No check was removed.
 2. **Outreach preparation resolved:** T8's consent/session/outreach drafts now precede T0's human outreach. The organization tracker is still unsent. Current r/Blind rules exclude this project recruitment; a blocked channel does not count toward 10 contacted groups.
 3. **Live-smoke privacy conflict:** `services/gateway/scripts/smoke-meta.ts` embeds full image bytes into SVGs under `docs/evals/day1` and writes recognized labels into its Markdown report. T5 then stages `docs/evals` for commit. This conflicts with AGENTS.md §4's restriction on image bytes/OCR text in commits. Before real smoke testing, keep raw content and overlays in ignored local output and produce sanitized aggregate metrics for Git. No real image dataset or smoke output exists yet.
 4. **Tester-session duration resolved:** plan and documents retain the practice blocks and use a 5-minute interview, making 45 minutes total.

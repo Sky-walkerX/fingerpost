@@ -519,7 +519,7 @@ val track = AudioTrack.Builder()
 - [x] **Step 4: Write `docs/outreach.md`.** English/Hindi DM: 71/75 words; email: 170/192; Reddit draft: 178/197. All within limits and explicit about unfinished features. Current r/Blind rules exclude this recruitment; draft retained but marked do not post. Nothing sent.
   - Targets: NAB, NFB India, Saksham, XRCVC, Enable India, Mitra Jyothi, college disability cells, r/Blind, RNIB forums, NFB US.
 - [x] **Step 5: Write `docs/testers.md`.** Organization/channel, date sent, status and next step only. All unsent; r/Blind marked blocked. No personal data or invented outreach/test results.
-- [ ] **Step 6: Push and watch CI.** Run `git add -A && git commit -m "ci+docs: dependabot, tester protocol, consent, outreach" && git push && gh run watch`.
+- [x] **Step 6: Push and watch CI.** Committed as 9102c2c (`ci(docs): add Dependabot and tester preparation`); run 40616176301 is successful for both ts and android. Watched with `gh run watch 40616176301 --interval 15 --exit-status`; all original test/build steps retained.
   - Expected: `ts` and `android` jobs green.
   - The `android` job needs T7b's app code; if T7b isn't merged yet, it fails on `:app:assembleDebug`. Re-run after T7b.
 
