@@ -17,7 +17,7 @@ export interface ControllerDeps {
 /** Wires one WebSocket: hub (validation) → pipeline (brain) + ASR relay + sim touches. Returns a disposer. */
 export function createSessionController(d: ControllerDeps): { hub: SessionHub; dispose(): void } {
   let disposed = false, relay: AsrRelay | null = null, unsubscribe: (() => void) | undefined;
-  let turn = 0, audioBytes = 0, audioEnded = false;
+  let turn = 0, audioBytes = 0, audioEnded = false, awaitingEnd = false;
   let keywords: string[] = [];
   const base = () => ({ id: ulid(), ts: d.now?.() ?? Date.now() });
   const send = (message: ServerMessage) => {
@@ -34,6 +34,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     relay = null;
     audioBytes = 0;
     audioEnded = false;
+    awaitingEnd = false;
     old?.close();
   };
   const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}), handlers: {
@@ -53,14 +54,16 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
       switch (message.type) {
         case 'goal': case 'answer': closeRelay(); pipeline.onGoal(message.text); break;
         case 'audio': {
-          if (!payload || audioEnded) break;
+          if (!payload || audioEnded || awaitingEnd) break;
           audioBytes += payload.length;
           if (!relay) {
             const currentTurn = ++turn;
             const active = () => !disposed && currentTurn === turn;
             const error = () => {
               if (!active()) return;
+              const ended = audioEnded;
               closeRelay();
+              awaitingEnd = !ended;
               send({ ...base(), type: 'error', code: 'model_unavailable', retryable: true, say: "I didn't catch that. Please say it again." });
             };
             try {
@@ -70,7 +73,9 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
                   if (!active()) return;
                   if (!text.trim() || text.length > 500) { error(); return; }
                   usage({ kind: 'asr', seconds: audioBytes / 32_000 });
+                  const ended = audioEnded;
                   closeRelay();
+                  awaitingEnd = !ended;
                   send({ ...base(), type: 'transcript', text, final: true });
                   pipeline.onGoal(text);
                 },
@@ -83,7 +88,10 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           relay?.push(payload);
           break;
         }
-        case 'audio.end': if (relay && !audioEnded) { audioEnded = true; relay.end(); } break;
+        case 'audio.end':
+          if (awaitingEnd) awaitingEnd = false;
+          else if (relay && !audioEnded) { audioEnded = true; relay.end(); }
+          break;
         case 'keyframe': if (payload) await pipeline.onKeyframe(message, payload); break;
         case 'abort': closeRelay(); send({ ...base(), type: 'finish', result: 'aborted', say: 'Stopped.' }); break;
       }

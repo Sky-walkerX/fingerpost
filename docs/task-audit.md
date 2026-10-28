@@ -19,7 +19,7 @@ The focused audit above contains the latest command executions and their limits.
 | Check | Audited result |
 |---|---|
 | TypeScript protocol tests | 48 passed |
-| Gateway tests | 205 passed: prior 180 retained plus 25 ASR/controller/session-flow cases |
+| Gateway tests | 206 passed: prior 180 retained plus 26 ASR/controller/session-flow cases |
 | Simulator tests | 14 passed |
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
@@ -82,7 +82,7 @@ The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was
 | D2-T4 — complete | State transitions/retries/hysteresis and correlated terminal speech completion; 15 supplied +12 boundary cases pass | Pure JVM; Android TTS integration remains T10c |
 | D2-T5 — complete | Deterministic exact/fuzzy aliases, ambiguity, position words and lists; 17 cases pass | D1-T4 done; T6/T7 wiring locally verified, live acceptance pending |
 | D2-T6 — complete | Locate/ask/target/verify, task gates and usage hooks; 20 cases pass | D2-T5 done; controller wiring locally verified, T7 live acceptance pending |
-| D2-T7 — partial | Controller/ASR/sim wiring and mock flow implemented; 25 new cases pass. Live acceptance/redeployment still required | D2-T6 done; human Meta/GCP prerequisites and accepted region missing |
+| D2-T7 — partial | Controller/ASR/sim wiring and mock flow implemented; 26 new cases pass. Live acceptance/redeployment still required | D2-T6 done; human Meta/GCP prerequisites and accepted region missing |
 | D2-T8 | Eval harness, labels and measured baseline | D2-T7 |
 | D2-T9 | Additional simulator scenes and touch relay | D1-T6 |
 | D2-T10a | Local screen-quad estimate and screen tracker | D2-T2; device verification |

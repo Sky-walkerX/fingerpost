@@ -39,9 +39,19 @@ test('ASR failure gives one generic retry and late callbacks cannot affect a new
   const c = setup(); await c.text(hello()); await c.hub.onBinary(audio);
   c.sinks[0]!.error('synthetic provider detail'); c.sinks[0]!.error('again'); c.sinks[0]!.final('stale');
   expect(c.sent.filter((m) => m.type === 'error')).toMatchObject([{ code: 'model_unavailable', retryable: true, say: "I didn't catch that. Please say it again." }]);
+  await c.hub.onBinary(audio); expect(c.asr).toHaveBeenCalledTimes(1);
+  await c.text({ type: 'audio.end', id: 'end1', ts: 3 });
   await c.hub.onBinary(audio); c.sinks[0]!.partial('stale'); c.sinks[1]!.final('start');
   expect(c.sent.filter((m) => m.type === 'goal.ack')).toMatchObject([{ goal: 'start' }]);
   expect(JSON.stringify(c.sent)).not.toContain('provider detail'); c.dispose();
+});
+
+test('endpointing final ignores trailing audio until the microphone end boundary', async () => {
+  const c = setup(); await c.text(hello()); await c.hub.onBinary(audio); c.sinks[0]!.final('start');
+  await c.hub.onBinary(audio); await c.hub.onBinary(audio);
+  expect(c.asr).toHaveBeenCalledTimes(1);
+  await c.text({ type: 'audio.end', id: 'end1', ts: 3 }); await c.hub.onBinary(audio);
+  expect(c.asr).toHaveBeenCalledTimes(2); c.dispose();
 });
 
 test('audio end closes input once and ASR usage counts only accepted audio', async () => {
