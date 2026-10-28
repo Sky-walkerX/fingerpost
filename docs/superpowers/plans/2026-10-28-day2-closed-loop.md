@@ -127,7 +127,7 @@ Everything in Day 1's list still applies, plus:
   - Returns `null` when there's nothing to say.
 - `SpeechQueue(minGuideGapMs = 700, staleGuideMs = 400)`:
   - **`offer(u)`:**
-    - If something is playing and `u` outranks it, and it isn't SAFETY: drop any queued items of `u`'s priority, make `u` current, record GUIDE start time, and return `Interrupt(u)`.
+    - If something is playing and `u` outranks it, and it isn't SAFETY (GUIDE may interrupt INFO only after the minimum guide gap): drop any queued items of `u`'s priority, make `u` current, record GUIDE start time, and return `Interrupt(u)`.
     - Otherwise replace any queued item of the same priority and return `Wait`.
   - **`poll(now)`:**
     - If something is playing → `Wait`.
@@ -137,10 +137,10 @@ Everything in Day 1's list still applies, plus:
     - Otherwise make it current and return `Speak`.
   - **`onDone()`** clears `current`.
 
-- [ ] **Step 1: Copy, then confirm red.**
-- [ ] **Step 2: Implement.**
-- [ ] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Confirmed 9 supplied phrase/queue TODO failures and six added boundary failures.
+- [x] **Step 2: Implement.**
+- [x] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`. All 85 cases pass with 0 failures/errors/skips; original supplied tests and finished cue planner retained unchanged.
+- [x] **Step 4: Commit.**
   `git commit -m "feat(guidance): English phrases and speech queue cadence/priorities"`
 
 ### Task D2-T4: guidance state machine

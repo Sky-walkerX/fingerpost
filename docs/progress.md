@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 2 closed-loop implementation, explicitly started by the user on 2026-10-28 with Day 1 unfinished · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Ten tasks are complete within their documented scope; four are partial and 23 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2 is complete under the user-directed phase exception; subsequent tasks are tracked below.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Eleven tasks are complete within their documented scope; four are partial and 22 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
 
@@ -31,7 +31,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
-| D2-T3 | Phrases, speech queue | A | D2-T2 | doing | Codex |
+| D2-T3 | Phrases, speech queue | A | D2-T2 | done | Codex |
 | D2-T4 | Guidance state machine | A | D2-T3 | todo | |
 | D2-T5 | Goal → element resolution | B | D1-T4 | todo | |
 | D2-T6 | Session pipeline | B | D2-T5 | todo | |
@@ -192,6 +192,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- D2-T3 · Clarified the plan's interruption rule using authoritative guidance-spec §5: the 700 ms gap applies even when GUIDE outranks current INFO. STATE/SAFETY speech can still interrupt immediately. Six boundary tests added; no supplied tests or timing values changed.
 _(task id · what changed · why · who approved)_
 - D1-T5 · User-requested Day 1 audit/fixes prepared safe smoke inputs/outputs and deployment orchestration offline before the blocked live steps. Use the documented Cloud Build config fallback instead of unsupported builds-submit --file; keep real latency samples in ignored private storage. Align Step 7 with ADR-0003 total-flow selection without choosing a region or dropping Voice Transcribe evidence. No paid/cloud call or phase advancement.
 - D1-T8 / D2-T1 · On the user's continuation request, reconcile the documented CI cycle by executing the existing Kotlin protocol foundation before Day 1 T8. Retain its id, assets, pinned dependencies and full contract tests; no other Day 2 work or phase advancement. T7c stays unfinished. Prepare T8 outreach materials before T0's human outreach, and correct T8's 50-minute total to the required 45 minutes with a 5-minute interview.
@@ -220,7 +221,7 @@ _(task id · what changed · why · who approved)_
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
-| 2026-10-28 | Kotlin guidance tests | 37 passed, 0 failures/skips (12 original + 6 projection + 7 fused-transform + 12 tone) | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | Kotlin guidance tests | 85 passed, 0 failures/errors/skips (37 Day 1 +26 geometry/target/fingertip +22 planner/speech) | apps/android/core/guidance/build/test-results/test |
 | 2026-10-28 | Kotlin protocol tests | 49 passed, 0 failures/skips; shared valid/invalid fixtures plus framing boundaries | apps/android/core/protocol/build/test-results/test |
 | 2026-10-28 | Deployment preparation | five synthetic orchestration tests pass; no real cloud calls | scripts/test_deploy_gateway.py |
 | 2026-10-28 | TypeScript protocol tests | 48 passed, including two added invalid base-field fixtures | packages/protocol |
@@ -273,3 +274,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: User reconnected an authorized USB phone with the current APK. Corrected profiling transport after red-first command regression; all 24 tracking +5 deployment tests pass. Camera-free shell probes stayed open for 5/20 seconds, then both 5-second warm-up +15-second app captures completed (14 tracker/15 camera windows each). GPU/one hand: 9–12 FPS / 52–109 ms, intermittent hand loss; GPU/two hands: 5–8 FPS / 107–167 ms, rolling max 167 ms, budget false (exit 1). Both thermal readings were 3; idle cooling reached only 2. Camera stopped after diagnostics; user deferred visual/TalkBack checks until later. T7c remains blocked, production defaults and Day 1 exit gate unchanged; no further speed attempt or task advancement. Full generic numeric evidence is appended to the profiling report/data.
 
 - 2026-10-28: D2-T2 complete: copied the finished geometry implementation and original tests unchanged; confirmed 10 expected target/fingertip TODO failures and six additional boundary failures before implementation. Added iso-space target zones/error, hysteresis/reset, fingertip pad compensation, valid/nearest hand selection and off-screen bounds. `./scripts/android.sh :core:guidance:test --console=plain` passes all 63 cases with 0 failures/errors/skips. Pure JVM scope only; app wiring and Day 1 acceptance remain pending.
+
+- 2026-10-28: D2-T3 complete: confirmed nine supplied phrase/queue TODO failures plus six boundary failures, then implemented English rendering and priority/cadence/freshness queue with clear/reset. Finished CuePlanner and both supplied test files remain unchanged; unsupported locales fail explicitly. `./scripts/android.sh :core:guidance:test --console=plain` passes all 85 cases with 0 failures/errors/skips. No Android TTS adapter is wired yet; that remains T10c.

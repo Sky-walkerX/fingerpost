@@ -70,7 +70,7 @@ Rules:
   - Name the second axis too only if its component is at least 40% of `|e|`, e.g. "up and left a little".
   - Never more than 2 axis words per cue.
 - **Cadence:**
-  - At least **700 ms** between guidance utterances.
+  - At least **700 ms** between guidance utterances. This also applies when GUIDE would interrupt INFO; higher STATE/SAFETY prompts do not wait for the guidance gap.
   - A queued guidance cue older than 400 ms is dropped.
   - A new cue replaces a queued one with the same priority.
 - **Priorities** (higher interrupts lower; equal waits):
