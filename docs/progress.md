@@ -19,7 +19,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
-| D1-T7d | Tone prototype | A | T7c | todo | |
+| D1-T7d | Tone prototype | A | T7c | doing | Codex |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
