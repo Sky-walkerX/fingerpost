@@ -483,12 +483,12 @@ val track = AudioTrack.Builder()
 - **Prototype mapping:** `setFrequency(toneFrequencyHz(1.0 - tipX / frameW))` and `setPan(tonePan((tipX / frameW - 0.5) * 0.6))`. Double-tapping the screen (the TalkBack action) toggles start/stop.
 
 - [x] **Step 1: Implement** `ToneSynth` and wire it into the screen. Twelve oscillator/mapping tests confirmed TODO failures before implementation; all 37 guidance tests, app:test (no source cases), debug build and lint pass. No dependency changes. Audio controls use an atomic snapshot and a dedicated audio thread; invalid/no-hand tracking mutes output and lifecycle stop releases it.
-- [ ] **Step 2: Check on the device.**
-  - [ ] Pitch rises as image x increases (finger moves right in the preview) and pans with it, matching the explicit prototype formula above.
-  - [ ] No clicks.
-  - [ ] With TalkBack on, double-tap toggles the tone.
-  - [ ] Note the latency you feel in `docs/evals/day1-device.md`.
-- [ ] **Step 3: Commit.**
+- [x] **Step 2: Check on the device.** User confirmed all required checks on 2026-10-28; see docs/evals/day1-tone.md.
+  - [x] Pitch rises as image x increases (finger moves right in the preview) and pans with it, matching the explicit prototype formula above. User confirmed tone/pitch/stereo pan on 2026-10-28.
+  - [x] No clicks. User confirmed clean toggles and changes.
+  - [x] With TalkBack on, double-tap toggles the tone. User confirmed; TalkBack-enabled state corroborated through ADB.
+  - [x] Note the latency you feel in `docs/evals/day1-device.md`. User reports prompt response; no acoustic millisecond measurement claimed.
+- [x] **Step 3: Commit.** Implementation saved in 1e51a15; final device acceptance recorded separately. T7c remains unfinished under the explicit dependency exception.
   `git add apps/android && git commit -m "feat(android): low-latency tone prototype driven by the fingertip"`
 
 ### Task D1-T8: CI green + lane-C docs

@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Six tasks are complete within their documented scope; four are partial and 27 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c to implement T7d; no Day 1 exit requirement is waived. Day 1's exit gate is not met; Days 2–3 have not started.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Seven tasks are complete within their documented scope; three are partial and 27 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c to implement T7d; no Day 1 exit requirement is waived. Day 1's exit gate is not met; Days 2–3 have not started.
 
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
@@ -19,7 +19,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T7a | Gradle + core:guidance cue math | A | T0 (JDK) | done | Codex |
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
-| D1-T7d | Tone prototype | A | T7c | blocked | Codex |
+| D1-T7d | Tone prototype | A | T7c | done | Codex |
 | D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
@@ -61,8 +61,6 @@ Agents and people both update this file. Keep each line short. Status values are
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
-
-- D1-T7d · Implementation/build/install checks pass; device listening acceptance is pending the user check. Confirm pitch/stereo pan, click-free changes and TalkBack double-tap, and report perceived latency. No failed build command or error output. See [tone acceptance report](evals/day1-tone.md). Do not mark done or advance until the required checks are confirmed.
 
 - D1-T7c · User resumed controlled profiling and supplied a comparison phone on 2026-10-28. Added fused crop/rotate/resize, callback-image cleanup, keep-awake and numeric diagnostics. Two valid comparison checks still fail: CPU/two hands with no hand visible: 11–14 fps / 45–61 ms, rolling max 67 ms; GPU/two hands with one pointing hand consistently detected: 10–12 fps / 43–86 ms, rolling max 87 ms. Required: ≥25 fps / ≤25 ms. Both full comparison runs reported thermal status 1, so an unthrottled comparison remains missing. Model-task latency remains high; callback queue delay is negligible. Production defaults remain GPU/two hands. Prior visual acceptance passed on the earlier build; fused-build visual regression and camera-screen TalkBack recheck remain pending. Further performance attempts stopped under AGENTS.md §9 after the two resumed budget failures. User subsequently explicitly deferred this unfinished task and authorized T7d only; no acceptance gate is waived. Next T7c work: controlled cold/native-task investigation. See [profiling report](evals/day1-tracking-profile.md) and [device report](evals/day1-device.md). Original failed probes are retained below.
 
@@ -224,6 +222,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Android shell | build/install/launch pass; permission and TalkBack device acceptance confirmed | apps/android/app/build/outputs/apk/debug/app-debug.apk |
 | 2026-10-28 | Android tracking, second GPU run | 8–11 fps; sampled inference 45–92 ms; worst window 96 ms; performance gate FAIL | docs/evals/day1-device.md |
 | 2026-10-28 | Comparison phone, optimized GPU/two hands | one pointing hand detected; 10–12 fps / 43–86 ms; rolling max 87 ms; gate FAIL | docs/evals/day1-tracking-profile.md |
+| 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
@@ -249,3 +248,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: User resumed D1-T7c profiling and supplied a comparison phone. Implemented fused crop/rotate/letterbox, distinct callback-image cleanup, visible camera keep-awake, debug-only comparison options and bounded numeric profiling CLI with private device targeting. Red-first checks: 7 new geometry tests and profiling tests; all 25 JVM +18 Python tests pass; app:test (no source cases), assembleDebug and lintDebug pass. Final APK installed/opened on the comparison phone. Valid CPU/two-hand and GPU/two-hand pointing-hand captures miss the unchanged budget; interrupted streams and asleep-phone runs discarded. Source/driver/native-task cause remains unresolved. Evidence in docs/evals/day1-tracking-profile.md and sanitized JSON. Task blocked; T7d not started; no camera content exported.
 - 2026-10-28: User-requested keep-awake follow-up: moved screen holding from the camera preview to MainActivity's visible window, covering the permission screen too. Guidance tests (25), app:test (no source cases), assembleDebug and lintDebug pass; lint has 0 errors/4 existing advisories. Updated both connected test phones. Comparison phone stayed awake/focused for 125.2 seconds beyond its unchanged 120-second timeout; Home released the screen hold after transition, and reopening restored it. No system sleep setting changed or camera content exported. Evidence: docs/evals/day1-device.md. T7c remains blocked on its existing acceptance requirements; no next task started.
 - 2026-10-28: User explicitly deferred unfinished T7c and requested T7d. Implemented the pure-JVM oscillator, thread-safe AudioTrack output, valid-fingertip mapping, single TalkBack toggle/state, no-hand mute and lifecycle release. Twelve expected TODO failures confirmed first; all 37 guidance tests, app:test (no source cases), debug build and lint pass. Updated APK installed on both connected test phones. Listening, TalkBack toggle and perceived-latency acceptance remain pending; T7d is not done. Evidence: docs/evals/day1-tone.md. No performance acceptance requirement was reduced.
+- 2026-10-28: D1-T7d complete: user confirmed tone/pitch/stereo pan, click-free TalkBack off/on toggling, no-hand/background silence and prompt perceived response. Numeric device state corroborates 48 kHz AudioTrack initialization, low-latency mode and TalkBack enabled. All 37 guidance tests and final app build/lint checks pass; app:test has no source cases. Implementation saved in 1e51a15; acceptance in docs/evals/day1-tone.md and docs/evals/day1-device.md. Acoustic/end-to-end latency was not instrumentally measured. T7c remains unfinished; no further task started.
