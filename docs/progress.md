@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
+**Current phase:** Day 2 closed-loop implementation, explicitly started by the user on 2026-10-28 with Day 1 unfinished · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
 **Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Nine tasks are complete within their documented scope; four are partial and 24 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; other Day 2–3 work has not started.
 
@@ -26,7 +26,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | done | Codex |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
-The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. Its id and specification are retained; other Day 2 tasks still require the Day 1 exit gate.
+The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On 2026-10-28 the user explicitly requested "Start implementing Day 2 now" after being told that Day 1 remains incomplete. This authorizes starting Day 2 while retaining all unfinished Day 1 requirements and statuses. Individual task prerequisites and completion checks still apply; no Day 1 exit check is marked passed by this exception.
 
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
@@ -236,6 +236,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-28: User explicitly requested starting Day 2 with Day 1 unfinished. Begin at D2-T2, whose D1-T7a prerequisite is done, and retain every Day 1 blocker/acceptance requirement. Individual Day 2 completion checks remain mandatory; no deployment, live model access or device acceptance is implied.
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.
 - 2026-10-27: D1-T1 complete: root assets and lockfile added; SECURITY, CONTRIBUTING and Contributor Covenant 2.1 added. Node 24.22.1 / pnpm 11.10.0: install, recursive test and typecheck exited 0 (no packages yet); git diff --check clean. CI workflow is staged; Android CI awaits its planned modules.
 - 2026-10-28: D1-T2 complete: binary framing and message parsing implemented after 45 expected TODO failures; all 46 tests pass, recursive typecheck, protocol build and JSON Schema export pass. Schemas and fixtures are unchanged from the plan. New commits use namanhere23 <namanhere23code@gmail.com> per user instruction.

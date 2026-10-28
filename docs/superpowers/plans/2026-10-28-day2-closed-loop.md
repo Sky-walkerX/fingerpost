@@ -4,6 +4,8 @@
 
 **Foundation ordering correction (2026-10-28):** D2-T1's existing Kotlin protocol task is pulled forward as a Day 1 CI prerequisite, because D1-T8 already requires that module. Its original id/specification/checklist below are retained. All other Day 2 tasks and the closed-loop phase remain gated on Day 1 completion.
 
+**User-directed phase exception (2026-10-28):** after being told Day 1 is incomplete, the user requested "Start implementing Day 2 now". Start at the first pending task with satisfied individual prerequisites. Day 1 remains incomplete, and this exception does not waive any task's tests, live/device checks or acceptance criteria.
+
 **Goal:** A voice-named button on the tablet replica is reached by a blindfolded proxy. The loop:
 - **Phone:** tracks the screen and the fingertip and guides with speech, tone and haptics.
 - **Gateway:** turns goal plus keyframe into layout plus target, relays speech to Voice Transcribe, and relays simulator touches.
