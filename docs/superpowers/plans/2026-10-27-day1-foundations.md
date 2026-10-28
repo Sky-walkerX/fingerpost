@@ -266,7 +266,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 - [ ] **Step 1: Run the smoke test.** Run `set -a; source .env; set +a; pnpm --filter @fingerpost/gateway smoke` (costs about $0.01 per image).
   - Expected: `wrote docs/evals/day1-smoke.md` plus local `evals/datasets/private/day1-smoke/<run>/sample-*.svg` overlays. Never stage the overlays or dataset.
   - The numerical tables give Spark, SAM box and SAM text p50/p95, tokens per parse and estimated cost per image using the Day 1 planning rates; this is not measured billing.
-- [ ] **Step 2: Inspect the overlays.** Open each SVG in a browser. Blue is Spark boxes, green is the SAM target.
+- [ ] **Step 2: Inspect the private overlays.** Open each SVG locally in a browser. Blue is all Spark boxes, orange identifies the selected box prompt, and green is the SAM target. This preserves review context without putting recognized labels into Git.
   - Note in the report how many images have the green polygon on the right button. The goal is 8 of 10 or more.
   - If **Spark** is the problem (wrong boxes), write down the pattern. Don't edit the prompt today; Day 2 evals measure prompt changes.
 - [x] **Step 3: Create `infra/deploy-gateway.sh`** (bash, `set -euo pipefail`). Prepared offline during the user-requested audit/fixes, with argument/clean-tree guards, five stubbed orchestration tests and shell syntax validation. No real cloud command has been executed. Args: `<project> <region>`. It runs:

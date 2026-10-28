@@ -40,6 +40,7 @@ test('public report contains metrics without filenames, recognized text or image
   expect(overlays.every((name) => /^sample-\d{3}\.svg$/.test(name))).toBe(true);
   const overlay = join(paths.privateOutput, overlays[0]!);
   expect(readFileSync(overlay, 'utf8')).toContain('data:image/jpeg;base64,');
+  expect(readFileSync(overlay, 'utf8')).toContain('stroke="#f59e0b"');
   expect(statSync(overlay).mode & 0o777).toBe(0o600);
 });
 

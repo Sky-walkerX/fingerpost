@@ -60,6 +60,7 @@ export async function runSmoke(models: ModelPort, paths: SmokePaths): Promise<vo
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${image.width} ${image.height}">` +
       `<image href="data:image/jpeg;base64,${Buffer.from(image.bytes).toString('base64')}" width="${image.width}" height="${image.height}"/>` +
       parsed.layout.elements.map((element) => `<polygon points="${points(element.polygon)}" fill="none" stroke="#2563eb" stroke-width="3"/>`).join('') +
+      (button ? `<polygon points="${points(button.polygon)}" fill="none" stroke="#f59e0b" stroke-width="5" stroke-dasharray="10 5"/>` : '') +
       (polygon ? `<polygon points="${points(polygon)}" fill="rgba(22,163,74,.35)" stroke="#16a34a" stroke-width="4"/>` : '') + '</svg>';
     writeFileSync(join(paths.privateOutput, `sample-${String(index + 1).padStart(3, '0')}.svg`), svg, { mode: 0o600 });
   }
@@ -71,7 +72,7 @@ export async function runSmoke(models: ModelPort, paths: SmokePaths): Promise<vo
     rows.join('\n') + '\n\n| Call | p50 ms | p95 ms |\n|---|---|---|\n' +
     timings.map(([label, values]) => `| ${label} | ${percentile(values, 0.5)} | ${percentile(values, 0.95)} |`).join('\n') +
     `\n\nAverage input tokens per parse: ${Math.round(inputTokens / images.length)}. Estimated total cost using Day 1 planning rates (not measured billing): $${estimatedCost.toFixed(4)} (~$${(estimatedCost / images.length).toFixed(4)} per image).\n\n` +
-    'Review overlays remain in ignored local storage. No photo, source filename or recognized label is included in this report.\n';
+    'Review overlays remain in ignored local storage: blue = Spark boxes, orange = selected box prompt, green = SAM target. No photo, source filename or recognized label is included in this report.\n';
   mkdirSync(dirname(paths.report), { recursive: true });
   writeFileSync(paths.report, report);
 }
