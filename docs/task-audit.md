@@ -4,7 +4,7 @@ This audit compares the implementation plans, actual runtime files, tests/builds
 
 The focused [Day 1 readiness audit](evals/day1-completion-audit.md) includes fixes at `5d4a5aa` and `d0a4ed3`: 8/12 original Day 1 tasks complete, plus the pulled-forward D2-T1 foundation; only 1/5 Day 1 exit checks passes. It separates freshly executed commands from historical device/container evidence and records fixed evaluation/privacy gaps and the remaining T5 live-measurement requirements.
 
-Of the 37 tasks written for Days 1–3, **9 meet their complete task checklists, 4 have partial implementation/setup, and 24 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; all other Day 2–3 work remains unstarted. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
+Of the 37 tasks written for Days 1–3, **11 meet their complete task checklists, 4 have partial implementation/setup, and 22 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; the user subsequently explicitly started Day 2 with Day 1 unfinished. D2-T2/T3 are now complete within their pure-logic scope; D2-T4 is blocked on a documented test/spec conflict. Later tasks remain unimplemented. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -24,7 +24,7 @@ The focused audit above contains the latest command executions and their limits.
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
 | All current TypeScript package builds | Pass |
-| Kotlin guidance tests | 37 passed; 0 failed/skipped (12 original + 6 projection + 7 fused-transform + 12 tone tests) |
+| Kotlin guidance tests | 85 passed; 0 failures/errors/skips (37 Day 1, 26 geometry/target/fingertip, 22 planner/speech) |
 | Kotlin protocol tests | 49 passed; 0 failed/skipped; shared fixtures and unsigned-length/UTF-8/type/privacy boundaries |
 | Numeric Android profiling CLI | 24 tests pass; shell transport, numeric-only retention/cleanup, early-EOF rejection and unchanged GPU/two-hand acceptance |
 | Deployment preparation | five synthetic command-stub tests and shell syntax pass; no real cloud calls |
@@ -33,9 +33,9 @@ The focused audit above contains the latest command executions and their limits.
 | Installed Android shell | Prior install/launch and device authorization verified; not rechecked in the readiness audit |
 | Device accessibility acceptance | User confirmed spoken denial and single session element; TalkBack enabled corroborated through device settings |
 | Camera/settings-return acceptance | User confirmed black session screen after grant/return; CAMERA granted=true and MainActivity resumed corroborated through ADB |
-| Latest verified CI | Both ts and android jobs pass at audited revision 2480252; all original checks retained |
+| Latest verified CI | Both ts and android jobs pass at Day 2 guidance revision caf62d0; all original checks retained |
 
-CI evidence: [run at audited revision 2480252](https://github.com/Sky-walkerX/fingerpost/actions/runs/40647979193). This confirms that exact revision; subsequent documentation changes are not covered by that run.
+Latest implementation CI evidence: [run at caf62d0](https://github.com/Sky-walkerX/fingerpost/actions/runs/40653225580). This confirms both guidance tasks and all existing checks at that revision; subsequent documentation changes are not covered by that run.
 
 ## Day 1: each task
 
@@ -70,16 +70,16 @@ One of five exit results passes: CI is green at audited revision 2480252. Finger
 
 The compile-SDK mismatch discovered during the first app build has already been resolved and documented: compile SDK 37 is required by the pinned libraries; minimum SDK 29 and target SDK 36 are retained.
 
-## Day 2: protocol foundation complete; other tasks not started
+## Day 2: protocol, target geometry and speech core complete
 
-The Day 2 plan requires Day 1 completion for closed-loop work. The existing D2-T1 foundation was pulled forward to satisfy Day 1 CI and is complete. The other 13 tasks below remain unimplemented; their reference files/tests do not count as done.
+The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was already complete as a CI foundation; D2-T2/T3 now meet their documented pure-logic task checks. The remaining 11 tasks are unimplemented; D2-T4 is blocked before implementation on the DONE speech-completion/timer conflict. Reference assets do not count as implemented work.
 
 | Task | Missing deliverable | Additional task prerequisites |
 |---|---|---|
 | D2-T1 — complete | Implemented Kotlin models, codec and shared-fixture tests; 49 JVM tests pass | Pulled forward as Day 1 CI foundation; not a network client |
-| D2-T2 | Kotlin target geometry/zones/debouncing and fingertip selection | D1-T7a |
-| D2-T3 | Cue planning, localized phrases and speech queue | D2-T2 |
-| D2-T4 | Guidance state machine | D2-T3 |
+| D2-T2 — complete | Iso-space target zones/error, debouncing/reset and fingertip selection; 20 supplied +6 added tests pass | D1-T7a done; no app wiring claimed |
+| D2-T3 — complete | Cue planner retained; English phrases and speech queue implemented; 16 supplied +6 added tests pass | D2-T2 done; other locales and Android TTS wiring remain later work |
+| D2-T4 — blocked | DONE: plan/test returns to IDLE after a fixed 1.5 s; authoritative spec waits for speech completion. User choice pending | D2-T3 done; no state-machine code/test copied or implemented |
 | D2-T5 | Goal-to-element resolution | D1-T4 |
 | D2-T6 | Model-driven session pipeline | D2-T5 |
 | D2-T7 | Session controller, Voice Transcribe and simulator relay | D2-T6 |

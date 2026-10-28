@@ -144,6 +144,8 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(guidance): English phrases and speech queue cadence/priorities"`
 
 ### Task D2-T4: guidance state machine
+**Blocked before implementation (2026-10-28):** guidance-spec §8 requires DONE to wait for speech completion; the fixed 1.5-second transition below and `happyPathToDone` test contradict it. User decision pending under AGENTS.md §4. No state-machine asset/test copied or changed.
+
 **Files:**
 - `apply.sh 2` with `…/guidance/GuidanceStateMachine.kt` and `GuidanceStateMachineTest.kt`.
 - **Skeleton:** the private helpers `go`, `handle`, `verify`, `noHandCheck` and `guidingFrame`. The types `GState`, `GEvent`, `Effect` and `Prompts`, and the private fields, are given.

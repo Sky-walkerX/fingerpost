@@ -1,10 +1,10 @@
 # Day 1 completion audit — 2026-10-28
 
-**Decision: Day 1 is not complete. Do not advance to the Day 2 closed-loop phase.** Eight of the 12 original Day 1 tasks are complete within their documented scope; four remain incomplete. One of the five Day 1 exit checks passes. These counts are checklist results, not an estimate of product completion.
+**Decision: Day 1 is not complete. The user subsequently explicitly authorized starting Day 2 despite these unfinished requirements; no Day 1 check is waived or marked passed.** Eight of the 12 original Day 1 tasks are complete within their documented scope; four remain incomplete. One of the five Day 1 exit checks passes. These counts are checklist results, not an estimate of product completion.
 
 Implementation audited: gateway/evaluation/deployment fixes in `5d4a5aa`/`a27887d` and tracking-tool/CI fixes in `d0a4ed3`, on `main`. Existing audit drafts were preserved and updated. This pass includes implementation fixes as well as documentation; it does not claim live or device acceptance. It compares [the Day 1 plan](../superpowers/plans/2026-10-27-day1-foundations.md), [the completion rules](../../AGENTS.md), specifications, active implementation, tests, build outputs, CI and previously recorded device acceptance. Plan assets alone do not count as implemented features. Local checks below were executed during this audit; historical checks are identified separately.
 
-The additional **D2-T1 Kotlin protocol foundation is complete** and was pulled forward to satisfy Day 1 CI's existing protocol-test requirement. It is not one of the original 12 Day 1 tasks. Including that foundation, the current Day 1 board has nine completed rows and four blocked rows. No other Day 2 feature task is complete or started.
+The additional **D2-T1 Kotlin protocol foundation is complete** and was pulled forward to satisfy Day 1 CI's existing protocol-test requirement. It is not one of the original 12 Day 1 tasks. Including that foundation, the current Day 1 board has nine completed rows and four blocked rows. D2-T2/T3 were subsequently implemented under that user exception; see the follow-up below.
 
 ## What currently works
 
@@ -89,10 +89,16 @@ The following evidence was reviewed, **not repeated**: shell acceptance in [day1
 
 ## Next actionable work
 
-Remain in Day 1. Human T0 setup/private photos and test-device availability are now the immediate prerequisites. Engineering then runs the prepared live smoke and manual quality review, verifies real deployment, supplies the missing regional measurement capability/evidence, and resumes the controlled T7c investigation. T6 needs its actual tablet checks. No Day 2 closed-loop task is started. When each task's required evidence exists, run its final verification and only then change its status; all five exit checks must be satisfied before the general Day 2 phase starts.
+The user has now prioritized Day 2 implementation, with the individual task prerequisites and completion checks retained. Unfinished Day 1 work remains: T0 human setup/private photos, T5 live quality/deployment/regional evidence, T7c unthrottled performance and deferred manual regression, and T6 tablet acceptance. The phase exception changes ordering only; record Day 1 complete only after its required evidence exists.
 
 ## Subsequent USB reconnect — 2026-10-28
 
 The prior zero-device finding above describes the audit snapshot. The user subsequently connected one authorized USB phone; the installed APK matches the current local build. A red-first profiling transport change uses explicit non-PTY ADB shell execution, preserving PID/main-buffer/tag restrictions and early-EOF rejection. All 24 tracking-tool and five deployment-tool tests pass locally. Two full capture windows now complete, including the first retained GPU/one-hand diagnostic.
 
 Both new runs report severe thermal status 3: GPU/one hand reaches 9–12 FPS / 52–109 ms, with intermittent hand loss; GPU/two hands reaches 5–8 FPS / 107–167 ms, rolling max 167 ms, and fails the unchanged gate. This is no unthrottled or isolated hand-count comparison. The camera session was stopped; the user postponed the fused visual/TalkBack regression. No Android production code, model, dependency, threshold or completion count changed. Next T7c work remains a controlled unthrottled/native-task investigation and the deferred manual checks. See the [profiling report](day1-tracking-profile.md) for exact conditions and numeric evidence.
+
+## User-directed Day 2 start — 2026-10-28
+
+The user requested "Start implementing Day 2 now" after being told Day 1 is incomplete. D2-T2 and T3 are now complete in their pure Kotlin scope, following failing-first runs and preserving the finished assets and original tests. All 85 guidance tests pass; the protocol check and Android compatibility build succeed. No new closed-loop app feature, live model acceptance or Day 1 completion is claimed. D2-T4 is blocked before implementation because its plan/test uses a fixed 1.5-second DONE timeout while guidance-spec §8 waits for speech completion; the user has been asked to resolve this under AGENTS.md §4.
+
+CI at [caf62d0](https://github.com/Sky-walkerX/fingerpost/actions/runs/40653225580) passes both jobs, including all 85 guidance and 49 protocol cases, TS/tooling checks and Android debug assembly. This validates the Day 2 core changes without completing any missing Day 1 device/live check.
