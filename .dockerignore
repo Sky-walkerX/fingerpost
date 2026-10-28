@@ -3,7 +3,12 @@
 .git
 .env
 .env.*
+**/.env
+**/.env.*
 apps/android
 docs
 evals/datasets
 **/*.keystore
+**/*.jks
+**/google-services.json
+**/service-account*.json

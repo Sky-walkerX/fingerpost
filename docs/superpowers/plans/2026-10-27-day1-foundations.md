@@ -86,7 +86,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - package id `io.github.fingerpost`. If GitHub won't give us that namespace, keep the id anyway: Android doesn't require domain ownership.
 - [ ] **Test photos:** photograph at least 10 appliance panels (microwave, induction cooktop, washing machine, AC remote screen). Use varied angles and light, with no faces or reflections of people.
   - Save as JPEG in `evals/datasets/day1/`.
-  - Put one 1024×576 crop in `services/gateway/test/fixtures/latency-sample.jpg`, replacing the 4-byte placeholder.
+  - Put one 1024×576 crop, at most 409,600 bytes, in `evals/datasets/private/day1/latency-sample.jpg` (gitignored). Leave the tracked four-byte synthetic placeholder unchanged; real captures must never replace committed fixtures.
 - [ ] **Testers:** send outreach (texts from D1-T8) to 10 or more groups. Log each in `docs/testers.md`.
 
 ### Task D1-T1: monorepo root
@@ -259,19 +259,21 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   `git add services/gateway && git commit -m "feat(gateway): Spark screen parse + SAM 3.1 segmentation adapters"`
 
 ### Task D1-T5 (needs T0 keys and photos): live smoke, Cloud Run deploy, region latency (ADR-0003)
-**Files:** everything is finished: `services/gateway/scripts/smoke-meta.ts`, `scripts/latency-matrix.ts`, `src/debug/latency.ts`. Create `infra/deploy-gateway.sh` (below). Modify `docs/adr/0003-cloud-run-region.md`.
+**Files:** supplied scripts: `services/gateway/scripts/smoke-meta.ts`, `scripts/latency-matrix.ts`, `src/debug/latency.ts`. Safe-output/input preparation adds tested runners and JPEG/metric validation. These files alone do not complete the live task. Create `infra/deploy-gateway.sh` (below). Modify `docs/adr/0003-cloud-run-region.md`.
+
+**Safety preparation (verified 2026-10-28):** all photos under `evals/datasets/day1/` and `evals/datasets/private/` are ignored. Smoke preflights at least ten JPEG dimension headers before model calls. Only anonymous numerical outcomes go into `docs/evals/day1-smoke.md`; overlays stay in a unique ignored local run directory, with private file permissions. CLI errors never echo SDK response content. Regional diagnostics validate HTTP status and strict numerical responses, reject the placeholder image, and disable redirects. No live step below is complete from synthetic checks.
 
 - [ ] **Step 1: Run the smoke test.** Run `set -a; source .env; set +a; pnpm --filter @fingerpost/gateway smoke` (costs about $0.01 per image).
-  - Expected: `wrote docs/evals/day1-smoke.md` plus `docs/evals/day1/*.svg` overlays.
-  - The tables give Spark, SAM box and SAM text p50/p95, tokens per parse and cost per image.
+  - Expected: `wrote docs/evals/day1-smoke.md` plus local `evals/datasets/private/day1-smoke/<run>/sample-*.svg` overlays. Never stage the overlays or dataset.
+  - The numerical tables give Spark, SAM box and SAM text p50/p95, tokens per parse and estimated cost per image using the Day 1 planning rates; this is not measured billing.
 - [ ] **Step 2: Inspect the overlays.** Open each SVG in a browser. Blue is Spark boxes, green is the SAM target.
   - Note in the report how many images have the green polygon on the right button. The goal is 8 of 10 or more.
   - If **Spark** is the problem (wrong boxes), write down the pattern. Don't edit the prompt today; Day 2 evals measure prompt changes.
-- [ ] **Step 3: Create `infra/deploy-gateway.sh`** (bash, `set -euo pipefail`). Args: `<project> <region>`. It runs:
+- [x] **Step 3: Create `infra/deploy-gateway.sh`** (bash, `set -euo pipefail`). Prepared offline during the user-requested audit/fixes, with argument/clean-tree guards, five stubbed orchestration tests and shell syntax validation. No real cloud command has been executed. Args: `<project> <region>`. It runs:
   ```bash
   SHA=$(git rev-parse --short HEAD)
   IMAGE="$2-docker.pkg.dev/$1/fp/gateway:$SHA"
-  gcloud builds submit --project "$1" --region "$2" --tag "$IMAGE" --file services/gateway/Dockerfile .
+  gcloud builds submit . --project "$1" --region "$2" --config infra/cloudbuild.yaml --ignore-file .gcloudignore --substitutions "_IMAGE=$IMAGE"
   gcloud run deploy fingerpost-gateway --project "$1" --region "$2" --image "$IMAGE" \
     --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 3 --allow-unauthenticated \
     --set-secrets META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest \
@@ -279,7 +281,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   ```
   Then `chmod +x infra/deploy-gateway.sh`.
   - `AUTH_REQUIRED=false` plus `ALLOW_UNAUTHENTICATED_LIVE=true` hold only until Day 3 turns auth on (D3-T9 removes both). Day 1 and 2 configs ignore them; the Day 3 config refuses `AUTH_REQUIRED=false` in live mode without the second flag.
-  - `gcloud builds submit --file` needs a recent gcloud. If it rejects `--file`, use a `cloudbuild.yaml` with `docker build -f services/gateway/Dockerfile` and record the change.
+  - Current `gcloud builds submit` documents `--config`, not `--file`. `infra/cloudbuild.yaml` builds the specified Dockerfile and pushes the same revision-tagged image. `.gcloudignore` excludes secrets, captures and unrelated apps/docs from the source upload. No account, secret, registry or service is created by these local tests.
 - [ ] **Step 4: Create the secrets** (dev project):
   ```bash
   printf %s "$META_API_KEY" | gcloud secrets create meta-api-key --data-file=- --project fingerpost-dev
@@ -291,8 +293,9 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   Expected: two service URLs, and `curl <url>/healthz` returns ok on both.
 - [ ] **Step 6: Measure.**
   `DEBUG_TOKEN=$(gcloud secrets versions access latest --secret debug-token --project fingerpost-dev) pnpm --filter @fingerpost/gateway latency <asiaUrl> <usUrl> --n 20`
-  Expected: rtt and rtt+model p50/p95 for each region.
-- [ ] **Step 7: Record the choice.** Fill in the Result table in ADR-0003 (the region with the lowest p50 rtt+spark wins). Set Status to accepted and delete the losing service with `gcloud run services delete fingerpost-gateway --region <loser> --project fingerpost-dev`.
+  Expected: health RTT, gateway Spark/SAM phases and actual parse-and-fixed-box-segmentation round-trip p50/p95 for each region. The sample lives in the ignored private path specified in T0. `--n` accepts 1–20 samples for bounded diagnostics; ADR acceptance still requires 20. Each request has an initial diagnostic timeout of 60 seconds. Failed HTTP/invalid metrics abort the comparison without printing partial success.
+  - These debug results do not measure Voice Transcribe connect or the complete keyframe-to-target flow required by ADR-0003. That evidence must be collected before selecting/accepting a region; do not substitute a sum of independent p50 values.
+- [ ] **Step 7: Record the choice.** Follow ADR-0003: collect its required measurements and pick the lowest measured p50 total for keyframe → target. RTT+Spark alone is insufficient. Keep Status proposed while Voice Transcribe/total-flow evidence is missing. After acceptance, delete the losing service with `gcloud run services delete fingerpost-gateway --region <loser> --project fingerpost-dev`.
 - [ ] **Step 8: Commit.**
   `git add infra docs/evals docs/adr && git commit -m "feat: live Meta smoke, Cloud Run deploy, region decision (ADR-0003)"`
 

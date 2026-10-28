@@ -29,6 +29,7 @@ captures/
 
 # evals: private captures stay local
 evals/datasets/private/
+evals/datasets/day1/
 
 # os
 .DS_Store

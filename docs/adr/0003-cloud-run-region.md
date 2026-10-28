@@ -15,3 +15,8 @@ Users and testers are in India. The location of the Meta Model API servers isn't
 
 ## Result
 _(fill in: table + choice)_
+
+## Measurement readiness
+The Day 1 debug endpoint times a Spark parse followed by a fixed-box SAM prompt. The local matrix reports health RTT, each gateway phase and the actual debug-request round trip after checking HTTP status and numerical response validity. The private sample must be a 1024×576 JPEG within the 409,600-byte keyframe limit.
+
+These are diagnostic inputs, not the complete keyframe → target measurement. Voice Transcribe connection timing and the required total-flow evidence are still missing. Do not select a region from RTT+Spark alone or by adding independent percentile values. This ADR remains proposed until all 20-sample measurements above are recorded; no region has been chosen.

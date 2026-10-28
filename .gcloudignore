@@ -1,0 +1,13 @@
+.gcloudignore
+.git
+#!include:.gitignore
+.env
+.env.*
+**/*.keystore
+**/*.jks
+**/google-services.json
+**/service-account*.json
+apps/android/
+apps/web/
+docs/
+evals/

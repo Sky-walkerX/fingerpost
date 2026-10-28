@@ -47,3 +47,20 @@ podman --root "$HOME/.local/share/fingerpost/containers" --runroot "/run/user/$(
 ```
 
 In another terminal, `curl --fail http://localhost:8080/healthz` should report status `ok`, version `dev` and protocol `fp.v1`. This is a local mock-model check and makes no paid model calls.
+
+## Day 1 live evaluation and deployment
+
+Live evaluation is still blocked on the human setup in T0. Configure the ignored local environment privately; do not paste keys into chat or commit them. Put at least ten panel JPEGs in ignored `evals/datasets/day1/`, and a 1024×576 crop of at most 409,600 bytes in `evals/datasets/private/day1/latency-sample.jpg`. Leave the tracked synthetic latency placeholder unchanged. These header checks read dimensions; they do not fully decode or visually validate a photo.
+
+`pnpm --filter @fingerpost/gateway smoke` makes paid model requests. It validates all input dimension headers before calling models, writes anonymous numeric results to `docs/evals/day1-smoke.md`, and keeps photo overlays in a unique local `evals/datasets/private/day1-smoke/<run>/` directory. Inspect those private overlays locally and record only the correctness count in the report. Do not infer the 8/10 quality result from polygon presence. Reported cost uses the plan's initial rates and is not a billing measurement.
+
+`infra/deploy-gateway.sh <project> <asia-south1|us-central1>` is prepared but has not been run against GCP. Install/authenticate the Cloud CLI and finish the documented project, billing, registry, secret and IAM setup first. The script requires a clean committed checkout. It uses the supported [Cloud Build config option](https://docs.cloud.google.com/sdk/gcloud/reference/builds/submit) with `infra/cloudbuild.yaml`; the explicit [source ignore file](https://docs.cloud.google.com/sdk/gcloud/reference/topic/gcloudignore) keeps private inputs out of uploads. This is the plan's temporary Day 1 deployment configuration; Day 3 must replace its unauthenticated session settings before authenticated deployment.
+
+`pnpm --filter @fingerpost/gateway latency <asiaUrl> <usUrl> --n 20` requires `DEBUG_TOKEN`. It checks HTTP status/metric shape, disables redirects, bounds each request to 60 seconds and prints a comparison only after all regions finish. It reports health RTT, gateway Spark/SAM phases and actual fixed-box debug-request round trip. Voice Transcribe connection timing and the complete keyframe-to-target measurement are still missing; these diagnostics alone cannot accept ADR-0003.
+
+Offline tooling checks make no cloud calls:
+
+```sh
+python3 -m unittest discover -s scripts -p 'test_*.py' -v
+bash -n infra/deploy-gateway.sh
+```
