@@ -6,7 +6,7 @@
 
 **User-directed phase exception (2026-10-28):** after being told Day 1 is incomplete, the user requested "Start implementing Day 2 now". Start at the first pending task with satisfied individual prerequisites. Day 1 remains incomplete, and this exception does not waive any task's tests, live/device checks or acceptance criteria.
 
-**Subsequent priority (2026-10-28):** the user then requested completing Day 1 first. Further Day 2 work is on hold until Day 1 is complete; retain the verified T2/T3 implementations and the unresolved T4 conflict.
+**Subsequent priorities (2026-10-28):** the user first restored Day 1 priority, then explicitly requested “So start implementing Day 2 coding”. Resume tasks with satisfied individual prerequisites; unfinished Day 1 requirements remain open. The user resolved T4 by choosing actual speech completion over the fixed timer; correct its plan/test accordingly.
 
 **Goal:** A voice-named button on the tablet replica is reached by a blindfolded proxy. The loop:
 - **Phone:** tracks the screen and the fingertip and guides with speech, tone and haptics.
@@ -222,10 +222,10 @@ Everything in Day 1's list still applies, plus:
   - Combinations: `"top left"`, `"bottom right"`, `"middle"`, `"middle left"`, `"top"`, and so on.
 - `listLabels(elements, max = 5)`: tappable labels only, as `"A"`, `"A and B"` or `"A, B and C"`.
 
-- [ ] **Step 1: Copy, then confirm red.** Run `pnpm --filter @fingerpost/gateway test -- match`.
-- [ ] **Step 2: Implement.**
-- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test -- match`. Expected: 7 pass.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Run `pnpm --filter @fingerpost/gateway test match`.
+- [x] **Step 2: Implement.**
+- [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test match`. All seven supplied plus ten boundary cases pass; full gateway suite 160/160 and recursive typecheck pass.
+- [x] **Step 4: Commit.**
   `git commit -m "feat(gateway): deterministic goal→element resolution and position words"`
 
 ### Task D2-T6: session pipeline (the Day 2 brain)

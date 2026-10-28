@@ -2,9 +2,9 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current phase:** Day 1 completion, restored by the user on 2026-10-28; further Day 2 work is on hold · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
+**Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Eleven tasks are complete within their documented scope; four are partial and 22 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Twelve tasks are complete within their documented scope; four are partial and 21 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
 
@@ -26,14 +26,14 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | done | Codex |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
-The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On 2026-10-28 the user explicitly requested "Start implementing Day 2 now" after being told that Day 1 remains incomplete. This authorizes starting Day 2 while retaining all unfinished Day 1 requirements and statuses. Individual task prerequisites and completion checks still apply; no Day 1 exit check is marked passed by this exception. The later instruction "Finish Day 1 first completely" supersedes permission to continue Day 2: retain completed T2/T3, but resume no further Day 2 task until Day 1 is complete.
+The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On 2026-10-28 the user explicitly requested "Start implementing Day 2 now" after being told that Day 1 remains incomplete. This authorizes starting Day 2 while retaining all unfinished Day 1 requirements and statuses. Individual task prerequisites and completion checks still apply; no Day 1 exit check is marked passed by this exception. The later instruction "Finish Day 1 first completely" supersedes permission to continue Day 2: retain completed T2/T3, but resumed no further Day 2 task until the user subsequently requested “So start implementing Day 2 coding”. That latest instruction authorizes independent Day 2 coding while every unfinished Day 1 requirement stays open.
 
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
 | D2-T3 | Phrases, speech queue | A | D2-T2 | done | Codex |
 | D2-T4 | Guidance state machine | A | D2-T3 | blocked | Codex |
-| D2-T5 | Goal → element resolution | B | D1-T4 | doing | Codex |
+| D2-T5 | Goal → element resolution | B | D1-T4 | done | Codex |
 | D2-T6 | Session pipeline | B | D2-T5 | todo | |
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | todo | |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | todo | |
@@ -287,3 +287,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D1-T5 measurement coding complete after failing-first ASR/route/client/CLI and bounded-queue checks. Added gateway ASR upgrade/accepted-handshake timings, actual binary keyframe → validated target timing with exact-label selection/SAM and a two-candidate matrix. All 143 gateway and 205 TS cases, recursive typecheck/builds and two compiled-gateway mock exchanges pass. Native localhost integration sends no real image/audio and makes no external model call. Existing tests/pinned dependencies/public schemas are preserved. Live prerequisites and 20-sample evidence are still missing, so T5 stays blocked, Step 6/ADR remain unaccepted and Day 2 stays on hold. Earlier Cloud CLI download was interrupted; no completed Cloud CLI installation is claimed.
 
 - 2026-10-28: Regional tooling implementation cd3aed5 pushed with the requested Git author; [CI run 40658914167](https://github.com/Sky-walkerX/fingerpost/actions/runs/40658914167) succeeds in both ts/android jobs, including the 205 TS cases, existing Python/JVM checks and app build. Working implementation is verified; no live measurement, new task completion or ADR acceptance claimed.
+
+- 2026-10-28: User explicitly resumed Day 2 coding with Day 1 unfinished. D2-T5 complete after seven supplied and ten additional boundary TODO failures: deterministic exact/fuzzy alias matching, ambiguity handling, position words and label lists implemented. All 160 gateway cases and recursive TS typecheck pass; existing localhost integration cases require socket permission. Original match tests unchanged; no dependency or public contract change. User also resolved D2-T4: wait for actual speech completion and correct the plan/test before implementation.
