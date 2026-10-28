@@ -31,7 +31,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
-| D2-T3 | Phrases, speech queue | A | D2-T2 | todo | |
+| D2-T3 | Phrases, speech queue | A | D2-T2 | doing | Codex |
 | D2-T4 | Guidance state machine | A | D2-T3 | todo | |
 | D2-T5 | Goal → element resolution | B | D1-T4 | todo | |
 | D2-T6 | Session pipeline | B | D2-T5 | todo | |
