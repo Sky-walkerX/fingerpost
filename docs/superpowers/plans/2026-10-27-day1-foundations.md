@@ -492,6 +492,8 @@ val track = AudioTrack.Builder()
   `git add apps/android && git commit -m "feat(android): low-latency tone prototype driven by the fingertip"`
 
 ### Task D1-T8: CI green + lane-C docs
+**Prerequisite correction (2026-10-28):** CI already requires `:core:protocol:test`. Execute the existing D2-T1 protocol foundation, using its original checklist in the Day 2 plan, before claiming T8. This resolves the forward dependency without starting the other Day 2 tasks or removing a CI check. T7c remains unfinished under the user's deferral. T8 drafts precede the human outreach item in T0.
+
 **Files:**
 - `.github/workflows/ci.yml` (copied in T1).
 - Create `.github/dependabot.yml`, `docs/tester-protocol.md`, `docs/consent-form.md`, `docs/outreach.md`, `docs/testers.md`.
@@ -505,7 +507,7 @@ val track = AudioTrack.Builder()
     - 3 single-target tasks on the appliance and sim, 15 min;
     - from Day 4: a multi-step sim task, 10 min;
     - PIN-pad exploration on the sim, 5 min;
-    - interview, 10 min.
+    - interview, 5 min (corrected from 10 so the full agenda totals 45).
   - **What we record:** sim run ids (metrics come from those logs), interview notes, and quotes only with explicit consent.
   - **Proxies:** blindfolded teammates are labeled `proxy` and never counted as blind-user results.
 - [ ] **Step 3: Write `docs/consent-form.md`.** Plain language in English and Hindi, screen-reader friendly (headings and short paragraphs, no tables). It says:

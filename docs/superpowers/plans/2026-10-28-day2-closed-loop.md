@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax. Read `AGENTS.md` first. Day 1 must be `done` in `docs/progress.md`.
 
+**Foundation ordering correction (2026-10-28):** D2-T1's existing Kotlin protocol task is pulled forward as a Day 1 CI prerequisite, because D1-T8 already requires that module. Its original id/specification/checklist below are retained. All other Day 2 tasks and the closed-loop phase remain gated on Day 1 completion.
+
 **Goal:** A voice-named button on the tablet replica is reached by a blindfolded proxy. The loop:
 - **Phone:** tracks the screen and the fingertip and guides with speech, tone and haptics.
 - **Gateway:** turns goal plus keyframe into layout plus target, relays speech to Voice Transcribe, and relays simulator touches.
@@ -46,6 +48,8 @@ Everything in Day 1's list still applies, plus:
 ---
 
 ### Task D2-T1: `core:protocol` (Kotlin models + codec, contract-tested against the TS fixtures)
+**Execution order:** complete this foundation before D1-T8. Add the module include to the current settings file; preserve existing app/settings corrections when applying assets.
+
 **Files:**
 - `apply.sh 2 apps/android/settings.gradle.kts apps/android/core/protocol`
 - **Finished:** `Common.kt`, `ClientMessages.kt`, `ServerMessages.kt` (data classes whose `init` blocks enforce the zod limits) and `build.gradle.kts`. The build file points the tests at `../../packages/protocol/fixtures` through the system property `fixtures.dir`.

@@ -20,12 +20,14 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
 | D1-T7d | Tone prototype | A | T7c | done | Codex |
-| D1-T8 | CI green + tester docs | C | T1, T7b | todo | |
+| D2-T1 (pulled forward) | Kotlin protocol foundation required by Day 1 CI | A | D1-T2, D1-T7a | todo | |
+| D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | todo | |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
+The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. Its id and specification are retained; other Day 2 tasks still require the Day 1 exit gate.
+
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
-| D2-T1 | core:protocol (Kotlin) | A | D1-T2, D1-T7a | todo | |
 | D2-T2 | Target zones, fingertip | A | D1-T7a | todo | |
 | D2-T3 | Phrases, speech queue | A | D2-T2 | todo | |
 | D2-T4 | Guidance state machine | A | D2-T3 | todo | |
@@ -180,16 +182,17 @@ After five logged warm-up windows:
 
 - D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
 
-- D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` fails: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` This is the D2-T1 module, not yet implemented. Current guidance tests and app build pass individually; CI workflow retained intact.
+- D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` previously failed: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` Resolved the ordering conflict by moving the existing D2-T1 foundation before T8; implementation and green CI are still required. No check removed.
 
 - D1-T0 · Only the tooling item is verified (1/8 top-level items). Account/credit/cloud/registry/name/photo/outreach requirements lack recorded completion evidence; local .env and Day 1 photo dataset are absent. Human-only setup remains required.
 - D1-T5 · Audit found smoke output privacy conflict: the script writes image bytes into SVGs and recognized labels into Markdown under docs/evals, which the plan stages for commit. Fix raw-output handling and retain only sanitized metrics in Git before running real photos. Deployment CLI is also absent locally.
-- D1-T8 / phase order · Day 1 CI requires the D2-T1 protocol module, but the Day 2 plan requires Day 1 completion. Reconcile this forward dependency before phase progression; do not bypass the CI check. T0 outreach also depends on missing T8 drafts, and T8's stated 45-minute agenda currently totals 50 minutes.
+- D1-T8 / tester preparation · T0's human outreach awaits T8 drafts. Prepare those before sending anything; T0 stays incomplete until outreach is actually performed. The session agenda is reconciled to 45 minutes by retaining the practice blocks and using a 5-minute interview.
 
 
 
 ## Deviations from the plan
 _(task id · what changed · why · who approved)_
+- D1-T8 / D2-T1 · On the user's continuation request, reconcile the documented CI cycle by executing the existing Kotlin protocol foundation before Day 1 T8. Retain its id, assets, pinned dependencies and full contract tests; no other Day 2 work or phase advancement. T7c stays unfinished. Prepare T8 outreach materials before T0's human outreach, and correct T8's 50-minute total to the required 45 minutes with a 5-minute interview.
 - D1-T7d · User explicitly instructed on 2026-10-28 to leave T7c unfinished and implement T7d. T7c stays blocked with its performance/acceptance boxes open; this is a scoped dependency-order exception, not a completed prerequisite or permission to advance phases.
 - D1-T7d · Retain the plan's explicit prototype formula: frequency rises as image x increases. Correct the contradictory device-check wording ("moves left") to "moves right"; no formula, guidance threshold or product decision changes.
 - D1-T1 · The referenced superpowers workflow skills are not installed; Codex follows the complete repository task checklist directly under the user’s autonomous-development instruction. No dependency or product changes.
