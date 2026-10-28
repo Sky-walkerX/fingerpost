@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 2 closed-loop implementation, explicitly started by the user on 2026-10-28 with Day 1 unfinished · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Nine tasks are complete within their documented scope; four are partial and 24 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; other Day 2–3 work has not started.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Ten tasks are complete within their documented scope; four are partial and 23 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2 is complete under the user-directed phase exception; subsequent tasks are tracked below.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
 
@@ -30,7 +30,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
-| D2-T2 | Target zones, fingertip | A | D1-T7a | doing | Codex |
+| D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
 | D2-T3 | Phrases, speech queue | A | D2-T2 | todo | |
 | D2-T4 | Guidance state machine | A | D2-T3 | todo | |
 | D2-T5 | Goal → element resolution | B | D1-T4 | todo | |
@@ -271,3 +271,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: Audit/fixes revision 2480252 pushed; `gh run watch 40647979193 --interval 15 --exit-status` exits 0 and run details confirm both ts/android jobs successful, including Python tooling checks. Day 1 remains 8/12 original tasks complete and 1/5 exit checks passed; T0/T5/T6/T7c stay blocked. No performance or live-quality result was invented.
 
 - 2026-10-28: User reconnected an authorized USB phone with the current APK. Corrected profiling transport after red-first command regression; all 24 tracking +5 deployment tests pass. Camera-free shell probes stayed open for 5/20 seconds, then both 5-second warm-up +15-second app captures completed (14 tracker/15 camera windows each). GPU/one hand: 9–12 FPS / 52–109 ms, intermittent hand loss; GPU/two hands: 5–8 FPS / 107–167 ms, rolling max 167 ms, budget false (exit 1). Both thermal readings were 3; idle cooling reached only 2. Camera stopped after diagnostics; user deferred visual/TalkBack checks until later. T7c remains blocked, production defaults and Day 1 exit gate unchanged; no further speed attempt or task advancement. Full generic numeric evidence is appended to the profiling report/data.
+
+- 2026-10-28: D2-T2 complete: copied the finished geometry implementation and original tests unchanged; confirmed 10 expected target/fingertip TODO failures and six additional boundary failures before implementation. Added iso-space target zones/error, hysteresis/reset, fingertip pad compensation, valid/nearest hand selection and off-screen bounds. `./scripts/android.sh :core:guidance:test --console=plain` passes all 63 cases with 0 failures/errors/skips. Pure JVM scope only; app wiring and Day 1 acceptance remain pending.

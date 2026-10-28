@@ -104,10 +104,10 @@ Everything in Day 1's list still applies, plus:
 - `chooseHand(hands, w, h, targetImg)`: keep hands with presence ≥ 0.6 and the tip inside `[0,w]×[0,h]`. Pick the one nearest `targetImg`, or the first if it's `null`.
 - `isOffScreen(uv)` = `uv.x ∉ [−0.15, 1.15]` or `uv.y ∉ [−0.15, 1.15]`.
 
-- [ ] **Step 1: Copy, then confirm red.** Run `./gradlew :core:guidance:test`. GeometryTest passes; Target and Fingertip fail.
-- [ ] **Step 2: Implement.**
-- [ ] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`. GeometryTest, TargetTest and FingertipTest all pass.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Run `./gradlew :core:guidance:test`. GeometryTest passed; 10 Target/Fingertip TODO failures confirmed. Six added boundary regressions also failed before implementation.
+- [x] **Step 2: Implement.**
+- [x] **Step 3: Confirm green.** Run `./gradlew :core:guidance:test`. All 63 guidance tests pass with 0 failures/errors/skips (37 existing, 20 supplied geometry/target/fingertip cases, six added boundaries).
+- [x] **Step 4: Commit.**
   `git commit -m "feat(guidance): target zones, debouncer, fingertip pad point"` (after `git add`)
 
 ### Task D2-T3: cue planner, phrases and speech queue
