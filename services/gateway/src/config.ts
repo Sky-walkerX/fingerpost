@@ -8,6 +8,7 @@ const Env = z
     DEBUG_TOKEN: z.string().min(16).optional(),
     GIT_SHA: z.string().min(1).default('dev'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    SIM_TOKEN: z.string().min(8).optional(),
   })
   .superRefine((e, ctx) => {
     if (e.MODEL_MODE === 'live' && !e.META_API_KEY) ctx.addIssue({ code: 'custom', path: ['META_API_KEY'], message: 'META_API_KEY is required when MODEL_MODE=live' });

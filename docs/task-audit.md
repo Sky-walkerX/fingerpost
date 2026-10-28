@@ -4,7 +4,7 @@ This audit compares the implementation plans, actual runtime files, tests/builds
 
 The focused [Day 1 readiness audit](evals/day1-completion-audit.md) includes fixes at `5d4a5aa` and `d0a4ed3`: 8/12 original Day 1 tasks complete, plus the pulled-forward D2-T1 foundation; only 1/5 Day 1 exit checks passes. It separates freshly executed commands from historical device/container evidence and records fixed evaluation/privacy gaps and the remaining T5 live-measurement requirements.
 
-Of the 37 tasks written for Days 1–3, **14 meet their complete task checklists, 4 have partial implementation/setup, and 19 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; the user subsequently explicitly started Day 2 with Day 1 unfinished. D2-T2–T4 are complete within their pure-logic scope, and D2-T5 target resolution is complete. The user resumed Day 2 coding while keeping Day 1 incomplete; later tasks remain pending. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
+Of the 37 tasks written for Days 1–3, **14 meet their complete task checklists, 5 have partial implementation/setup, and 18 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; the user subsequently explicitly started Day 2 with Day 1 unfinished. D2-T2–T4 are complete within their pure-logic scope, and D2-T5 target resolution is complete. The user resumed Day 2 coding while keeping Day 1 incomplete; later tasks remain pending. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -19,7 +19,7 @@ The focused audit above contains the latest command executions and their limits.
 | Check | Audited result |
 |---|---|
 | TypeScript protocol tests | 48 passed |
-| Gateway tests | 180 passed: prior 160 retained plus 20 pipeline cases |
+| Gateway tests | 205 passed: prior 180 retained plus 25 ASR/controller/session-flow cases |
 | Simulator tests | 14 passed |
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
@@ -72,7 +72,7 @@ The compile-SDK mismatch discovered during the first app build has already been 
 
 ## Day 2: core logic and target resolution complete
 
-The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was already complete as a CI foundation; D2-T2–T4 meet their documented pure-logic checks and T5 target resolution is complete. T6 session pipeline is also complete as a standalone component; the remaining eight tasks are pending. The user resolved DONE in favor of actual speech completion, with the plan/test corrected. Reference assets do not count as implemented work.
+The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was already complete as a CI foundation; D2-T2–T4 meet their documented pure-logic checks and T5 target resolution is complete. T6 session pipeline is also complete as a standalone component; T7 coding/local checks are complete but its required live check/redeployment is blocked; the remaining seven tasks are unimplemented/unperformed. The user resolved DONE in favor of actual speech completion, with the plan/test corrected. Reference assets do not count as implemented work.
 
 | Task | Missing deliverable | Additional task prerequisites |
 |---|---|---|
@@ -80,9 +80,9 @@ The user explicitly requested starting Day 2 despite unfinished Day 1. D2-T1 was
 | D2-T2 — complete | Iso-space target zones/error, debouncing/reset and fingertip selection; 20 supplied +6 added tests pass | D1-T7a done; no app wiring claimed |
 | D2-T3 — complete | Cue planner retained; English phrases and speech queue implemented; 16 supplied +6 added tests pass | D2-T2 done; other locales and Android TTS wiring remain later work |
 | D2-T4 — complete | State transitions/retries/hysteresis and correlated terminal speech completion; 15 supplied +12 boundary cases pass | Pure JVM; Android TTS integration remains T10c |
-| D2-T5 — complete | Deterministic exact/fuzzy aliases, ambiguity, position words and lists; 17 cases pass | D1-T4 done; session wiring remains T6/T7 |
-| D2-T6 — complete | Locate/ask/target/verify, task gates and usage hooks; 20 cases pass | D2-T5 done; controller wiring remains T7 |
-| D2-T7 | Session controller, Voice Transcribe and simulator relay | D2-T6 |
+| D2-T5 — complete | Deterministic exact/fuzzy aliases, ambiguity, position words and lists; 17 cases pass | D1-T4 done; T6/T7 wiring locally verified, live acceptance pending |
+| D2-T6 — complete | Locate/ask/target/verify, task gates and usage hooks; 20 cases pass | D2-T5 done; controller wiring locally verified, T7 live acceptance pending |
+| D2-T7 — partial | Controller/ASR/sim wiring and mock flow implemented; 25 new cases pass. Live acceptance/redeployment still required | D2-T6 done; human Meta/GCP prerequisites and accepted region missing |
 | D2-T8 | Eval harness, labels and measured baseline | D2-T7 |
 | D2-T9 | Additional simulator scenes and touch relay | D1-T6 |
 | D2-T10a | Local screen-quad estimate and screen tracker | D2-T2; device verification |

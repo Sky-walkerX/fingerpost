@@ -270,6 +270,8 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(gateway): session pipeline: locate, ask, target, verify"`
 
 ### Task D2-T7: controller, Voice Transcribe relay, sim relay, Day 2 app
+**Status (2026-10-28):** coding/local verification complete, required live ASR acceptance and redeployment blocked. No Meta key is configured and ADR-0003 is still proposed. Preserve this task as blocked until Steps 4/5 pass.
+
 **Files:**
 - `apply.sh 2` with:
   - `services/gateway/package.json` (adds `ws`, and the `exports` for `./eval-api`);
@@ -309,13 +311,13 @@ Everything in Day 1's list still applies, plus:
   - **Day 3 hooks:** when `quota` is given, `onUsage` → `quota.recordUsage` (fire-and-forget). When `claims` is also given, `beforeTask` → `quota.startTask(uid, tier)`. ASR seconds are `audioBytes / 32 000`, recorded on the final.
   - **`dispose`:** close the relay and unsubscribe.
 
-- [ ] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test -- asr e2e`.
-- [ ] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
-- [ ] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 68 pass.
+- [x] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test asr e2e`.
+- [x] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
+- [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. All 205 gateway cases and recursive typecheck/build pass; source/compiled localhost mock exchanges pass.
 - [ ] **Step 4: Live check** (needs the D1 key). Run `set -a; source .env; set +a; MODEL_MODE=live pnpm --filter @fingerpost/gateway dev` and connect any WS client.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
 - [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region>`. To use the sim against the live gateway, first create a `sim-token` secret (`openssl rand -hex 16`), add `SIM_TOKEN=sim-token:latest` to `--set-secrets`, and open the sim with `&token=<value>`. Without it, live mode has no sim route at all.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit coding work.** Live Steps 4/5 remain blocked; this commit does not complete the task.
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 
 ### Task D2-T8: eval harness v1 (`evals/`)
