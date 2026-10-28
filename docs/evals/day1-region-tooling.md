@@ -24,6 +24,8 @@ Failing-first runs confirmed eight ASR TODO failures, ten route TODO failures, t
 
 All **143 gateway tests**, **48 protocol tests** and **14 simulator tests** pass: **205 TypeScript tests** total. Recursive typecheck and all workspace production builds pass. The **49 new gateway cases** include actual localhost native-WebSocket exchanges with synthetic bytes and fake providers; no external model call is made. Existing tests remain intact. Android code and dependencies are unchanged in this work.
 
+[CI at implementation cd3aed5](https://github.com/Sky-walkerX/fingerpost/actions/runs/40658914167) passes both `ts` and `android`, retaining all original checks.
+
 The compiled gateway also completes two localhost mock benchmark samples through real binary target exchanges. Mock ASR timings are zero placeholders and never qualify for live ranking. No mock timing figure is recorded as live performance.
 
 ## Run after human prerequisites are ready

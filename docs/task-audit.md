@@ -33,9 +33,9 @@ The focused audit above contains the latest command executions and their limits.
 | Installed Android shell | Prior install/launch and device authorization verified; not rechecked in the readiness audit |
 | Device accessibility acceptance | User confirmed spoken denial and single session element; TalkBack enabled corroborated through device settings |
 | Camera/settings-return acceptance | User confirmed black session screen after grant/return; CAMERA granted=true and MainActivity resumed corroborated through ADB |
-| Latest verified CI | Both ts and android jobs pass at Day 2 guidance revision caf62d0; all original checks retained |
+| Latest verified CI | Both ts and android jobs pass at regional measurement revision cd3aed5; all original checks retained |
 
-Latest implementation CI evidence: [run at caf62d0](https://github.com/Sky-walkerX/fingerpost/actions/runs/40653225580). This confirms both guidance tasks and all existing checks at that revision; subsequent documentation changes are not covered by that run.
+Latest implementation CI evidence: [run at cd3aed5](https://github.com/Sky-walkerX/fingerpost/actions/runs/40658914167). This confirms regional tooling, existing guidance and all original checks at that revision; subsequent documentation changes are not covered by that run.
 
 ## Day 1: each task
 
