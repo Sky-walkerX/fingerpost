@@ -161,6 +161,49 @@ class ParserTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "two-hand"):
             profile.meets_budget(summary)
 
+    def test_cpu_diagnostic_cannot_pass_gpu_acceptance(self):
+        line = (TRACKER.replace("delegate=GPU", "delegate=CPU").replace("fps=10", "fps=30")
+                .replace("inferenceMs=52", "inferenceMs=20").replace("maxMs=81", "maxMs=22"))
+        summary = profile.summarize([profile.parse_line(line)], "CPU", 2)
+        with self.assertRaisesRegex(ValueError, "GPU"):
+            profile.meets_budget(summary)
+
+    def test_budget_cli_rejects_cpu_before_device_operations(self):
+        with (mock.patch.object(profile, "find_adb") as find,
+              redirect_stderr(StringIO()), self.assertRaises(SystemExit)):
+            profile.main(["--delegate", "CPU", "--check-budget"])
+        find.assert_not_called()
+
+    def test_budget_requires_awake_evidence_and_enough_measurement_windows(self):
+        good = (TRACKER.replace("fps=10", "fps=30").replace("inferenceMs=52", "inferenceMs=20")
+                .replace("maxMs=81", "maxMs=22"))
+        row = profile.parse_line(good)
+        for awake, count in [([True, False], 14), ([None, True], 14), ([True, None], 14), ([True, True], 1)]:
+            with self.subTest(awake=awake, count=count):
+                errors, output = StringIO(), StringIO()
+                with (mock.patch.object(profile, "find_adb", return_value="synthetic-adb"),
+                      mock.patch.object(profile, "thermal_status", return_value=0),
+                      mock.patch.object(profile, "awake_status", side_effect=awake),
+                      mock.patch.object(profile, "adb_output", side_effect=["", "Status: ok\n", "123"]),
+                      mock.patch.object(profile, "collect", return_value=[row] * count),
+                      redirect_stdout(output), redirect_stderr(errors)):
+                    self.assertEqual(profile.main(["--check-budget"]), 1)
+                self.assertEqual(output.getvalue(), "")
+                self.assertIn("Incomplete performance evidence", errors.getvalue())
+
+    def test_complete_default_gpu_evidence_can_pass_without_changing_thresholds(self):
+        good = (TRACKER.replace("fps=10", "fps=25").replace("inferenceMs=52", "inferenceMs=25")
+                .replace("maxMs=81", "maxMs=25"))
+        output = StringIO()
+        with (mock.patch.object(profile, "find_adb", return_value="synthetic-adb"),
+              mock.patch.object(profile, "thermal_status", return_value=0),
+              mock.patch.object(profile, "awake_status", return_value=True),
+              mock.patch.object(profile, "adb_output", side_effect=["", "Status: ok\n", "123"]),
+              mock.patch.object(profile, "collect", return_value=[profile.parse_line(good)] * 14),
+              redirect_stdout(output)):
+            self.assertEqual(profile.main(["--check-budget"]), 0)
+        self.assertIn('"budget_pass": true', output.getvalue())
+
     def test_thermal_parser_exposes_only_numeric_status(self):
         self.assertEqual(profile.parse_thermal_status("Other private data\nThermal Status: 1\nMore data"), 1)
         self.assertIsNone(profile.parse_thermal_status("not available"))

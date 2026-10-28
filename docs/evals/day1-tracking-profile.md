@@ -9,7 +9,7 @@
 - Added numeric timing for analyzer delivery, bitmap conversion, crop/rotation, model input preparation, task-call latency, submission and callback queue delay. Task latency ends at listener entry; callback dispatch is measured separately. Previously it included that dispatch. Observed dispatch was negligible, so the shortfall was not a measurement artifact.
 - Added an optional raw `AnalysisFrame` path to the existing CameraPipeline interface. The tracker draws crop, clockwise rotation, downscale and letterbox in one operation into its reusable 640×480 bitmap. It no longer allocates a full-resolution rotated intermediate on this path. Published landmarks still use the same upright crop dimensions. The original upright-bitmap callback remains available.
 - Recycle the **distinct output MPImage** supplied to each MediaPipe callback. Inspection of pinned 1.1.1 bytecode confirmed that it allocates a new Bitmap and that OutputHandler does not close it. The reusable input image remains alive until tracker teardown/fallback.
-- Keep the visible camera PreviewView awake. A comparison run exposed automatic screen sleep; invalid runs produced no results. This flag does not override explicit device locking or keep a background camera session alive.
+- Keep the visible camera awake. A comparison run exposed automatic screen sleep; invalid runs produced no results. The initial PreviewView flag was subsequently moved to MainActivity's visible window, covering the permission screen too. It does not override explicit device locking or keep a background camera session alive.
 - Added debug-only intent selection of CPU/GPU and one/two hands for controlled comparisons. Release intent overrides are ignored; default configuration remains **GPU, two hands**.
 - Added `scripts/profile-android-tracking.py`: standard-library-only developer tooling, bounded warm-up/sample duration, strict numeric parsing, configuration validation, thermal/awake state, optional private device selector and budget check. It reads only the app's main log buffer. No frame, screenshot, audio, landmark coordinates or identifying device information is exported.
 
@@ -43,6 +43,10 @@ The full-size rotation cost is removed by the new path, but the model task still
 - The diagnostic one-hand session was force-stopped after capture. The app was then launched without diagnostic extras and backgrounded; previous test sessions were stopped and the private temporary device selector was deleted. No diagnostic setting was promoted to production.
 
 ## Reproduce
+
+**Audit follow-up (2026-10-28):** four new synthetic tracking-tool tests reproduced acceptance gaps before correction. `--check-budget` now requires GPU/two hands, confirmed awake state before/after and enough logged windows for the requested duration (one boundary window may be omitted). All 22 tracking-tool tests pass, and CI now runs them plus the five deployment-tool tests. The FPS/latency thresholds are unchanged. CPU and one-hand modes remain diagnostics and cannot pass GPU acceptance. The historical CPU command in progress.md used the earlier checker; omit `--check-budget` for current CPU diagnostics.
+
+No phone was connected during this follow-up, so there is no new speed, thermal, visual or TalkBack acceptance result. Log-stream termination remains unresolved; EOF still rejects the capture. These tooling fixes do not improve or establish tracking performance.
 
 Install the debug APK, grant Camera, unlock the phone and open Fingerpost. With a single USB phone:
 

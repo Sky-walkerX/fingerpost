@@ -448,6 +448,7 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
 - [x] **Step 1: Add the model asset** and check its checksum: `shasum -a 256 app/src/main/assets/hand_landmarker.task`. Verified pinned SHA-256 and 7,819,105 bytes on 2026-10-28; recorded in apps/android/ASSETS.md.
 - [x] **Step 2: Implement** `CameraPipeline`, `HandTracker` and the overlay. Uses guidance-spec §3's 640×480 aspect-preserving letterbox; six projection and seven fused-transform tests added red-first. All 25 JVM tests and 18 numeric-tool tests pass. Build and lint pass; the visible app window keeps the screen awake, including the permission screen.
 - [x] **Step 3: Build and install.** Run `./gradlew :app:installDebug`. Final fused/keep-awake APK installed and launched successfully on the comparison test phone on 2026-10-28; multiple-device install used privately targeted adb.
+  - Audit follow-up: tracking CLI acceptance now requires GPU/two hands, awake-state evidence and sufficient logged windows; 22 synthetic tracking-tool tests pass and run in CI. No production detector setting or performance threshold changed. No device was connected for new acceptance checks.
 - [ ] **Step 4: Check on the device.**
   - [x] The original overlay follows the index fingertip in portrait and landscape and disappears when the hand leaves view. User confirmed on 2026-10-28. Fused-build regression confirmation remains pending below.
   - [ ] The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.

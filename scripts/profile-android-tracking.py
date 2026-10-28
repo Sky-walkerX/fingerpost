@@ -97,6 +97,8 @@ def summarize(rows, delegate, hands):
 
 
 def meets_budget(report):
+    if report["actual_configuration"]["delegate"] != "GPU":
+        raise ValueError("Budget acceptance requires the default GPU delegate")
     if report["actual_configuration"]["max_hands"] != 2:
         raise ValueError("Budget acceptance requires the default two-hand configuration")
     return (report["tracker"]["fps"]["min"] >= 25
@@ -135,7 +137,7 @@ def build_parser():
     parser.add_argument("--warmup-seconds", type=bounded_seconds(0, 60), default=5)
     parser.add_argument("--seconds", type=bounded_seconds(1, 600), default=15)
     parser.add_argument("--serial-file", type=Path, help="read the target device privately from a file; defaults to adb -d")
-    parser.add_argument("--check-budget", action="store_true", help="fail below 25 FPS or above 25 ms window maximum (two hands only)")
+    parser.add_argument("--check-budget", action="store_true", help="check 25 FPS/25 ms with GPU, two hands and a complete awake measurement window")
     return parser
 
 
@@ -236,8 +238,8 @@ def collect(adb, pid, warmup_seconds, seconds, target=None):
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.check_budget and args.hands != 2:
-        parser.error("--check-budget requires the default two-hand configuration")
+    if args.check_budget and (args.hands != 2 or args.delegate != "GPU"):
+        parser.error("--check-budget requires the default GPU/two-hand configuration")
     try:
         adb = find_adb()
         target = adb_target(args.serial_file)
@@ -260,6 +262,12 @@ def main(argv=None):
         report["thermal_status"] = {"before": thermal_before, "after": thermal_status(adb, target=target)}
         report["awake_before"] = awake_before
         report["awake_after"] = awake_status(adb, target=target)
+        if args.check_budget:
+            # At most one tracker line is emitted per second; allow one boundary window.
+            minimum_windows = max(1, math.floor(args.seconds) - 1)
+            if (awake_before is not True or report["awake_after"] is not True
+                    or report["tracker"]["sample_count"] < minimum_windows):
+                raise ValueError("Incomplete performance evidence; verify the awake state and capture the full measurement window")
         report["budget_pass"] = meets_budget(report) if args.check_budget else None
         print(json.dumps(report, indent=2, sort_keys=True))
         return 1 if report["budget_pass"] is False else 0
