@@ -52,3 +52,9 @@ On the comparison test phone, Fingerpost remained focused and awake for **125.2 
 The user explicitly requested T7d while leaving T7c unfinished. The tone prototype is implemented and installed; all 37 guidance tests, debug build and lint pass. The user confirmed pitch rising toward the right under the prototype formula, stereo pan following the dot, click-free changes, TalkBack double-tap off/on, silence when the hand leaves view and silence in the background. **Perceived response: feels prompt.** This is a listening report, not a measured acoustic or frame-to-cue delay.
 
 Read-only numeric state reports 48,000 Hz, 3,848 buffer frames and low-latency AudioTrack mode; TalkBack is enabled. No camera frame or audio recording was exported. See [the full tone acceptance report](day1-tone.md). T7d is complete for its scope; T7c and the overall Day 1 exit gate remain open.
+
+## Later USB reconnect — 2026-10-28
+
+One authorized USB phone has Camera permission and the current APK (installed/local hash match); no identifier was saved. The corrected shell transport completed both 5-second warm-up +15-second diagnostic windows. GPU/one hand: 9–12 FPS / 52–109 ms, rolling max 116 ms, intermittent hand loss. GPU/two hands: 5–8 FPS / 107–167 ms, rolling max 167 ms, unchanged speed gate fails. Both runs reported severe thermal status 3; idle screen-off cooling reached status 2. These are not a cold baseline or an isolated hand-count experiment. The app was stopped after diagnostics.
+
+The user explicitly postponed the fused visual/orientation/disappearance and single-TalkBack-element checks until later. Those requirements and the production speed check remain open; no new device acceptance is claimed. See the [profiling follow-up](day1-tracking-profile.md#usb-reconnect-and-capture-transport-follow-up--2026-10-28) and [numeric evidence](day1-tracking-profile-data.json).

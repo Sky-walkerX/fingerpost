@@ -192,7 +192,9 @@ def awake_status(adb, target=None):
 
 
 def collect(adb, pid, warmup_seconds, seconds, target=None):
-    command = [adb, *(target or ["-d"]), "logcat", "-b", "main", "--pid=" + pid, "-v", "raw", "-T", "1", "-s",
+    # Explicit shell transport avoids the observed early exit of adb's logcat shortcut.
+    # Disable the PTY so line framing stays independent of terminal processing.
+    command = [adb, *(target or ["-d"]), "shell", "-T", "logcat", "-b", "main", "--pid=" + pid, "-v", "raw", "-T", "1", "-s",
                "FingerpostTracker:I", "FingerpostCamera:I", "*:S"]
     rows = []
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0) as process:

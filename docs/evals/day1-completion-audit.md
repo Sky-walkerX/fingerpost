@@ -90,3 +90,9 @@ The following evidence was reviewed, **not repeated**: shell acceptance in [day1
 ## Next actionable work
 
 Remain in Day 1. Human T0 setup/private photos and test-device availability are now the immediate prerequisites. Engineering then runs the prepared live smoke and manual quality review, verifies real deployment, supplies the missing regional measurement capability/evidence, and resumes the controlled T7c investigation. T6 needs its actual tablet checks. No Day 2 closed-loop task is started. When each task's required evidence exists, run its final verification and only then change its status; all five exit checks must be satisfied before the general Day 2 phase starts.
+
+## Subsequent USB reconnect — 2026-10-28
+
+The prior zero-device finding above describes the audit snapshot. The user subsequently connected one authorized USB phone; the installed APK matches the current local build. A red-first profiling transport change uses explicit non-PTY ADB shell execution, preserving PID/main-buffer/tag restrictions and early-EOF rejection. All 24 tracking-tool and five deployment-tool tests pass locally. Two full capture windows now complete, including the first retained GPU/one-hand diagnostic.
+
+Both new runs report severe thermal status 3: GPU/one hand reaches 9–12 FPS / 52–109 ms, with intermittent hand loss; GPU/two hands reaches 5–8 FPS / 107–167 ms, rolling max 167 ms, and fails the unchanged gate. This is no unthrottled or isolated hand-count comparison. The camera session was stopped; the user postponed the fused visual/TalkBack regression. No Android production code, model, dependency, threshold or completion count changed. Next T7c work remains a controlled unthrottled/native-task investigation and the deferred manual checks. See the [profiling report](day1-tracking-profile.md) for exact conditions and numeric evidence.

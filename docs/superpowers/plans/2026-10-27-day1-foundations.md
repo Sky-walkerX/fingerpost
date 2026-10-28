@@ -453,7 +453,8 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
   - [x] The original overlay follows the index fingertip in portrait and landscape and disappears when the hand leaves view. User confirmed on 2026-10-28. Fused-build regression confirmation remains pending below.
   - [ ] The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
   - [x] Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
-  - [ ] Recheck visual following/disappearance in both orientations and the single TalkBack element after the fused-pipeline change.
+  - [ ] Recheck visual following/disappearance in both orientations and the single TalkBack element after the fused-pipeline change. User postponed this check during the later USB reconnect.
+  - USB reconnect follow-up: corrected shell transport completes both full diagnostic windows; all 24 tracking-tool +5 deployment-tool tests pass. GPU/one hand reaches 9–12 FPS / 52–109 ms (intermittent hand loss), GPU/two hands 5–8 FPS / 107–167 ms (rolling max 167 ms; budget false). Both report thermal status 3, so a cold baseline is still missing.
   - **Blocked (2026-10-28):** original runs missed the target. Resumed tests on a comparison phone still fail: CPU/two hands 11–14 fps / 45–61 ms with no hands; GPU/two hands 10–12 fps / 43–86 ms with a pointing hand consistently detected. Production stays GPU/two hands. See docs/evals/day1-tracking-profile.md and progress Blockers. User subsequently explicitly authorized T7d while leaving this task unfinished (exception below).
 - [ ] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`

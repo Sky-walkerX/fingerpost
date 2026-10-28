@@ -1,6 +1,6 @@
 # T7c performance investigation — 2026-10-28
 
-**Outcome: T7c remains blocked.** The user explicitly resumed investigation and provided a second Android test phone. The required GPU/two-hand mode still misses ≥25 result FPS and ≤25 ms inference. No requirement, dependency, model asset, or production hand limit was reduced.
+**Outcome: T7c remains blocked.** The user explicitly resumed investigation and provided a second Android test phone. The required GPU/two-hand mode still misses ≥25 result FPS and ≤25 ms inference. No requirement, dependency, model asset, or production hand limit was reduced. A later USB reconnect produced two complete captures through the corrected shell transport; both reported severe thermal throttling and neither establishes unthrottled performance (follow-up below).
 
 **Subsequent scope decision:** the user explicitly deferred unfinished T7c and requested the T7d tone prototype. That work and its separate acceptance are tracked in [the tone report](day1-tone.md); the performance measurements and open T7c checks here are unchanged.
 
@@ -43,6 +43,24 @@ The full-size rotation cost is removed by the new path, but the model task still
 - The diagnostic one-hand session was force-stopped after capture. The app was then launched without diagnostic extras and backgrounded; previous test sessions were stopped and the private temporary device selector was deleted. No diagnostic setting was promoted to production.
 
 ## Reproduce
+
+### USB reconnect and capture transport follow-up — 2026-10-28
+
+- One USB phone is authorized, Camera is granted, and the installed APK's hash matches the current local debug build. ADB selection uses `-d`; no device identifier is saved or reported.
+- The direct `adb logcat` probe exited 255 after about 1.9 seconds while the camera was stopped. An explicit `adb shell -T logcat` probe stayed open for 5 seconds and then a full 20-second window with no stderr. The CLI now uses that shell transport without a PTY, retaining the same PID, main-buffer and two-tag filters. This is an observed transport workaround, not proof of the earlier EOF's root cause.
+- The command regression failed before implementation. All **24 tracking-tool tests** and **five deployment-tool tests** pass. Added subprocess cases verify numeric-only retention, child cleanup and rejection of early EOF even after valid partial rows. No acceptance threshold or interrupted-capture rejection was weakened.
+- While idle with the screen off, thermal status fell from 3 to 2. After the user opened the app and confirmed a fixed, well-lit pointing-hand scene, **both runs reported status 3 before and after capture**. Each completed a 5-second warm-up and 15-second sample window, retaining 14 tracker and 15 camera log windows; both awake checks passed.
+
+| Order / diagnostic | Result FPS | Sampled task latency | Rolling maximum | Detected hands |
+|---|---|---|---|---|
+| 1: GPU/one hand | 9–12 | 52–109 ms, median 73 ms | 116 ms | 0 or 1 across retained samples |
+| 2: GPU/two hands | 5–8 | 107–167 ms, median 135 ms | 167 ms | 1 in every retained sample |
+
+The first run exited 0 as a diagnostic, **not a performance acceptance**. The production GPU/two-hand check exited 1 with `budget_pass: false`. Camera analyzer delivery remained approximately 29–31 FPS, while task submission took 0–3 ms and median callback queue delay was 0 ms. Full numeric summaries and per-run APK hashes are appended to [the profile data](day1-tracking-profile-data.json).
+
+These runs establish successful capture and another failed production speed check. They do **not** isolate the repeated-palm-detection cost: the first mode intermittently lost the hand, the runs were sequential rather than counterbalanced, and the coarse thermal status does not establish equal clock behavior. No one-hand setting was promoted to production. The diagnostic session was force-stopped afterward. The user postponed the fused visual/orientation/disappearance and single-TalkBack-element regression until later; those boxes remain unchecked. A controlled unthrottled comparison and native-task investigation remain necessary; no further speed attempts were made in this follow-up.
+
+### Commands
 
 **Audit follow-up (2026-10-28):** four new synthetic tracking-tool tests reproduced acceptance gaps before correction. `--check-budget` now requires GPU/two hands, confirmed awake state before/after and enough logged windows for the requested duration (one boundary window may be omitted). All 22 tracking-tool tests pass, and CI now runs them plus the five deployment-tool tests. The FPS/latency thresholds are unchanged. CPU and one-hand modes remain diagnostics and cannot pass GPU acceptance. The historical CPU command in progress.md used the earlier checker; omit `--check-budget` for current CPU diagnostics.
 

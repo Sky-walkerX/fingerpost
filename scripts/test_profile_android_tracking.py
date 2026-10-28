@@ -2,6 +2,7 @@ import importlib.util
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -75,14 +76,40 @@ class ParserTest(unittest.TestCase):
         command.assert_not_called()
         self.assertIn("Wake and unlock the selected phone before profiling", errors.getvalue())
 
-    def test_logcat_reads_main_buffer_and_only_own_numeric_tags(self):
+    def test_logcat_shell_transport_reads_main_buffer_and_only_own_numeric_tags(self):
         with mock.patch.object(profile.subprocess, "Popen", side_effect=RuntimeError("synthetic stop")) as popen:
             with self.assertRaisesRegex(RuntimeError, "synthetic stop"):
                 profile.collect("synthetic-adb", "123", 0, 1, target=["-s", "synthetic-private-device"])
         self.assertEqual(popen.call_args.args[0], [
-            "synthetic-adb", "-s", "synthetic-private-device", "logcat", "-b", "main", "--pid=123",
+            "synthetic-adb", "-s", "synthetic-private-device", "shell", "-T", "logcat", "-b", "main", "--pid=123",
             "-v", "raw", "-T", "1", "-s", "FingerpostTracker:I", "FingerpostCamera:I", "*:S",
         ])
+
+    def test_complete_capture_retains_only_numeric_rows_and_stops_child(self):
+        popen = profile.subprocess.Popen
+        children = []
+
+        def start_child(*args, **kwargs):
+            child = popen([sys.executable, "-u", "-c",
+                           "import time; print('synthetic private text'); "
+                           f"print({TRACKER!r}); print({CAMERA!r}); time.sleep(30)"], **kwargs)
+            children.append(child)
+            return child
+
+        with mock.patch.object(profile.subprocess, "Popen", side_effect=start_child):
+            rows = profile.collect("synthetic-adb", "123", 0, 1)
+        self.assertEqual(rows, [profile.parse_line(TRACKER), profile.parse_line(CAMERA)])
+        self.assertIsNotNone(children[0].poll())
+
+    def test_early_eof_rejects_even_valid_partial_rows(self):
+        popen = profile.subprocess.Popen
+
+        def start_child(*args, **kwargs):
+            return popen([sys.executable, "-u", "-c", f"print({TRACKER!r})"], **kwargs)
+
+        with mock.patch.object(profile.subprocess, "Popen", side_effect=start_child):
+            with self.assertRaisesRegex(ValueError, "App log stream ended before profiling completed"):
+                profile.collect("synthetic-adb", "123", 0, 2)
 
     def test_tracker_numeric_fields(self):
         row = profile.parse_line(TRACKER)
