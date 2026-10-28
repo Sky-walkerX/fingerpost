@@ -84,8 +84,7 @@ class MainActivity : ComponentActivity() {
 
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     if (cameraGranted) {
-                        // D1-T7d connects this action to the tone output.
-                        SessionScreen(onToggle = {}, trackingOptions = trackingOptions)
+                        SessionScreen(trackingOptions = trackingOptions)
                     } else {
                         Column(
                             modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),

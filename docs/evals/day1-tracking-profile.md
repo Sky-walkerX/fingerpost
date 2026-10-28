@@ -2,6 +2,8 @@
 
 **Outcome: T7c remains blocked.** The user explicitly resumed investigation and provided a second Android test phone. The required GPU/two-hand mode still misses ≥25 result FPS and ≤25 ms inference. No requirement, dependency, model asset, or production hand limit was reduced.
 
+**Subsequent scope decision:** the user explicitly deferred unfinished T7c and requested the T7d tone prototype. That work and its separate acceptance are tracked in [the tone report](day1-tone.md); the performance measurements and open T7c checks here are unchanged.
+
 ## Implemented
 
 - Added numeric timing for analyzer delivery, bitmap conversion, crop/rotation, model input preparation, task-call latency, submission and callback queue delay. Task latency ends at listener entry; callback dispatch is measured separately. Previously it included that dispatch. Observed dispatch was negligible, so the shortfall was not a measurement artifact.

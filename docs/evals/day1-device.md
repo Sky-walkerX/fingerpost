@@ -2,6 +2,8 @@
 
 **D1-T7c is blocked, not complete.** Device label: connected Android test phone. No model or serial is recorded.
 
+The user subsequently explicitly deferred unfinished T7c to implement T7d. See [the tone report](day1-tone.md) for that separate prototype and acceptance; no tracking check below has been waived or marked complete.
+
 **Latest update:** user resumed profiling and supplied a comparison test phone. Fused transforms, callback-image cleanup and camera keep-awake are installed; all 25 guidance tests and 18 diagnostic-tool tests pass. The valid comparison GPU/two-hand run detects one pointing hand but reaches only 10–12 FPS / 43–86 ms (rolling max 87 ms). See [resumed investigation](day1-tracking-profile.md) for complete measurements and limitations. Earlier acceptance below is retained as evidence for the earlier build; the fused build still needs a visual/TalkBack regression check.
 
 ## Implemented and verified

@@ -95,6 +95,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
   - in `NEAR`, the tone pulses at `4 + 8 · (1 − |e| / nearRadius)` Hz;
   - in `ON`, the tone stops and the success earcon plays.
 - **Audio path:** `AudioTrack` with `PERFORMANCE_MODE_LOW_LATENCY`, 48 kHz, 5 ms ramps to prevent clicks. Target: under 100 ms from frame capture to audible change.
+  - **Prototype synthesis (initial values):** stereo float PCM in 240-frame (5 ms) blocks, amplitude 0.25, equal-power gains `cos((pan+1)·π/4)` / `sin((pan+1)·π/4)`. Frequency, pan and start/stop gain ramp linearly over 240 frames; phase continues across control changes. No hand or invalid tracking mutes the tone.
+  - **D1-T7d prototype mapping (initial values):** with `x = tipX / frameW`, frequency uses `toneFrequencyHz(1 − x)` and pan uses `tonePan((x − 0.5) · 0.6)`. Pitch rises toward the right of the preview; this temporary horizontal test mapping is replaced by target error during closed-loop wiring.
 - **Haptics:**
   - entering `NEAR`: `EFFECT_TICK`;
   - `ON`: `EFFECT_HEAVY_CLICK` twice, 120 ms apart;

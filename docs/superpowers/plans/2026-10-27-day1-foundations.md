@@ -450,12 +450,14 @@ landmarker.detectAsync(BitmapImageBuilder(scaled).build(), tsMs)   // timestamps
   - [ ] The label shows ≥ 25 fps and ≤ 25 ms inference on the Android phone.
   - [x] Record a generic phone label, fps and ms in `docs/evals/day1-device.md` (user privacy requirement).
   - [ ] Recheck visual following/disappearance in both orientations and the single TalkBack element after the fused-pipeline change.
-  - **Blocked (2026-10-28):** original runs missed the target. Resumed tests on a comparison phone still fail: CPU/two hands 11–14 fps / 45–61 ms with no hands; GPU/two hands 10–12 fps / 43–86 ms with a pointing hand consistently detected. Production stays GPU/two hands. See docs/evals/day1-tracking-profile.md and progress Blockers; do not start T7d.
+  - **Blocked (2026-10-28):** original runs missed the target. Resumed tests on a comparison phone still fail: CPU/two hands 11–14 fps / 45–61 ms with no hands; GPU/two hands 10–12 fps / 43–86 ms with a pointing hand consistently detected. Production stays GPU/two hands. See docs/evals/day1-tracking-profile.md and progress Blockers. User subsequently explicitly authorized T7d while leaving this task unfinished (exception below).
 - [ ] **Step 5: Commit.**
   `git add apps/android && git commit -m "feat(android): CameraX + MediaPipe fingertip overlay with fps"`
   - Implementation and performance-investigation checkpoints are saved separately; this completion step remains open until device acceptance passes.
 
 ### Task D1-T7d: tone prototype
+**Dependency exception (2026-10-28):** user explicitly deferred unfinished T7c and requested T7d. T7c remains blocked; its open checks and the Day 1 exit gate are unchanged.
+
 **Files:**
 - Create `app/src/main/kotlin/io/github/fingerpost/audio/ToneSynth.kt`.
 - Modify `SessionScreen.kt`.
@@ -480,12 +482,12 @@ val track = AudioTrack.Builder()
 - **Amplitude:** 0.25.
 - **Prototype mapping:** `setFrequency(toneFrequencyHz(1.0 - tipX / frameW))` and `setPan(tonePan((tipX / frameW - 0.5) * 0.6))`. Double-tapping the screen (the TalkBack action) toggles start/stop.
 
-- [ ] **Step 1: Implement** `ToneSynth` and wire it into the screen.
+- [x] **Step 1: Implement** `ToneSynth` and wire it into the screen. Twelve oscillator/mapping tests confirmed TODO failures before implementation; all 37 guidance tests, app:test (no source cases), debug build and lint pass. No dependency changes. Audio controls use an atomic snapshot and a dedicated audio thread; invalid/no-hand tracking mutes output and lifecycle stop releases it.
 - [ ] **Step 2: Check on the device.**
-  - Pitch rises as the finger moves left and pans with it.
-  - No clicks.
-  - With TalkBack on, double-tap toggles the tone.
-  - Note the latency you feel in `docs/evals/day1-device.md`.
+  - [ ] Pitch rises as image x increases (finger moves right in the preview) and pans with it, matching the explicit prototype formula above.
+  - [ ] No clicks.
+  - [ ] With TalkBack on, double-tap toggles the tone.
+  - [ ] Note the latency you feel in `docs/evals/day1-device.md`.
 - [ ] **Step 3: Commit.**
   `git add apps/android && git commit -m "feat(android): low-latency tone prototype driven by the fingertip"`
 

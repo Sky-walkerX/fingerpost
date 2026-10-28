@@ -1,8 +1,8 @@
 # Task completion audit — 2026-10-28
 
-This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. Updated with subsequent T7b acceptance and T7c implementation/device results.
+This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. Updated with T7b acceptance, T7c implementation/device results and the user-authorized T7d prototype.
 
-Of the 37 tasks written for Days 1–3, **6 meet their complete task checklists, 3 have partial implementation/setup, and 28 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started.
+Of the 37 tasks written for Days 1–3, **6 meet their complete task checklists, 4 have partial implementation/setup, and 27 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started. The user explicitly deferred unfinished T7c to implement T7d; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -20,7 +20,7 @@ Previously completed tasks are assessed against their documented scope. For exam
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
 | All current TypeScript package builds | Pass |
-| Kotlin guidance tests | 25 passed; 0 failed/skipped (12 original + 6 projection + 7 fused-transform tests) |
+| Kotlin guidance tests | 37 passed; 0 failed/skipped (12 original + 6 projection + 7 fused-transform + 12 tone tests) |
 | Numeric Android profiling CLI | 18 synthetic tests pass; actual configuration, private targeting and awake state checked |
 | Android `:app:test :app:assembleDebug` | Successful; app unit-test task has no source cases |
 | Current gateway container | Rebuilt; expected `/healthz` JSON; runtime UID 1000 |
@@ -44,8 +44,8 @@ CI evidence: [run at the audited source revision](https://github.com/Sky-walkerX
 | D1-T6 — simulator | **Partial: implementation/build complete** | 14 tests and build pass; desktop flow was checked. Android tablet fullscreen, full fast-food flow, three-finger export with one event per tap, and scrambled PIN-pad acceptance are not verified. | A tablet and actual device acceptance. Engineering handles any defects found. |
 | D1-T7a — Android foundation/cue math | **Yes** | Project/wrapper/toolchain and cue calculations implemented; all 12 JVM tests pass, including a fresh forced rerun. | No task gap. |
 | D1-T7b — Android app shell | **Yes** | APK builds, installs and launches. User confirmed the spoken denial message, settings navigation, grant/return to the black session screen and single TalkBack session element. ADB corroborates granted permission, resumed activity and enabled TalkBack. See docs/evals/day1-app-shell.md. | No task gap; camera tracking and tone playback remain T7c/T7d. |
-| D1-T7c — camera/fingertip | **Partial: implemented; device performance blocked** | Camera/tracker/overlay implemented; fused image transforms, callback cleanup, keep-awake and private numeric diagnostics added. All 25 guidance +18 tool tests, app build and lint pass. Earlier visual acceptance passed; fused regression pending. A supplied comparison phone still fails: required GPU/two-hand mode with a pointing hand yields 10–12 fps / 43–86 ms, rolling max 87 ms; CPU/two-hand mode also misses. See docs/evals/day1-tracking-profile.md. | Resolve native-task/thermal performance and diagnostic-stream reliability after the two-attempt stop; finish fused visual/TalkBack regression and speed acceptance. T7d remains pending. |
-| D1-T7d — tone prototype | **No: not started** | ToneSynth, playback wiring, ramp/pan behavior and audible latency/click tests are absent. Requires T7c completion first. | Engineering implementation and device listening/TalkBack checks. |
+| D1-T7c — camera/fingertip | **Partial: implemented; device performance blocked** | Camera/tracker/overlay implemented; fused image transforms, callback cleanup, keep-awake and private numeric diagnostics added. All 25 tracking-related guidance +18 tool tests, app build and lint pass. Earlier visual acceptance passed; fused regression pending. A supplied comparison phone still fails: required GPU/two-hand mode with a pointing hand yields 10–12 fps / 43–86 ms, rolling max 87 ms; CPU/two-hand mode also misses. See docs/evals/day1-tracking-profile.md. | Resolve native-task/thermal performance and diagnostic-stream reliability after the two-attempt stop; finish fused visual/TalkBack regression and speed acceptance. User explicitly deferred this unfinished task to permit T7d. |
+| D1-T7d — tone prototype | **Partial: implemented and installed; listening acceptance pending** | ToneSynth and playback wiring implemented; 12 signal/mapping tests and all 37 guidance tests pass; debug build/lint pass. No-hand mute, lifecycle release and one TalkBack action implemented. User authorized proceeding while T7c remains unfinished. See docs/evals/day1-tone.md. | Device pitch/pan, click-free toggling, TalkBack and perceived-latency confirmation. |
 | D1-T8 — CI/tester documents | **No: 0/6 steps complete** | Dependabot config, tester protocol, consent, outreach drafts and tester tracking file are absent. Overall CI is red. T7b and the CI sequencing issue below must be resolved. | Engineering writes documents and fixes the dependency order; human confirms contact details and performs outreach. |
 
 ## Day 1 exit gate
