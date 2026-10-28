@@ -37,6 +37,28 @@ pnpm -r test
 
 Other machines can use their own Node 24 installation with pnpm 11.10.0. Full tests may remain red for planned skeletons; `docs/progress.md` records which tasks are implemented and which checks remain pending.
 
+## Private gateway environment
+
+The root [`.env.example`](../.env.example) contains offline defaults and commented placeholders for the settings currently implemented. Create your private copy from the repository root; `cp -n` preserves an existing `.env`:
+
+```sh
+cp -n .env.example .env
+chmod 600 .env
+```
+
+Edit `.env` locally. Keep `MODEL_MODE=mock` for offline work. For live models, set `MODEL_MODE=live`, uncomment `META_API_KEY` and replace its placeholder with your actual Standard API key. Optional `DEBUG_TOKEN` and `SIM_TOKEN` should be separate private random values (for example, generate each locally with `openssl rand -hex 32`). `LATENCY_GOAL` is only needed by the regional measurement client. Leave unused settings commented; empty secret values fail configuration validation.
+
+Gateway commands read the process environment; they do not automatically load the root `.env`. In the same terminal, load your private file before running them:
+
+```sh
+set -a
+source .env
+set +a
+pnpm --filter @fingerpost/gateway dev
+```
+
+Only `.env.example` is committed. `.env` and `.env.*` are ignored. Cloud Run deployments obtain credentials from Secret Manager, with `meta-api-key` mapped to `META_API_KEY` and `debug-token` to `DEBUG_TOKEN`; never put provider credentials in the Android app.
+
 ## Gateway containers on this laptop
 
 Podman is installed. Its default container database still references an old home path, so Fingerpost uses a separate rootless store. This leaves existing containers untouched:
