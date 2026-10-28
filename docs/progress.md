@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current phase:** Day 2 closed-loop implementation, explicitly started by the user on 2026-10-28 with Day 1 unfinished · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
+**Current phase:** Day 1 completion, restored by the user on 2026-10-28; further Day 2 work is on hold · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
 **Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Eleven tasks are complete within their documented scope; four are partial and 22 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2/T3 are complete under the user-directed phase exception; subsequent tasks are tracked below.
 
@@ -26,7 +26,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | done | Codex |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
-The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On 2026-10-28 the user explicitly requested "Start implementing Day 2 now" after being told that Day 1 remains incomplete. This authorizes starting Day 2 while retaining all unfinished Day 1 requirements and statuses. Individual task prerequisites and completion checks still apply; no Day 1 exit check is marked passed by this exception.
+The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On 2026-10-28 the user explicitly requested "Start implementing Day 2 now" after being told that Day 1 remains incomplete. This authorizes starting Day 2 while retaining all unfinished Day 1 requirements and statuses. Individual task prerequisites and completion checks still apply; no Day 1 exit check is marked passed by this exception. The later instruction "Finish Day 1 first completely" supersedes permission to continue Day 2: retain completed T2/T3, but resume no further Day 2 task until Day 1 is complete.
 
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
@@ -280,3 +280,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: D2-T3 complete: confirmed nine supplied phrase/queue TODO failures plus six boundary failures, then implemented English rendering and priority/cadence/freshness queue with clear/reset. Finished CuePlanner and both supplied test files remain unchanged; unsupported locales fail explicitly. `./scripts/android.sh :core:guidance:test --console=plain` passes all 85 cases with 0 failures/errors/skips. No Android TTS adapter is wired yet; that remains T10c.
 
 - 2026-10-28: D2-T2 implementation 9a931c8 and D2-T3 caf62d0 are pushed using the requested author. Both exact-revision CI runs pass; latest [run 40653225580](https://github.com/Sky-walkerX/fingerpost/actions/runs/40653225580) confirms ts/android success. Final local checks: 85 guidance cases (0 failures/errors/skips), unchanged 49-case protocol check, Android debug compatibility build, recursive TS typecheck and all 156 TS cases pass. Finished Geometry/CuePlanner assets and all five supplied Day 2 test files match their originals. D2-T4 remains blocked before copying/implementation on the quoted DONE transition conflict; no later task or Day 1 completion claimed.
+
+- 2026-10-28: User restored Day 1 as the priority and asked for full completion before more Day 2 work. Retain completed T2/T3 without advancing further. Fresh readiness: zero authorized/unauthorized ADB devices; local .env absent, Meta key not present in the environment, zero Day 1 JPEGs, no private latency crop and no gcloud on PATH. Asked for device availability and human setup status; preparing the missing local Cloud CLI within T0 tooling scope. No live/device check or task completion claimed.

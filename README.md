@@ -4,7 +4,7 @@ Fingerpost is being built to guide a blind or low-vision person's finger to the 
 
 We're building it for the Meta Global AI Developer Hackathon (Indie track), using Muse Spark, SAM 3.1, Voice Transcribe and Muse Glimmer. The build runs Oct 27 to Nov 2, 2026, and the submission is due Nov 5 at 07:30 IST.
 
-> **Status (2026-10-28): Day 2 implementation started by explicit user request; Day 1 remains incomplete.** Workspace, TypeScript protocol, gateway foundations/adapters and Android guidance math are implemented. The Android camera/fingertip build is installed, but its device performance gate fails. Simulator tablet acceptance and live model validation remain pending. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
+> **Status (2026-10-28): Day 1 completion is the current priority; further Day 2 work is on hold.** Workspace, TypeScript protocol, gateway foundations/adapters and Android guidance math are implemented. The Android camera/fingertip build is installed, but its device performance gate fails. Simulator tablet acceptance and live model validation remain pending. See [`docs/progress.md`](docs/progress.md) for verified completion and blockers.
 
 The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/12 original tasks complete and 1/5 exit checks passed**. T0 setup, T5 live validation/region, T6 tablet acceptance and T7c performance/regression remain open. The additional Kotlin protocol foundation is complete; it does not complete the Day 2 phase.
 
@@ -14,7 +14,7 @@ The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/1
    - **A:** the Android app and guidance. Read [`docs/guidance-spec.md`](docs/guidance-spec.md).
    - **B:** the gateway and AI pipeline. Read [`docs/protocol.md`](docs/protocol.md).
    - **C:** evals, testers, the web page and the video.
-3. **Run today's plan:** [`docs/superpowers/plans/2026-10-27-day1-foundations.md`](docs/superpowers/plans/2026-10-27-day1-foundations.md). Task 0 is the human setup (accounts, Android Studio). Tasks 1–8 are test-first engineering tasks with exact files, interfaces and commands. The user has now prioritized the [Day 2 plan](docs/superpowers/plans/2026-10-28-day2-closed-loop.md); unfinished Day 1 checks remain open.
+3. **Run today's plan:** [`docs/superpowers/plans/2026-10-27-day1-foundations.md`](docs/superpowers/plans/2026-10-27-day1-foundations.md). Task 0 is the human setup (accounts, Android Studio). Tasks 1–8 are test-first engineering tasks with exact files, interfaces and commands. The user has restored Day 1 completion as the priority. Retain the completed [Day 2 core tasks](docs/superpowers/plans/2026-10-28-day2-closed-loop.md), but start no further Day 2 work until Day 1 is complete.
 4. **Check the reasoning:** the "why" behind the big decisions is in [`docs/adr/`](docs/adr).
 
 ## Where things stand

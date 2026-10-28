@@ -6,6 +6,8 @@
 
 **User-directed phase exception (2026-10-28):** after being told Day 1 is incomplete, the user requested "Start implementing Day 2 now". Start at the first pending task with satisfied individual prerequisites. Day 1 remains incomplete, and this exception does not waive any task's tests, live/device checks or acceptance criteria.
 
+**Subsequent priority (2026-10-28):** the user then requested completing Day 1 first. Further Day 2 work is on hold until Day 1 is complete; retain the verified T2/T3 implementations and the unresolved T4 conflict.
+
 **Goal:** A voice-named button on the tablet replica is reached by a blindfolded proxy. The loop:
 - **Phone:** tracks the screen and the fingertip and guides with speech, tone and haptics.
 - **Gateway:** turns goal plus keyframe into layout plus target, relays speech to Voice Transcribe, and relays simulator touches.
