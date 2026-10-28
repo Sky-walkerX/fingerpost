@@ -22,7 +22,7 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | ADR 0003 (Cloud Run region) | Pending: decided by Day 1's latency measurements |
 | Implementation plans | Days 1–3 written; executing the task checklists sequentially |
 | D1-T1: workspace root | Complete; pinned tooling, lockfile, CI workflow and community documents present |
-| D1-T2: TypeScript protocol | Complete; 46 tests, typecheck, build and JSON Schema export pass. Kotlin counterpart is D2-T1. |
+| D1-T2: TypeScript protocol | Complete; 48 tests and typecheck pass, including new invalid-fixture coverage. Build/schema export previously verified. Kotlin counterpart is now implemented as the CI prerequisite below. |
 | D1-T3: gateway foundations | Complete; 14 targeted tests, typecheck, builds and actual container health/non-root checks pass under rootless Podman. |
 | D1-T4: Spark/SAM adapters | Implemented; all 43 gateway tests pass with synthetic fixtures/stubs. Live model smoke is D1-T5 and still needs human setup. |
 | D1-T6: simulator | Implemented; 14 tests and production build pass; desktop fast-food flow and scrambled PIN scene checked. Android tablet acceptance pending. |
@@ -30,8 +30,9 @@ We're building it for the Meta Global AI Developer Hackathon (Indie track), usin
 | D1-T7b: Android shell | Complete; debug APK builds, installs and launches. User-confirmed spoken denial, settings return, black session screen and single TalkBack element; permission state corroborated through ADB. Camera tracking and tone output come in T7c/T7d. |
 | D1-T7c: camera/fingertip | Implemented and installed; fused transforms and callback-image cleanup added. All 25 guidance tests, 18 diagnostic-tool tests, build and lint pass. Earlier visual following passed; fused-build visual/TalkBack regression pending. Comparison phone GPU/two-hand run still fails: 10–12 fps / 43–86 ms against ≥25 fps / ≤25 ms. See [`profiling report`](docs/evals/day1-tracking-profile.md). |
 | D1-T7d: tone prototype | Complete within prototype scope after the user explicitly deferred unfinished T7c. Twelve tone tests pass; user confirmed pitch/pan, click-free TalkBack toggling, no-hand/background silence and prompt perceived response. See [`tone report`](docs/evals/day1-tone.md). |
+| D2-T1: Kotlin protocol foundation | Complete; pulled forward to resolve Day 1 CI's missing-module dependency. All 49 JVM protocol tests and the 48 TS protocol tests pass on shared fixtures. The app's network client is still later work. |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
-| CI | All 103 TypeScript tests pass locally. Android workflow still references `core:protocol`, scheduled for D2-T1; full CI remains pending. No checks disabled. |
+| CI | Kotlin guidance/protocol tests and app build pass locally. The former missing-module dependency is resolved; actual green CI is the next T8 check. No checks disabled. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Human setup remains unverified/incomplete on the progress board (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 

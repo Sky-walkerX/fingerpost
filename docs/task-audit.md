@@ -2,7 +2,7 @@
 
 This audit compares the implementation plans, actual runtime files, tests/builds, CI and recorded device acceptance. Reference assets alone are not implementation evidence. Updated with T7b acceptance, T7c implementation/device results and the user-authorized T7d prototype.
 
-Of the 37 tasks written for Days 1–3, **7 meet their complete task checklists, 3 have partial implementation/setup, and 27 have not been implemented or executed**. Day 1 is not complete. Days 2 and 3 have not started. The user explicitly deferred unfinished T7c to implement T7d; T7c's acceptance gates remain open.
+Of the 37 tasks written for Days 1–3, **8 meet their complete task checklists, 3 have partial implementation/setup, and 26 have not been implemented or executed**. Day 1 is not complete. The Kotlin protocol foundation (D2-T1) was pulled forward to resolve the CI dependency cycle; all other Day 2–3 work remains unstarted. The user explicitly deferred unfinished T7c; its acceptance gates remain open.
 
 ## Completion rule
 
@@ -14,13 +14,14 @@ Previously completed tasks are assessed against their documented scope. For exam
 
 | Check | Audited result |
 |---|---|
-| TypeScript protocol tests | 46 passed |
+| TypeScript protocol tests | 48 passed |
 | Gateway tests | 43 passed |
 | Simulator tests | 14 passed |
 | Recursive TypeScript typecheck | Pass |
 | Protocol JSON Schema export | Pass |
 | All current TypeScript package builds | Pass |
 | Kotlin guidance tests | 37 passed; 0 failed/skipped (12 original + 6 projection + 7 fused-transform + 12 tone tests) |
+| Kotlin protocol tests | 49 passed; 0 failed/skipped; shared fixtures and unsigned-length/UTF-8/type/privacy boundaries |
 | Numeric Android profiling CLI | 18 synthetic tests pass; actual configuration, private targeting and awake state checked |
 | Android `:app:test :app:assembleDebug` | Successful; app unit-test task has no source cases |
 | Current gateway container | Rebuilt; expected `/healthz` JSON; runtime UID 1000 |
@@ -37,7 +38,7 @@ CI evidence: [run at the audited source revision](https://github.com/Sky-walkerX
 |---|---|---|---|
 | D1-T0 — accounts/tooling | **Partial: 1/8 top-level items checked** | Laptop Android tooling is verified. Meta access/credits, partner credits, GCP/Firebase/billing/budget setup, regional registries, name checks, 10 panel photos and recorded tester outreach are not verified. No local `.env` or Day 1 photo dataset exists. External accounts may exist, but no completion evidence is recorded. | Human account/credit/billing/name/outreach steps; engineering can verify configuration afterward. Store keys privately, never in chat or Git. |
 | D1-T1 — workspace root | **Yes, for its root-workspace scope** | Root configs, pinned package manager/lockfile, CI definition and three community documents exist. Tests/typechecks/builds pass for current TS packages. Green overall CI is a separate D1-T8 requirement. | No task gap. A real private security contact remains a release follow-up; the placeholder is explicitly permitted by T1. |
-| D1-T2 — TS protocol | **Yes** | Framing/parsing implemented; 46 tests, typecheck, build and schema export pass. Kotlin contract coverage belongs to D2-T1 and is still absent. | No task gap in the TS scope. |
+| D1-T2 — TS protocol | **Yes** | Framing/parsing implemented; 48 tests and typecheck pass. Build/schema export previously verified. Kotlin contract coverage is now implemented in the pulled-forward D2-T1 foundation. | No task gap in the TS scope. |
 | D1-T3 — gateway foundations | **Yes** | Config/session hub implemented; app/session tests pass. Local and actual container health verified; non-root runtime verified. Rootless Podman equivalence is documented. Authentication and the model-driven session loop belong to later tasks. | No task gap. |
 | D1-T4 — Spark/SAM adapters | **Yes, for adapter implementation and fixture tests** | Request construction, strict Spark parsing/layout conversion, SAM mask selection and polygon conversion implemented. All 43 gateway tests and builds pass. Live requests have not been exercised; that is T5. | No task gap in T4 scope. |
 | D1-T5 — live smoke/deploy/region | **No: 0/8 steps complete** | No live smoke report, real overlays, deployment script, regional deployment/measurements or accepted ADR-0003. The latency image is still a 4-byte placeholder; the deployment CLI is absent locally. Human setup is unverified. The smoke output privacy issue below must also be fixed before real images are used. | Human supplies verified access/credits/cloud setup and local panel photos. Engineering fixes the smoke output handling, implements deployment and performs authorized live measurements. |
@@ -54,20 +55,20 @@ None of the five required exit results is fully verified: live fingertip perform
 
 ## Planning issues that must be resolved before progression
 
-1. **CI forward dependency:** Day 1's CI invokes `:core:protocol:test`, but `core:protocol` is introduced in D2-T1 and Day 2 explicitly requires Day 1 to be done. This is a sequencing contradiction. Reconcile where that module is completed before the Day 1 CI gate; do not disable its check to claim success.
+1. **CI forward dependency resolved:** the existing D2-T1 Kotlin protocol foundation was moved before D1-T8 and implemented with its original checklist. Both Kotlin suites and the app build pass locally. Remote CI still needs T8 verification; no check was removed.
 2. **Outreach ordering:** T0 requires outreach using T8's drafts, but those drafts do not exist yet. Reconcile the preparation/outreach order before claiming all of T0 complete.
 3. **Live-smoke privacy conflict:** `services/gateway/scripts/smoke-meta.ts` embeds full image bytes into SVGs under `docs/evals/day1` and writes recognized labels into its Markdown report. T5 then stages `docs/evals` for commit. This conflicts with AGENTS.md §4's restriction on image bytes/OCR text in commits. Before real smoke testing, keep raw content and overlays in ignored local output and produce sanitized aggregate metrics for Git. No real image dataset or smoke output exists yet.
-4. **Tester-session duration:** T8 calls the session 45 minutes, but its listed time blocks total 50 minutes. Reconcile the written agenda before the tester documents are considered complete.
+4. **Tester-session duration resolved in the plan:** retain the practice blocks and use a 5-minute interview, making 45 minutes total. T8 documents must use this corrected agenda.
 
 The compile-SDK mismatch discovered during the first app build has already been resolved and documented: compile SDK 37 is required by the pinned libraries; minimum SDK 29 and target SDK 36 are retained.
 
-## Day 2: every task is not started
+## Day 2: protocol foundation complete; other tasks not started
 
-The Day 2 plan explicitly requires Day 1 completion. All 14 tasks below are unimplemented in the active application. Their reference files/tests do not count as done.
+The Day 2 plan requires Day 1 completion for closed-loop work. The existing D2-T1 foundation was pulled forward to satisfy Day 1 CI and is complete. The other 13 tasks below remain unimplemented; their reference files/tests do not count as done.
 
 | Task | Missing deliverable | Additional task prerequisites |
 |---|---|---|
-| D2-T1 | Kotlin protocol module, codec and shared-fixture tests | D1-T2, D1-T7a; reconcile CI sequencing first |
+| D2-T1 — complete | Implemented Kotlin models, codec and shared-fixture tests; 49 JVM tests pass | Pulled forward as Day 1 CI foundation; not a network client |
 | D2-T2 | Kotlin target geometry/zones/debouncing and fingertip selection | D1-T7a |
 | D2-T3 | Cue planning, localized phrases and speech queue | D2-T2 |
 | D2-T4 | Guidance state machine | D2-T3 |

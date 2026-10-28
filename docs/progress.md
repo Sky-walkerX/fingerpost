@@ -4,7 +4,7 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 1 foundations (planned Tue Oct 27; still in progress Oct 28) · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
 
-**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Seven tasks are complete within their documented scope; three are partial and 27 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c to implement T7d; no Day 1 exit requirement is waived. Day 1's exit gate is not met; Days 2–3 have not started.
+**Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Eight tasks are complete within their documented scope; three are partial and 26 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; other Day 2–3 work has not started.
 
 ## Day 1: `docs/superpowers/plans/2026-10-27-day1-foundations.md`
 | Task | What | Lane | Depends on | Status | Owner |
@@ -20,7 +20,7 @@ Agents and people both update this file. Keep each line short. Status values are
 | D1-T7b | App shell (Compose, TalkBack, permission) | A | T7a | done | Codex |
 | D1-T7c | CameraX + MediaPipe fingertip overlay | A | T7b | blocked | Codex |
 | D1-T7d | Tone prototype | A | T7c | done | Codex |
-| D2-T1 (pulled forward) | Kotlin protocol foundation required by Day 1 CI | A | D1-T2, D1-T7a | doing | Codex |
+| D2-T1 (pulled forward) | Kotlin protocol foundation required by Day 1 CI | A | D1-T2, D1-T7a | done | Codex |
 | D1-T8 | CI green + tester docs | C | T1, T7b, D2-T1 | todo | |
 
 ## Day 2: `docs/superpowers/plans/2026-10-28-day2-closed-loop.md`
@@ -182,7 +182,7 @@ After five logged warm-up windows:
 
 - D1-T5 · Required human setup in D1-T0 (Meta key/credits, real panel photos and GCP billing/projects) has no recorded verification. Adapter fixture tests pass; live smoke/deployment were not attempted.
 
-- D1-T8 / CI · `./scripts/android.sh :core:guidance:test :core:protocol:test --dry-run --console=plain` previously failed: `Cannot locate tasks that match ':core:protocol:test' as project 'protocol' not found in project ':core'.` Resolved the ordering conflict by moving the existing D2-T1 foundation before T8; implementation and green CI are still required. No check removed.
+- D1-T8 / CI · Missing Kotlin protocol module resolved by completing the pulled-forward D2-T1 foundation. Both Kotlin suites and the app build now pass locally; green remote CI remains to be verified in T8. No check removed.
 
 - D1-T0 · Only the tooling item is verified (1/8 top-level items). Account/credit/cloud/registry/name/photo/outreach requirements lack recorded completion evidence; local .env and Day 1 photo dataset are absent. Human-only setup remains required.
 - D1-T5 · Audit found smoke output privacy conflict: the script writes image bytes into SVGs and recognized labels into Markdown under docs/evals, which the plan stages for commit. Fix raw-output handling and retain only sanitized metrics in Git before running real photos. Deployment CLI is also absent locally.
@@ -219,6 +219,8 @@ _(task id · what changed · why · who approved)_
 | Date | What | Value | Where |
 |---|---|---|---|
 | 2026-10-28 | Kotlin guidance tests | 37 passed, 0 failures/skips (12 original + 6 projection + 7 fused-transform + 12 tone) | apps/android/core/guidance/build/test-results/test |
+| 2026-10-28 | Kotlin protocol tests | 49 passed, 0 failures/skips; shared valid/invalid fixtures plus framing boundaries | apps/android/core/protocol/build/test-results/test |
+| 2026-10-28 | TypeScript protocol tests | 48 passed, including two added invalid base-field fixtures | packages/protocol |
 | 2026-10-28 | Numeric profiling tool | 18 synthetic tests pass; no device content/identifiers in output | scripts/test_profile_android_tracking.py |
 | 2026-10-28 | TypeScript tests | 103 passed (protocol 46, gateway 43, web 14) | pnpm -r test |
 | 2026-10-28 | Gateway container | expected health JSON; UID 1000 | rootless Podman build/run |
@@ -252,3 +254,4 @@ _(task id · what changed · why · who approved)_
 - 2026-10-28: User-requested keep-awake follow-up: moved screen holding from the camera preview to MainActivity's visible window, covering the permission screen too. Guidance tests (25), app:test (no source cases), assembleDebug and lintDebug pass; lint has 0 errors/4 existing advisories. Updated both connected test phones. Comparison phone stayed awake/focused for 125.2 seconds beyond its unchanged 120-second timeout; Home released the screen hold after transition, and reopening restored it. No system sleep setting changed or camera content exported. Evidence: docs/evals/day1-device.md. T7c remains blocked on its existing acceptance requirements; no next task started.
 - 2026-10-28: User explicitly deferred unfinished T7c and requested T7d. Implemented the pure-JVM oscillator, thread-safe AudioTrack output, valid-fingertip mapping, single TalkBack toggle/state, no-hand mute and lifecycle release. Twelve expected TODO failures confirmed first; all 37 guidance tests, app:test (no source cases), debug build and lint pass. Updated APK installed on both connected test phones. Listening, TalkBack toggle and perceived-latency acceptance remain pending; T7d is not done. Evidence: docs/evals/day1-tone.md. No performance acceptance requirement was reduced.
 - 2026-10-28: D1-T7d complete: user confirmed tone/pitch/stereo pan, click-free TalkBack off/on toggling, no-hand/background silence and prompt perceived response. Numeric device state corroborates 48 kHz AudioTrack initialization, low-latency mode and TalkBack enabled. All 37 guidance tests and final app build/lint checks pass; app:test has no source cases. Implementation saved in 1e51a15; acceptance in docs/evals/day1-tone.md and docs/evals/day1-device.md. Acoustic/end-to-end latency was not instrumentally measured. T7c remains unfinished; no further task started.
+- 2026-10-28: Continued after T7d; resolved the Day 1 CI ordering cycle by pulling forward the existing D2-T1 foundation. Red baseline: 35 TODO failures/6 passes, then 6 additional boundary-test TODO failures. Implemented strict server parsing with content-free errors, client encoding/base-field validation and unsigned big-endian/strict-UTF-8 binary framing. All 49 Kotlin protocol tests, 37 guidance tests, 48 TS protocol tests, recursive TS typecheck and app debug build pass. Finished model/config/fixture assets retained; added two synthetic invalid fixtures without changing the wire schema. Day 1 remains open; next is T8 docs and actual CI verification.

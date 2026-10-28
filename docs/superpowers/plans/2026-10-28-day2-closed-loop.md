@@ -69,10 +69,10 @@ Everything in Day 1's list still applies, plus:
   - Use `ByteBuffer` (big-endian by default).
   - Use a `CharsetDecoder` with `CodingErrorAction.REPORT` for strict UTF-8.
 
-- [ ] **Step 1: Copy, then confirm red.** Run `cd apps/android && ./gradlew :core:protocol:test --console=plain`. Expected: 35 failed, 6 passed.
-- [ ] **Step 2: Implement `Codec.kt`.**
-- [ ] **Step 3: Confirm green.** Run `./gradlew :core:protocol:test`. Expected: 41 passed. Then run `pnpm --filter @fingerpost/protocol test` to confirm TS still parses the same fixtures.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Copy, then confirm red.** Run `cd apps/android && ./gradlew :core:protocol:test --console=plain`. Verified 35 TODO failures/6 passes. Six added framing/type/privacy boundary tests also confirmed TODO failures before implementation.
+- [x] **Step 2: Implement `Codec.kt`.** Includes common id/timestamp validation matching the TS contract and fixed error text that does not echo message contents.
+- [x] **Step 3: Confirm green.** Baseline was 41 tests; all 49 now pass with 6 extra boundaries and 2 shared invalid fixtures. TS protocol 48 tests, recursive typecheck, guidance 37 tests and app build also pass. No original test weakened; model/build assets retained.
+- [x] **Step 4: Commit.** Completed as a Day 1 CI prerequisite; this does not begin the other Day 2 work.
   `git add apps/android && git commit -m "feat(android): core:protocol models and codec, contract-tested on shared fixtures"`
 
 ### Task D2-T2: guidance geometry, targets and fingertip
