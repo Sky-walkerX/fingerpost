@@ -33,7 +33,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D2-T2 | Target zones, fingertip | A | D1-T7a | done | Codex |
 | D2-T3 | Phrases, speech queue | A | D2-T2 | done | Codex |
 | D2-T4 | Guidance state machine | A | D2-T3 | blocked | Codex |
-| D2-T5 | Goal → element resolution | B | D1-T4 | todo | |
+| D2-T5 | Goal → element resolution | B | D1-T4 | doing | Codex |
 | D2-T6 | Session pipeline | B | D2-T5 | todo | |
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | todo | |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | todo | |
