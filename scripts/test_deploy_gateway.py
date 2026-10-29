@@ -11,6 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "infra" / "deploy-gateway.sh"
+DIGEST = "ab" * 32
 
 
 class DeployGatewayTest(unittest.TestCase):
@@ -53,22 +54,25 @@ else:
         return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
 
     def test_invalid_arguments_never_contact_cloud(self):
-        for arguments in [(), ("synthetic-project",), ("bad;command", "asia-south1"),
-                          ("synthetic-project", "unknown-region"),
-                          ("synthetic-project", "asia-south1", "extra")]:
+        for arguments in [(), ("synthetic-project",), ("synthetic-project", "asia-south1"),
+                          ("bad;command", "asia-south1", DIGEST),
+                          ("synthetic-project", "unknown-region", DIGEST),
+                          ("synthetic-project", "asia-south1", "AB" * 32),
+                          ("synthetic-project", "asia-south1", DIGEST + ";rm"),
+                          ("synthetic-project", "asia-south1", DIGEST, "extra")]:
             with self.subTest(arguments=arguments):
                 self.assertEqual(self.run_script(*arguments).returncode, 2)
                 self.assertEqual(self.commands(), [])
 
     def test_dirty_checkout_is_not_deployed_under_a_clean_commit_tag(self):
         self.environment["FP_TEST_DIRTY"] = " M synthetic-file\n"
-        result = self.run_script("synthetic-project", "asia-south1")
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST)
         self.assertEqual(result.returncode, 2)
         self.assertEqual(self.commands(), [])
 
     def test_build_failure_prevents_deployment(self):
         self.environment["FP_TEST_BUILD_EXIT"] = "18"
-        result = self.run_script("synthetic-project", "asia-south1")
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST)
         self.assertEqual(result.returncode, 18)
         self.assertEqual(len(self.commands()), 1)
         self.assertEqual(self.commands()[0][:2], ["builds", "submit"])
@@ -77,7 +81,7 @@ else:
         for region in ("asia-south1", "us-central1"):
             with self.subTest(region=region):
                 self.log.unlink(missing_ok=True)
-                result = self.run_script("synthetic-project", region)
+                result = self.run_script("synthetic-project", region, DIGEST)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 build, deploy = self.commands()
                 image = region + "-docker.pkg.dev/synthetic-project/fp/gateway:abc1234"
@@ -87,12 +91,15 @@ else:
                 self.assertEqual(build[build.index("--substitutions") + 1], "_IMAGE=" + image)
                 self.assertEqual(deploy[:3], ["run", "deploy", "fingerpost-gateway"])
                 self.assertEqual(deploy[deploy.index("--image") + 1], image)
-                self.assertIn("META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest", deploy)
-                self.assertIn("MODEL_MODE=live,GIT_SHA=abc1234,AUTH_REQUIRED=false,ALLOW_UNAUTHENTICATED_LIVE=true", deploy)
+                self.assertIn("META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest,"
+                              "SESSION_SECRET=session-secret:latest", deploy)
+                self.assertIn("^;^MODEL_MODE=live;GIT_SHA=abc1234;AUTH_REQUIRED=true;SIGNING_DIGESTS=" + DIGEST
+                              + ";FIREBASE_PROJECT_ID=synthetic-project;DAILY_CAP_USD=12", deploy)
+                self.assertNotIn("ALLOW_UNAUTHENTICATED_LIVE", " ".join(deploy))
 
     def test_deploy_failure_propagates(self):
         self.environment["FP_TEST_DEPLOY_EXIT"] = "19"
-        result = self.run_script("synthetic-project", "asia-south1")
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST)
         self.assertEqual(result.returncode, 19)
         self.assertEqual(len(self.commands()), 2)
 
