@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyAttestation, type AttestationPolicy } from './attestation.ts';
 import type { ChallengeStore } from './challenges.ts';
 import { issueSessionToken, TOKEN_TTL_S } from './tokens.ts';
-import { FixedWindowLimiter } from './rate-limit.ts';
+import { clientKey, FixedWindowLimiter } from './rate-limit.ts';
 
 export interface AuthDeps {
   challenges: ChallengeStore;
@@ -30,13 +30,14 @@ export function registerAuthRoutes(app: FastifyInstance, d: AuthDeps): void {
   const attestLimit = new FixedWindowLimiter(d.limits?.attestsPerHour ?? 20, hour, now);
 
   app.post('/v1/auth/challenge', async (req, reply) => {
-    if (!challengeLimit.hit(req.ip)) return reply.code(429).send({ error: 'rate limited' });
-    const { challengeId, nonce } = d.challenges.issue();
-    return { challengeId, nonce: Buffer.from(nonce).toString('base64url') };
+    if (!challengeLimit.hit(clientKey(req.ip))) return reply.code(429).send({ error: 'rate limited' });
+    const issued = d.challenges.issue();
+    if (!issued) return reply.code(503).send({ error: 'busy' });
+    return { challengeId: issued.challengeId, nonce: Buffer.from(issued.nonce).toString('base64url') };
   });
 
   app.post('/v1/auth/attest', async (req, reply) => {
-    if (!attestLimit.hit(req.ip)) return reply.code(429).send({ error: 'rate limited' });
+    if (!attestLimit.hit(clientKey(req.ip))) return reply.code(429).send({ error: 'rate limited' });
     const body = AttestBody.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid body' });
     const nonce = d.challenges.take(body.data.challengeId);

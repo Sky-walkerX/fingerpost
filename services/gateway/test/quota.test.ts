@@ -21,7 +21,7 @@ test('session token round-trips and expires after 15 minutes', async () => {
 test('challenges are single use and expire after 5 minutes', () => {
   let now = T0;
   const s = new ChallengeStore(() => now);
-  const a = s.issue(), b = s.issue();
+  const a = s.issue()!, b = s.issue()!;
   expect(a.nonce).toHaveLength(32);
   expect(s.take(a.challengeId)).toEqual(a.nonce);
   expect(s.take(a.challengeId)).toBeNull();
@@ -90,4 +90,20 @@ test('safeEqual compares in constant time and handles missing values', () => {
   expect(safeEqual('secret-123', 'secret-123')).toBe(true);
   expect(safeEqual('secret-12', 'secret-123')).toBe(false);
   expect(safeEqual(undefined, 'secret-123')).toBe(false);
+});
+
+import { clientKey } from '../src/auth/rate-limit.ts';
+
+test('limiter keys: IPv4 as is, IPv6 grouped by /56, mapped IPv4 unwrapped', () => {
+  expect(clientKey('203.0.113.7')).toBe('203.0.113.7');
+  expect(clientKey('::ffff:203.0.113.7')).toBe('203.0.113.7');
+  expect(clientKey('2001:db8:abcd:12ff::1')).toBe(clientKey('2001:db8:abcd:1200:ffff::9'));
+  expect(clientKey('2001:db8:abcd:12ff::1')).not.toBe(clientKey('2001:db8:abcd:1300::1'));
+});
+
+test('a full limiter table evicts the oldest window instead of locking everyone out', () => {
+  const l = new FixedWindowLimiter(1, 60_000, () => T0);
+  for (let i = 0; i < 10_000; i++) l.hit(`k${i}`);
+  expect(l.hit('fresh')).toBe(true);
+  expect(l.hit('k9999')).toBe(false);
 });

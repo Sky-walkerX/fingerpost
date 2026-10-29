@@ -8,9 +8,10 @@ export class ChallengeStore {
   private readonly m = new Map<string, { nonce: Uint8Array; exp: number }>();
   constructor(private readonly now: () => number = Date.now, private readonly ttlMs = 5 * 60_000) {}
 
-  issue(): { challengeId: string; nonce: Uint8Array } {
+  /** null when too many challenges are outstanding (the caller answers 503); other clients' challenges are never evicted. */
+  issue(): { challengeId: string; nonce: Uint8Array } | null {
     this.sweep();
-    if (this.m.size >= MAX_OUTSTANDING) this.m.delete(this.m.keys().next().value!);
+    if (this.m.size >= MAX_OUTSTANDING) return null;
     const challengeId = ulid(), nonce = new Uint8Array(randomBytes(32));
     this.m.set(challengeId, { nonce, exp: this.now() + this.ttlMs });
     return { challengeId, nonce };
