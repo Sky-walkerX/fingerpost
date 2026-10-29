@@ -21,6 +21,16 @@ class PinGateTest {
     @Test fun sixDigitsAreNotEnough() = assertEquals(PinGateReason.NONE, PinGate.check(keypad(listOf("1", "2", "3", "4", "5", "6"))))
     @Test fun digitsInOneRowAreNotAKeypad() =
         assertEquals(PinGateReason.NONE, PinGate.check((0..9).map { OcrToken("$it", 0.05 + it * 0.09, 0.5, 0.03, 0.06) }))
+    @Test fun phoneKeysWithLettersAreBlocked() = assertEquals(PinGateReason.DIGIT_GRID, PinGate.check(
+        keypad(listOf("1", "2 ABC", "3 DEF", "4 GHI", "5 JKL", "6 MNO", "7 PQRS", "8 TUV", "9 WXYZ")) + OcrToken("0", 0.45, 0.65, 0.03, 0.06)))
+    @Test fun mergedRowTokensAreSplit() = assertEquals(PinGateReason.DIGIT_GRID, PinGate.check(listOf(
+        OcrToken("1 2 3", 0.35, 0.2, 0.23, 0.06), OcrToken("4 5 6", 0.35, 0.35, 0.23, 0.06), OcrToken("7 8 9", 0.35, 0.5, 0.23, 0.06), OcrToken("0", 0.45, 0.65, 0.03, 0.06))))
+    @Test fun strayDigitsElsewhereDoNotHideAKeypad() = assertEquals(PinGateReason.DIGIT_GRID, PinGate.check(
+        keypad(listOf("1", "2", "3", "4", "5", "6", "7", "8", "9")) + OcrToken("0", 0.45, 0.65, 0.03, 0.06) +
+            OcrToken("2", 0.05, 0.05, 0.02, 0.04) + OcrToken("5", 0.9, 0.9, 0.02, 0.04)))
+    @Test fun passcodeWordingIsBlocked() {
+        for (text in listOf("Passcode", "Enter password", "Contraseña", "पासवर्ड")) assertEquals(PinGateReason.PIN_TEXT, PinGate.check(listOf(OcrToken(text, 0.4, 0.1, 0.2, 0.05))), text)
+    }
     @Test fun clusteringCountsGaps() { assertEquals(3, PinGate.cluster(listOf(0.1, 0.11, 0.5, 0.52, 0.9), 0.05)); assertEquals(0, PinGate.cluster(emptyList(), 0.1)) }
 }
 

@@ -135,7 +135,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 ### 10.1 Pre-upload gate (runs on every frame before it may be uploaded)
 The frame is **blocked** and PIN mode is entered if either holds:
 - **Digit grid:** on-device OCR finds at least 7 distinct single-character digit tokens (0–9) inside the screen quad, and their centers fall into a 3- or 4-row × 3-column grid. Row clustering uses a tolerance of 0.6 × the median token height; column clustering uses 0.9 × the median token height.
-- **PIN text:** OCR text matches `/\b(PIN|enter pin|पिन|clave|NIP)\b/i`.
+- **PIN text:** OCR text matches `/\b(PIN|enter pin|पिन|clave|NIP|passcode|password|contraseña|पासवर्ड)\b/i`.
+- **Fail closed (added Day 3):** a word that is one digit plus up to 4 letters ("2ABC") counts as that digit, OCR tokens holding several words ("1 2 3") are split evenly across their box, and the 3 grid columns are the column clusters holding at least 2 digits, so stray single digits elsewhere on screen can't hide a keypad.
 
 The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for missed cases. The ≥98% recall release gate measures **local gate OR server**, and the local gate alone is reported too.
 - **On entry:**
