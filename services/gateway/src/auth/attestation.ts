@@ -9,7 +9,7 @@ export interface AttestationPolicy {
   /** Lowercase hex SHA-256 of our release (and debug, in dev) signing certificates. */
   signatureDigests: readonly string[];
   allowSoftware: boolean;
-  /** Serial numbers (lowercase hex, no leading zeros) from https://android.googleapis.com/attestation/status. */
+  /** Serial numbers (lowercase hex, no leading zeros) from https://android.googleapis.com/attestation/status. Throws when the list is unavailable (fails closed). */
   isRevoked?: (serialHex: string) => boolean;
   now?: Date;
 }
@@ -37,15 +37,24 @@ export function verifyAttestation(chainDer: readonly Uint8Array[], expectedChall
   const now = (p.now ?? new Date()).getTime();
   for (const [i, cert] of certs.entries()) {
     if (now < Date.parse(cert.validFrom) || now > Date.parse(cert.validTo)) return fail(`certificate ${i} not valid now`);
-    if (p.isRevoked?.(normSerial(cert.serialNumber))) return fail(`certificate ${i} revoked`);
+    let revoked: boolean | undefined;
+    try {
+      revoked = p.isRevoked?.(normSerial(cert.serialNumber));
+    } catch {
+      return fail('revocation status unavailable');
+    }
+    if (revoked) return fail(`certificate ${i} revoked`);
     const issuer = certs[i + 1] ?? cert;
     if (!cert.checkIssued(issuer) || !cert.verify(issuer.publicKey)) return fail(`certificate ${i} not signed by its issuer`);
+    // Only CAs may sign: a genuine attested key could otherwise sign a forged "leaf" with any KeyDescription.
+    if (i > 0 && !cert.ca) return fail(`certificate ${i} is not a CA`);
   }
   const rootKey = spki(certs.at(-1)!);
   if (!p.trustedRoots.some((root) => spki(root).equals(rootKey))) return fail('untrusted root');
 
-  const leaf = pkijs.Certificate.fromBER(Buffer.from(chainDer[0]!));
-  const extension = leaf.extensions?.find((e) => e.extnID === KEY_DESCRIPTION_OID);
+  const parsed = chainDer.map((der) => pkijs.Certificate.fromBER(Buffer.from(der)));
+  if (parsed.slice(1).some((c) => c.extensions?.some((e) => e.extnID === KEY_DESCRIPTION_OID))) return fail('attestation extension above the leaf');
+  const extension = parsed[0]!.extensions?.find((e) => e.extnID === KEY_DESCRIPTION_OID);
   if (!extension) return fail('no attestation extension');
   let kd;
   try {

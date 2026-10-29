@@ -36,6 +36,15 @@ test.each([
 ])('rejects: %s', async (reason, run) => {
   expect(await run()).toEqual({ ok: false, reason });
 });
+test('a certificate signed by a genuine attested key is not accepted as the leaf', async () => {
+  const { chain, root } = await fakeChain({ challenge, signatureDigestHex: digest }, { forgedChild: true });
+  expect(verifyAttestation(chain, challenge, policy(root))).toEqual({ ok: false, reason: 'certificate 1 is not a CA' });
+});
+test('revocation fails closed when the status list is unavailable', async () => {
+  const { chain, root } = await fakeChain({ challenge, signatureDigestHex: digest });
+  expect(verifyAttestation(chain, challenge, policy(root, { isRevoked: () => { throw new Error('status list not loaded'); } })))
+    .toEqual({ ok: false, reason: 'revocation status unavailable' });
+});
 test('software attestation passes when allowed (lower quota tier)', async () => {
   const { chain, root } = await fakeChain({ challenge, signatureDigestHex: digest, level: 0 });
   expect(verifyAttestation(chain, challenge, policy(root, { allowSoftware: true }))).toMatchObject({ ok: true, level: 'software' });

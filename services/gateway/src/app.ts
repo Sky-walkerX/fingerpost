@@ -24,10 +24,13 @@ export interface AppOverrides {
   models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
   /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
   quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
+  /** Live: Google's attestation status list (auth/revocation.ts). */
+  isRevoked?: (serialHex: string) => boolean;
 }
 
 export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: { level: cfg.LOG_LEVEL, redact: ['req.headers.authorization', 'req.headers["x-debug-token"]', 'req.headers["x-sim-token"]'] }, bodyLimit: 64 * 1024 });
+  // Trust exactly one proxy hop: Cloud Run's front end appends the real client IP to X-Forwarded-For.
+  const app = Fastify({ trustProxy: (_address: string, hop: number) => hop === 0, logger: { level: cfg.LOG_LEVEL, redact: ['req.headers.authorization', 'req.headers["x-debug-token"]', 'req.headers["x-sim-token"]'] }, bodyLimit: 64 * 1024 });
   await app.register(websocket, { options: { maxPayload: 512 * 1024 } });
 
   const live = cfg.MODEL_MODE === 'live';
@@ -42,7 +45,8 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
     registerAuthRoutes(app, {
       challenges: o.auth?.challenges ?? new ChallengeStore(now),
       verifyFirebaseIdToken: o.auth?.verifyFirebaseIdToken ?? (async () => null),
-      policy: o.auth?.policy ?? { trustedRoots: loadGoogleRoots(), packageName: 'io.github.fingerpost', signatureDigests: cfg.SIGNING_DIGESTS!.split(','), allowSoftware: cfg.ALLOW_SOFTWARE_ATTESTATION },
+      policy: o.auth?.policy ?? { trustedRoots: loadGoogleRoots(), packageName: 'io.github.fingerpost', signatureDigests: cfg.SIGNING_DIGESTS!.split(','), allowSoftware: cfg.ALLOW_SOFTWARE_ATTESTATION,
+        ...(o.isRevoked ? { isRevoked: o.isRevoked } : {}) },
       secret: secret!, now,
     });
   }

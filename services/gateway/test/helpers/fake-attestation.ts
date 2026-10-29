@@ -45,11 +45,17 @@ async function makeCert(serial: number, subjectCN: string, issuerCN: string, sub
 }
 
 /** A root → intermediate → leaf chain (returned leaf first) whose leaf carries the given KeyDescription. */
-export async function fakeChain(kd: FakeKeyDescription, opts: { expiredLeaf?: boolean } = {}) {
+export async function fakeChain(kd: FakeKeyDescription, opts: { expiredLeaf?: boolean; forgedChild?: boolean } = {}) {
   const gen = () => webcrypto.subtle.generateKey(ALG, true, ['sign', 'verify']) as Promise<CryptoKeyPair>;
   const [rootK, interK, leafK] = await Promise.all([gen(), gen(), gen()]);
   const root = await makeCert(1, 'Fake Root', 'Fake Root', rootK, rootK.privateKey, true);
   const inter = await makeCert(2, 'Fake Intermediate', 'Fake Root', interK, rootK.privateKey, true);
   const leaf = await makeCert(3, 'Android Keystore Key', 'Fake Intermediate', leafK, interK.privateKey, false, keyDescriptionDer(kd), opts.expiredLeaf ? new Date(Date.now() - 1000) : undefined);
+  if (opts.forgedChild) {
+    // A genuine attested key can sign anything, including a certificate with a KeyDescription of the attacker's choosing.
+    const forgedK = await gen();
+    const forged = await makeCert(4, 'Forged', 'Android Keystore Key', forgedK, leafK.privateKey, false, keyDescriptionDer(kd));
+    return { chain: [forged, leaf, inter, root], root };
+  }
   return { chain: [leaf, inter, root], root };
 }

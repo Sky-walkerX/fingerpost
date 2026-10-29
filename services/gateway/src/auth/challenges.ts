@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { ulid } from 'ulid';
 
+const MAX_OUTSTANDING = 10_000;
+
 /** Single-use attestation challenges, 32 random bytes, valid for 5 minutes. In memory (one instance per region is fine for v1). */
 export class ChallengeStore {
   private readonly m = new Map<string, { nonce: Uint8Array; exp: number }>();
@@ -8,6 +10,7 @@ export class ChallengeStore {
 
   issue(): { challengeId: string; nonce: Uint8Array } {
     this.sweep();
+    if (this.m.size >= MAX_OUTSTANDING) this.m.delete(this.m.keys().next().value!);
     const challengeId = ulid(), nonce = new Uint8Array(randomBytes(32));
     this.m.set(challengeId, { nonce, exp: this.now() + this.ttlMs });
     return { challengeId, nonce };
