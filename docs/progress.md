@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3 · **Days 4–7:** written each evening from results (design.md §7 has the outline)
+**Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
 **Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Fourteen tasks are complete within their documented scope; five are partial and 18 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2–T6 are complete under the user-directed phase exception; T7 coding is verified but required live acceptance remains blocked.
 
@@ -58,6 +58,50 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | todo | |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
+
+## Days 4–7: `docs/superpowers/plans/2026-10-30-days4-7-parallel.md`
+Three lanes run in parallel (A device · B brain · C quality/story). A task waits only on its "Needs". 🔑 = needs a credential; merge the mock-first step without it.
+
+| Task | What | Lane | Needs | Status | Owner |
+|---|---|---|---|---|---|
+| B4-0 | Flow contracts + review hardening | B | – | todo | |
+| A4-0 | Single-hand tracking + thermal stride | A | – | todo | |
+| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | todo | |
+| A4-2 | Device pay-confirm policy | A | – | todo | |
+| A4-3 | Local PIN mode on device | A | A4-1 | todo | |
+| A4-4 | HI/ES guidance strings | A | – | todo | |
+| A4-5 | Settings screen | A | – | todo | |
+| B4-1 | Model router (private, Spark fallback) | B | – | todo | |
+| B4-2 | Agent loop + policy | B | B4-0 | todo | |
+| B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | todo | |
+| B4-4 | HI/ES server speech | B | – | todo | |
+| C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | todo | |
+| C4-2 | Virtual-device flow runner | C | B4-0 | todo | |
+| C4-3 | Tester session #1 + triage | C | – | todo | |
+| C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
+| B5-0 | Explore + memory flow contracts | B | – | todo | |
+| A5-1 | Explore summary + touch-explore | A | B5-0 | todo | |
+| A5-2 | On-device layout cache | A | – | todo | |
+| A5-3 | Tuning, Crashlytics, update check | A | C4-3 | todo | |
+| A5-4 | (stretch) Mock glasses source | A | – | todo | |
+| B5-1 | Explore summary on gateway | B | B5-0 | todo | |
+| B5-2 | Kiosk memory | B | – | todo | |
+| B5-3 | Breaker + fallback chain | B | B4-1 | todo | |
+| B5-4 | 50-session load test | B | C4-2 | todo | |
+| C5-1 | Tester session #2 | C | – | todo | |
+| C5-2 | Privacy, data-safety, install pages | C | – | todo | |
+| C5-3 | README v1 + soak steps | C | – | todo | |
+| C5-4 | (cut first) Donation pipeline | C+B | – | todo | |
+| A6-1 | Offline basic mode | A | – | todo | |
+| A6-2 | Low-vision UI + a11y audit | A | – | todo | |
+| A6-3 | Phrasing polish | A+C | A4-4 | todo | |
+| B6-1 | Signed APK release workflow | B | – | todo | |
+| B6-2 | Waitlist + config endpoints | B | – | todo | |
+| B6-3 | Threat model, alerts, runbook | B | – | todo | |
+| C6-1 | Launch landing page | C | B6-2 | todo | |
+| C6-2 | Video script, shots, B-roll | C | – | todo | |
+| C6-3 | Tester session #3, X warm-up | C | – | todo | |
+| D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | todo | |
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
 - Fixed in Day 3 assets: live config fails closed (AUTH_REQUIRED=false needs ALLOW_UNAUTHENTICATED_LIVE=true); software attestation off by default in live; challenge/attest rate-limited per IP; sim route disabled in live without SIM_TOKEN, timing-safe compare; kill switch also applies to unauthenticated sessions.
