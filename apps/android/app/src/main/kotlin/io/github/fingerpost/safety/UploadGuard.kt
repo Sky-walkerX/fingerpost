@@ -15,6 +15,16 @@ class UploadGuard(
     @Volatile var pinMode = false; private set
     private var fewDigitsSince: Long? = null
 
+    @Synchronized
+    fun enterPinMode() {
+        fewDigitsSince = null
+        if (!pinMode) { pinMode = true; onEnter() }
+    }
+
+    /** Serializes the final send with local/server PIN entry, including frames encoded earlier. */
+    @Synchronized
+    fun sendIfAllowed(send: () -> Boolean): Boolean = !pinMode && send()
+
     /** Feed every OCR result (about 5 Hz). Keeps PIN mode state current even when nothing is being uploaded. null = OCR failed. */
     @Synchronized
     fun observe(tokens: List<OcrToken>?, nowMs: Long) {
@@ -23,11 +33,7 @@ class UploadGuard(
             return
         }
         if (PinGate.check(tokens) != PinGateReason.NONE) {
-            fewDigitsSince = null
-            if (!pinMode) {
-                pinMode = true
-                onEnter()
-            }
+            enterPinMode()
             return
         }
         if (!pinMode) return

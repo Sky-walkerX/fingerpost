@@ -20,6 +20,8 @@ import io.github.fingerpost.BuildConfig
 import io.github.fingerpost.camera.AnalysisFrame
 import io.github.fingerpost.guidance.AnalysisFrameTransform
 import io.github.fingerpost.guidance.FrameTransform
+import io.github.fingerpost.guidance.Bbox
+import io.github.fingerpost.guidance.Vec2
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +32,7 @@ data class FingerSample(
     val tipX: Float, val tipY: Float, val dipX: Float, val dipY: Float,
     val presence: Float, val frameW: Int, val frameH: Int,
     val frameTsMs: Long, val inferenceMs: Long,
+    val handBox: Bbox? = null,
 )
 
 data class TrackingPerformance(val fps: Int = 0, val inferenceMs: Long = 0)
@@ -187,8 +190,12 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
         mutableSamples.value = result.landmarks().mapIndexed { index, landmarks ->
             val tip = frame.transform.unmap(landmarks[8].x() * MODEL_WIDTH, landmarks[8].y() * MODEL_HEIGHT)
             val dip = frame.transform.unmap(landmarks[7].x() * MODEL_WIDTH, landmarks[7].y() * MODEL_HEIGHT)
+            val box = Bbox.of(landmarks.map { point ->
+                val image = frame.transform.unmap(point.x() * MODEL_WIDTH, point.y() * MODEL_HEIGHT)
+                Vec2(image.x.toDouble(), image.y.toDouble())
+            })
             FingerSample(tip.x, tip.y, dip.x, dip.y, result.handedness()[index][0].score(),
-                frame.width, frame.height, frame.timestamp, inferenceMs)
+                frame.width, frame.height, frame.timestamp, inferenceMs, box)
         }
         results.addLast(now to inferenceMs)
         while (results.isNotEmpty() && results.first().first <= now - 1_000) results.removeFirst()

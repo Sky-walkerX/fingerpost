@@ -28,7 +28,9 @@ class QuadEstimator {
         val edges = Mat()
         Imgproc.Canny(gray, edges, 50.0, 150.0)
         val contours = ArrayList<MatOfPoint>()
-        Imgproc.findContours(edges, contours, Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        val hierarchy = Mat()
+        Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        hierarchy.release()
         edges.release()
         var best: List<Vec2>? = null
         var bestArea = 0.0
@@ -37,13 +39,15 @@ class QuadEstimator {
             val approx = MatOfPoint2f()
             Imgproc.approxPolyDP(c2f, approx, 0.02 * Imgproc.arcLength(c2f, true), true)
             val pts = approx.toArray()
-            if (pts.size == 4 && Imgproc.isContourConvex(MatOfPoint(*pts))) {
+            val polygon = MatOfPoint(*pts)
+            if (pts.size == 4 && Imgproc.isContourConvex(polygon)) {
                 val area = abs(Imgproc.contourArea(approx))
                 if (area > bestArea && area / frameArea in 0.08..0.90) {
                     best = pts.map { Vec2(it.x, it.y) }
                     bestArea = area
                 }
             }
+            polygon.release()
             c2f.release()
             approx.release()
             contour.release()
@@ -70,7 +74,8 @@ class QuadEstimator {
         nonZero.release()
         ocrPoints.forEach { points += Point(it.x, it.y) }
         if (points.size < 3) return null
-        val rect = Imgproc.minAreaRect(MatOfPoint2f(*points.toTypedArray()))
+        val allPoints = MatOfPoint2f(*points.toTypedArray())
+        val rect = try { Imgproc.minAreaRect(allPoints) } finally { allPoints.release() }
         rect.size.width *= 1.06
         rect.size.height *= 1.06
         val corners = arrayOfNulls<Point>(4)
@@ -94,6 +99,7 @@ class QuadEstimator {
 /** A filled polygon mask (255 inside) the size of [like]. */
 internal fun polygonMask(like: Mat, poly: List<Vec2>): Mat {
     val mask = Mat.zeros(like.size(), CvType.CV_8UC1)
-    Imgproc.fillPoly(mask, listOf(MatOfPoint(*poly.map { Point(it.x, it.y) }.toTypedArray())), org.opencv.core.Scalar(255.0))
+    val polygon = MatOfPoint(*poly.map { Point(it.x, it.y) }.toTypedArray())
+    try { Imgproc.fillPoly(mask, listOf(polygon), org.opencv.core.Scalar(255.0)) } finally { polygon.release() }
     return mask
 }

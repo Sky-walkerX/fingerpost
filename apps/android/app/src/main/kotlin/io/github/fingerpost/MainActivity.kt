@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
         // Guidance stays visible while the user's hands are on another screen.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val trackingOptions = TrackingOptions.fromIntent(intent)
+        val simRunId = if (BuildConfig.DEBUG) intent.getStringExtra("fingerpost.simRunId")?.takeIf { it.length in 1..64 } else null
         setContent {
             FingerpostTheme {
                 var cameraGranted by remember { mutableStateOf(hasCameraPermission()) }
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     if (cameraGranted) {
-                        SessionScreen(trackingOptions = trackingOptions)
+                        SessionScreen(trackingOptions = trackingOptions, simRunId = simRunId)
                     } else {
                         Column(
                             modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),

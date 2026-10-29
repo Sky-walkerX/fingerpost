@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim a task by setting `doing` and your name, and commit that change on its own (see AGENTS.md §3).
 
-**Current phase:** Day 2 coding resumed by the user on 2026-10-28; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
+**Current phase:** Day 2–3 Android integration resumed by the user on 2026-10-30; phone acceptance assigned to teammates; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
 **Completion audit (2026-10-28):** [all 37 tasks](task-audit.md). Fourteen tasks are complete within their documented scope; five are partial and 18 are not implemented/executed. Finish every requirement, including required live/device acceptance, before moving past a task unless the user explicitly reprioritizes it. User deferred unfinished T7c; its requirements and the Day 1 exit gate remain open. D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2–T6 are complete under the user-directed phase exception; T7 coding is verified but required live acceptance remains blocked.
 
@@ -38,9 +38,9 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | blocked | Codex |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | todo | |
 | D2-T9 | Sim scenes 2/4 + touch relay | C | D1-T6 | todo | |
-| D2-T10a | Screen tracker + local quad (device) | A | D2-T2 | todo | |
-| D2-T10b | Session client + mic + keyframes (device) | A | D2-T1, D2-T7 | todo | |
-| D2-T10c | Guidance engine wiring (device) | A | D2-T4, D2-T10a, D2-T10b | todo | |
+| D2-T10a | Screen tracker + local quad (device) | A | D2-T2 | blocked | Sky-walkerX |
+| D2-T10b | Session client + mic + keyframes (device) | A | D2-T1, D2-T7 | blocked | Sky-walkerX |
+| D2-T10c | Guidance engine wiring (device) | A | D2-T4, D2-T10a, D2-T10b | blocked | Sky-walkerX |
 | D2-T10d | Proxy trials (exit check) | C | D2-T10c | todo | |
 | D2-T11 | Labeling page, tester booking | C | D1-T6 | todo | |
 
@@ -48,14 +48,14 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D3-T0 | Noon tech gate | C | D2-T10c | todo | |
-| D3-T1 | OCR, face covering, OCR tokens (device) | A | D2-T10b | todo | |
-| D3-T2 | PIN gate + two-source agreement | A | D3-T1 | todo | |
-| D3-T3 | Screen-change evidence + framing coach | A | D2-T10c | todo | |
-| D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | todo | |
+| D3-T1 | OCR, face covering, OCR tokens (device) | A | D2-T10b | blocked | Sky-walkerX |
+| D3-T2 | PIN gate + two-source agreement | A | D3-T1 | blocked | Sky-walkerX |
+| D3-T3 | Screen-change evidence + framing coach | A | D2-T10c | blocked | Sky-walkerX |
+| D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | blocked | Sky-walkerX |
 | D3-T5 | Key Attestation verifier | B | D2-T7 | todo | |
 | D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | todo | |
 | D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | todo | |
-| D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | todo | |
+| D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
 
@@ -110,9 +110,10 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
-- Android acceptance handoff (2026-10-30): the user authorized continued implementation and assigned phone testing to teammates. D2-T10a/b/c and D3 device checks remain open until those results are recorded; coding may proceed under this explicit reprioritization.
+- D2-T10a/b/c, D3-T1/T2/T3/T8 · Android implementation and local checks pass; phone acceptance remains assigned to teammates. See [integration handoff](evals/android-integration-handoff.md). Firebase configuration/credential checks remain human-owned. No live/device task is marked done.
+- D3-T4 · Reacquire, glare coaching and self-voicing are integrated; focus/exposure metering, persisted onboarding and the ten-minute TalkBack acceptance remain unimplemented or unverified.
 
-- 2026-10-30 privacy follow-up: unknown OCR blocks keyframes, labeled/merged digits use the same parsing for entry and exit, and OCR failure resets the continuous PIN-exit window. Four app JVM regressions pass (the exit-window test failed first); guidance tests and the debug build pass. No phone acceptance result is claimed.
+- Android acceptance handoff (2026-10-30): the user authorized continued implementation and assigned phone testing to teammates. D2-T10a/b/c and D3 device checks remain open until those results are recorded; coding may proceed under this explicit reprioritization.
 
 - D2-T7 · Coding/local verification complete; required live acceptance and regional redeployment remain blocked by human credentials and unaccepted ADR-0003. Safe preflight `node --conditions=source --input-type=module -e 'import { loadConfig } from "./services/gateway/src/config.ts"; try { loadConfig({ ...process.env, MODEL_MODE: "live" }); } catch (e) { console.log(e.message); process.exitCode = 2; }'` exits 2: `Invalid gateway config: META_API_KEY: META_API_KEY is required when MODEL_MODE=live`. Root `.env` is absent; no live model request or deployment was attempted. ADR-0003 remains proposed. Supply credentials privately, finish D1-T5 regional evidence, then run T7 Steps 4/5. No task progression past this acceptance gate. See [Day 2 coding evidence](evals/day2-coding.md).
 
@@ -274,6 +275,7 @@ _(task id · what changed · why · who approved)_
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
+| 2026-10-30 | Android integration, local only | 148 guidance +49 protocol +5 app JVM cases; debug build and lint pass; no phone acceptance | docs/evals/android-integration-handoff.md |
 | 2026-10-28 | Kotlin guidance tests | 85 passed, 0 failures/errors/skips (37 Day 1 +26 geometry/target/fingertip +22 planner/speech) | apps/android/core/guidance/build/test-results/test |
 | 2026-10-28 | Kotlin protocol tests | 49 passed, 0 failures/skips; shared valid/invalid fixtures plus framing boundaries | apps/android/core/protocol/build/test-results/test |
 | 2026-10-28 | Deployment preparation | five synthetic orchestration tests pass; no real cloud calls | scripts/test_deploy_gateway.py |
@@ -290,6 +292,8 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-30: D2-T10c integration implemented: lifecycle-scoped frame router/engine, authenticated session, permission-gated mic, framing/reacquire, fresh fingertip mapping, cue/tone/haptic output, correlated TTS/verify completion, PIN pause/resume, two-source checks and screen-change/dwell evidence. New geometry, stale-completion and PIN-resume regressions were confirmed red before implementation. Final local command `./scripts/android.sh :core:guidance:test :core:protocol:test :app:test :app:assembleDebug :app:lintDebug --console=plain` passes: 148 guidance +49 protocol +5 app tests, 0 failures/errors/skips; APK and lint pass. CI now runs app tests. No device check, deployment or paid call was attempted; teammate acceptance and remaining Day 3/4 scope are listed in [the handoff](evals/android-integration-handoff.md).
+- 2026-10-30 privacy follow-up: unknown OCR blocks keyframes, labeled/merged digits use the same parsing for entry and exit, and OCR failure resets the continuous PIN-exit window. Four app JVM regressions pass (the exit-window test failed first); guidance tests and the debug build pass. No phone acceptance result is claimed.
 - 2026-10-28: User-requested environment setup correction: added root .env.example with valid mock defaults and inactive secret/measurement placeholders, plus private-copy/loading and Secret Manager instructions. Node 24 parsing and existing gateway validation pass; live mode without a key still fails, shell syntax passes, and Git ignores .env/.env.local while allowing the example. No private environment file was read or modified, no network/model request made, and task completion/blocker statuses remain unchanged.
 - 2026-10-28: User explicitly requested starting Day 2 with Day 1 unfinished. Begin at D2-T2, whose D1-T7a prerequisite is done, and retain every Day 1 blocker/acceptance requirement. Individual Day 2 completion checks remain mandatory; no deployment, live model access or device acceptance is implied.
 - 2026-10-27: design, specs, ADRs and the Days 1–3 plans are committed. Planning verified the assets: each day's starting state typechecks, and the reference passes gateway 105 tests, protocol 46, web 20, evals 5, Kotlin guidance 81, Kotlin protocol 41.

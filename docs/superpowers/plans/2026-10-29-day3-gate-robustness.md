@@ -124,8 +124,8 @@ Everything from Days 1–2 still applies, plus:
   - **False:** replace the arrival speech with "I think this is <label>, but I'm not sure." Use the same SAFETY rule for `pay|confirm|submit` roles (Day 4 adds the confirm gate).
 
 - [ ] **Step 1: Confirm red.** Run `./gradlew :core:guidance:test`. PinGateTest passes; TwoSourceTest, ScreenChangeTest and FramingTest fail.
-- [ ] **Step 2: Implement `twoSourceAgree`.** TwoSourceTest goes green.
-- [ ] **Step 3: Implement `UploadGuard`** and wire it in.
+- [x] **Step 2: Implement `twoSourceAgree`.** TwoSourceTest goes green.
+- [x] **Step 3: Implement `UploadGuard`** and wire it in.
 - [ ] **Step 4: Check on the device.**
   - Open the tablet PIN pad scene (phone, calculator and scrambled).
   - Gateway logs show **no** keyframe after the pad appears.
@@ -169,7 +169,7 @@ Device integration happens in `GuidanceEngine` and `QuadEstimator`.
     - `GOOD`: a soft tick earcon, not speech.
   - `QuadStability` replaces the Day 2 stability check.
 
-- [ ] **Step 1: Implement the Kotlin.** Then `./gradlew :core:guidance:test`: all 81 pass.
+- [x] **Step 1: Implement the Kotlin.** Then `./gradlew :core:guidance:test`: all 81 pass.
 - [ ] **Step 2: Wire it up on the device, and check:**
   - pressing a real cooktop key gives "Done" without a sim touch;
   - pointing half off the tablet gives the cut-off cue.

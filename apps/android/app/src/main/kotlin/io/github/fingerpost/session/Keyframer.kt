@@ -33,8 +33,8 @@ class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
      * [tokens] must be OCR of this very frame; null (OCR failed) blocks it. Blocking: call off the UI thread.
      */
     fun encode(upright: Bitmap, quadPx: List<Vec2>?, kind: KeyframeKind, purpose: KeyframePurpose,
-               tokens: List<OcrToken>?, nowMs: Long): EncodedKeyframe? {
-        if (tokens == null || !guard.mayUpload(tokens, nowMs)) return null
+               tokens: List<OcrToken>?, nowMs: Long, gateTokens: List<OcrToken>? = tokens): EncodedKeyframe? {
+        if (tokens == null || !guard.mayUpload(gateTokens, nowMs)) return null
         return if (kind == KeyframeKind.SCREEN && quadPx != null) screen(upright, quadPx, purpose, tokens)
         else full(upright, quadPx, purpose, tokens)
     }
@@ -44,7 +44,7 @@ class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
         val scaled = Bitmap.createScaledBitmap(upright, WIDTH, (upright.height * scale).toInt().coerceAtLeast(1), true)
         val covered = faces.cover(scaled)
         if (scaled !== upright) scaled.recycle()
-        val jpeg = jpeg(covered)
+        val jpeg = try { jpeg(covered) } catch (e: RuntimeException) { covered.recycle(); throw e }
         val header = KeyframeHeader(newId(), nowMs(), KeyframeKind.FULL,
             quadPx?.map { Point(it.x * scale, it.y * scale) }, ImageSize(covered.width, covered.height),
             wire(KeyframeTokens.forFull(tokens)), purpose)
@@ -68,8 +68,7 @@ class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
         val crop = Bitmap.createBitmap(WIDTH, height, Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(dst, crop)
         listOf(src, from, to, m, dst).forEach { it.release() }
-        val jpeg = jpeg(crop)
-        crop.recycle()
+        val jpeg = try { jpeg(crop) } finally { crop.recycle() }
         val quadNorm = quadPx.map { Vec2(it.x / upright.width, it.y / upright.height) }
         val header = KeyframeHeader(newId(), nowMs(), KeyframeKind.SCREEN, null, ImageSize(WIDTH, height),
             wire(KeyframeTokens.forScreen(tokens, quadNorm)), purpose)
@@ -82,8 +81,7 @@ class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
             if (out.size() <= Limits.KEYFRAME_BYTES) return out.toByteArray()
         }
-        val half = Bitmap.createScaledBitmap(bitmap, bitmap.width / 2, bitmap.height / 2, true)
-        return ByteArrayOutputStream().also { half.compress(Bitmap.CompressFormat.JPEG, 65, it); half.recycle() }.toByteArray()
+        error("Keyframe exceeds the protocol size limit")
     }
 
     private fun wire(tokens: List<OcrToken>) = tokens.map { WireToken(it.text, Box(it.u, it.v, it.w, it.h)) }

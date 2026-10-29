@@ -20,6 +20,8 @@ sealed interface GEvent {
     data class Abort(override val nowMs: Long) : GEvent
     /** The screen tracker lost the quad (guidance-spec §2: LOST). Reacquire by framing again; the goal is kept. */
     data class TrackingLost(override val nowMs: Long) : GEvent
+    /** Local privacy pause ended: keep the gateway's goal and locate from a fresh, checked frame. */
+    data class ResumeAfterPin(override val nowMs: Long) : GEvent
     /** Timer tick, about every 100 ms. */
     data class Tick(override val nowMs: Long) : GEvent
 }
@@ -86,6 +88,12 @@ class GuidanceStateMachine {
     }
 
     fun handle(ev: GEvent): List<Effect> {
+        if (ev is GEvent.ResumeAfterPin) {
+            if (state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) return emptyList()
+            debounce.reset()
+            go(GState.LOCATING, ev.nowMs)
+            return listOf(Effect.ToneOff, Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.LOCATE))
+        }
         if (ev is GEvent.Abort) {
             if (state == GState.IDLE) return emptyList()
             go(GState.IDLE, ev.nowMs)

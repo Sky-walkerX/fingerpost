@@ -45,6 +45,7 @@ Rules:
 - **Validity:** hand presence ≥0.6, and landmark 8 inside the image.
   - With several hands, use the one whose landmark 8 is nearest the target. Ties go to the `handedness` setting.
 - **Filter:** a One Euro filter on the screen-space `(u, v)` with `minCutoff = 1.0 Hz`, `beta = 0.007`, `dCutoff = 1.0 Hz`.
+- **Landmark freshness (initial value):** mute guidance after 200 ms without a new hand result; repeated or older landmark timestamps do not count toward the six-frame ON test.
 - **Off-screen:** if the pad maps outside `[−0.15, 1.15]` on either axis, the state is "finger off screen". The cue is "Bring your finger onto the screen" plus a direction.
 
 ## 4. Targets
@@ -93,6 +94,7 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
   - frequency `f = 220 · 2^(3 · (1 − min(|e| / 0.5, 1)))` Hz, which spans 220–1760 Hz;
   - stereo pan `= clamp(e_x / 0.3, −1, 1)`, so the sound sits on the side the finger should move toward;
   - in `NEAR`, the tone pulses at `4 + 8 · (1 − |e| / nearRadius)` Hz;
+    - Pulse duty cycle is 50% (initial value), retaining the audio ramps at each edge.
   - in `ON`, the tone stops and the success earcon plays.
 - **Audio path:** `AudioTrack` with `PERFORMANCE_MODE_LOW_LATENCY`, 48 kHz, 5 ms ramps to prevent clicks. Target: under 100 ms from frame capture to audible change.
   - **Prototype synthesis (initial values):** stereo float PCM in 240-frame (5 ms) blocks, amplitude 0.25, equal-power gains `cos((pan+1)·π/4)` / `sin((pan+1)·π/4)`. Frequency, pan and start/stop gain ramp linearly over 240 frames; phase continues across control changes. No hand or invalid tracking mutes the tone.
@@ -101,6 +103,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
   - entering `NEAR`: `EFFECT_TICK`;
   - `ON`: `EFFECT_HEAVY_CLICK` twice, 120 ms apart;
   - tracking `LOST`: a single 300 ms vibration.
+- **Framing earcon (initial values):** a 40 ms accessibility-stream beep at 25% tone-generator volume, at most once per 1.5 s when framing is good.
+- **Success earcon (initial value):** an 80 ms accessibility-stream acknowledgement at the same volume when entering ON.
 - **Mix settings:** the user sets the weights for speech, tone and haptics. Each mode can be off. Never all three: the settings UI blocks the last remaining one from being turned off.
 
 ## 8. State machine

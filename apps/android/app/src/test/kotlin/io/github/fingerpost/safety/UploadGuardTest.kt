@@ -5,6 +5,14 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class UploadGuardTest {
+    @Test fun serverPinEntryBlocksAnAlreadyEncodedFrame() {
+        val gate = UploadGuard({}, {})
+        assertTrue(gate.mayUpload(emptyList(), 0))
+        gate.enterPinMode()
+        var sent = false
+        assertFalse(gate.sendIfAllowed { sent = true; true })
+        assertFalse(sent)
+    }
     @Test fun failedOcrBlocksTheFrame() {
         val gate = UploadGuard({}, {})
         assertFalse(gate.mayUpload(null, 0))

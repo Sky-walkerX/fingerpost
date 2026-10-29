@@ -5,6 +5,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class GuidanceStateMachineTest {
+    @Test fun pinExitRequestsFreshLocateWithoutLosingTheActiveGoal() {
+        val s = GuidanceStateMachine().toGuiding()
+        assertEquals(listOf(Effect.ToneOff, Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.LOCATE)),
+            s.handle(GEvent.ResumeAfterPin(30)))
+        assertEquals(GState.LOCATING, s.state)
+    }
     private fun sm() = GuidanceStateMachine()
     private fun GuidanceStateMachine.toGuiding(): GuidanceStateMachine {
         handle(GEvent.Start(0)); handle(GEvent.GoalHeard(1000, "start"))

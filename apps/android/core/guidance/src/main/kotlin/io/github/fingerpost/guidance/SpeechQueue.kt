@@ -36,6 +36,13 @@ class SpeechQueue(private val minGuideGapMs: Long = 700, private val staleGuideM
 
     fun onDone() { current = null }
 
+    /** Android callbacks can already be queued when a higher-priority utterance replaces this one. */
+    fun onDone(expected: Utterance): Boolean {
+        if (current !== expected) return false
+        current = null
+        return true
+    }
+
     fun poll(nowMs: Long): SpeechAction {
         if (current != null) return SpeechAction.Wait
         queued.removeAll { it.priority == Priority.GUIDE && nowMs - it.atMs > staleGuideMs }

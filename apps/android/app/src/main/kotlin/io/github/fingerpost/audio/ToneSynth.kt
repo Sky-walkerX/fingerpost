@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class ToneSynth {
     private data class Controls(
         val frequencyHz: Double = 220.0, val pan: Double = 0.0,
+        val pulseHz: Double = 0.0,
         val enabled: Boolean = false, val released: Boolean = false,
     )
 
@@ -53,12 +54,15 @@ class ToneSynth {
                 if (controls.get().released) return@thread
                 val generator = ToneGenerator()
                 val buffer = FloatArray(ToneGenerator.BLOCK_FRAMES * 2)
+                var pulsePhase = 0.0
                 audioTrack.play()
                 if (BuildConfig.DEBUG) Log.i("FingerpostTone",
                     "sampleRate=${audioTrack.sampleRate} bufferFrames=${audioTrack.bufferSizeInFrames} performanceMode=${audioTrack.performanceMode}")
                 while (!controls.get().released) {
                     val current = controls.get()
-                    generator.render(buffer, current.frequencyHz, current.pan, current.enabled)
+                    val audible = current.enabled && (current.pulseHz == 0.0 || pulsePhase < 0.5)
+                    generator.render(buffer, current.frequencyHz, current.pan, audible)
+                    pulsePhase = (pulsePhase + current.pulseHz * ToneGenerator.BLOCK_FRAMES / ToneGenerator.SAMPLE_RATE) % 1.0
                     var offset = 0
                     while (offset < buffer.size && !controls.get().released) {
                         val written = audioTrack.write(buffer, offset, buffer.size - offset, AudioTrack.WRITE_BLOCKING)
@@ -103,6 +107,11 @@ class ToneSynth {
     fun setPan(pan: Double) {
         require(pan.isFinite())
         controls.updateAndGet { if (it.released) it else it.copy(pan = pan) }
+    }
+
+    fun setPulseHz(hz: Double) {
+        require(hz.isFinite() && hz >= 0)
+        controls.updateAndGet { if (it.released) it else it.copy(pulseHz = hz) }
     }
 
     fun release() {

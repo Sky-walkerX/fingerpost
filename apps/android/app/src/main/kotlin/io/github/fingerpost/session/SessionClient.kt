@@ -40,6 +40,7 @@ class SessionClient(
     private val hello: () -> ClientMessage,
     private val token: suspend () -> String? = { null },
     private val url: String = BuildConfig.GATEWAY_URL + "/v1/session",
+    private val onAuthExpired: suspend () -> Unit = {},
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val http = OkHttpClient.Builder().pingInterval(15, TimeUnit.SECONDS).build()
@@ -62,20 +63,23 @@ class SessionClient(
         scope.launch {
             val request = Request.Builder().url(url).header("Fp-Protocol", "fp.v1")
             token()?.let { request.header("Authorization", "Bearer $it") }
+            if (closed) return@launch
             socket = http.newWebSocket(request.build(), listener)
         }
     }
 
     private val listener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
+            if (closed || webSocket !== socket) { webSocket.close(1000, null); return }
             backoffMs = 500L
             mutableConnected.value = true
             webSocket.send(encodeClientMessage(hello()))
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
+            if (closed || webSocket !== socket) return
             when (val parsed = parseServerMessage(text)) {
-                is ServerParse.Ok -> mutableMessages.tryEmit(parsed.msg)
+                is ServerParse.Ok -> if (!mutableMessages.tryEmit(parsed.msg)) webSocket.cancel()
                 is ServerParse.Unknown -> Unit
                 is ServerParse.Invalid -> if (BuildConfig.DEBUG) Log.w(TAG, "invalid server message")
             }
@@ -83,12 +87,12 @@ class SessionClient(
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) = webSocket.close(code, null).let { }
 
-        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) = scheduleReconnect(webSocket)
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) = scheduleReconnect(webSocket, code == 4401)
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) = scheduleReconnect(webSocket)
     }
 
-    private fun scheduleReconnect(from: WebSocket) {
+    private fun scheduleReconnect(from: WebSocket, authExpired: Boolean = false) {
         if (from !== socket) return
         mutableConnected.value = false
         socket = null
@@ -97,6 +101,7 @@ class SessionClient(
         backoffMs = minOf(backoffMs * 2, 8_000L)
         reconnect?.cancel()
         reconnect = scope.launch {
+            if (authExpired) onAuthExpired()
             delay(wait)
             if (!closed) connect()
         }
@@ -106,12 +111,23 @@ class SessionClient(
 
     fun send(header: ClientMessage, payload: ByteArray): Boolean = socket?.send(Frame.encode(header, payload).toByteString()) ?: false
 
+    fun reconnect() {
+        reconnect?.cancel()
+        val previous = socket
+        socket = null
+        mutableConnected.value = false
+        previous?.cancel()
+        if (!closed) connect()
+    }
+
     fun close() {
         closed = true
         reconnect?.cancel()
         socket?.close(1000, null)
         socket = null
         scope.cancel()
+        http.dispatcher.executorService.shutdown()
+        http.connectionPool.evictAll()
     }
 
     private companion object { const val TAG = "FingerpostSession" }

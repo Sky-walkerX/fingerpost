@@ -57,14 +57,15 @@ class ScreenTracker {
         val current = quad ?: return TrackState.NONE.also { state = it }
         val previous = prev
         val points = prevPts
-        if (previous != null && points != null && !points.empty()) track(previous, points, gray, current, nowMs)
+        if (previous != null && points != null && !points.empty()) track(previous, points, gray, current, handBox, nowMs)
+        else if (previous != null) badFrame(nowMs)
         if (quad != null && (prevPts == null || prevPts!!.rows() < MIN_FEATURES)) detect(gray, quad!!, handBox)
         prev?.release()
         prev = gray.clone()
         return state
     }
 
-    private fun track(previous: Mat, points: MatOfPoint2f, gray: Mat, current: List<Vec2>, nowMs: Long) {
+    private fun track(previous: Mat, points: MatOfPoint2f, gray: Mat, current: List<Vec2>, handBox: Bbox?, nowMs: Long) {
         val next = MatOfPoint2f()
         val status = MatOfByte()
         val err = MatOfFloat()
@@ -74,7 +75,14 @@ class ScreenTracker {
         val b = next.toArray()
         val from = ArrayList<Point>()
         val to = ArrayList<Point>()
-        for (i in st.indices) if (st[i].toInt() == 1) { from += a[i]; to += b[i] }
+        for (i in st.indices) if (st[i].toInt() == 1) {
+            val handCovers = handBox?.let { box ->
+                val dx = box.w * 0.15 / 2
+                val dy = box.h * 0.15 / 2
+                b[i].x in (box.minX - dx)..(box.maxX + dx) && b[i].y in (box.minY - dy)..(box.maxY + dy)
+            } ?: false
+            if (!handCovers) { from += a[i]; to += b[i] }
+        }
         next.release(); status.release(); err.release()
 
         var inlierTo: List<Point> = emptyList()
@@ -90,9 +98,13 @@ class ScreenTracker {
                     val corners = MatOfPoint2f(*current.map { Point(it.x, it.y) }.toTypedArray())
                     val moved = MatOfPoint2f()
                     Core.perspectiveTransform(corners, moved, h)
-                    quad = moved.toArray().map { Vec2(it.x, it.y) }
+                    val candidate = moved.toArray().map { Vec2(it.x, it.y) }
+                    val size = minOf((current[1] - current[0]).length, (current[3] - current[0]).length)
+                    val valid = candidate.all { it.x.isFinite() && it.y.isFinite() } &&
+                        candidate.indices.all { (candidate[it] - current[it]).length < size * 0.25 } &&
+                        Homography.imageToScreen(candidate) != null
+                    if (valid) { quad = candidate; inlierTo = inliers }
                     corners.release(); moved.release()
-                    inlierTo = inliers
                 }
             }
             src.release(); dst.release(); mask.release(); h.release()
@@ -105,14 +117,16 @@ class ScreenTracker {
             state = TrackState.TRACKING
         } else {
             prevPts = if (to.isEmpty()) null else MatOfPoint2f(*to.toTypedArray())
-            badFrames++
-            if (state == TrackState.TRACKING && badFrames >= DEGRADE_AFTER_FRAMES) {
-                state = TrackState.DEGRADED
-                degradedSince = nowMs
-            } else if (state == TrackState.DEGRADED && nowMs - degradedSince >= LOST_AFTER_MS) {
-                state = TrackState.LOST
-            }
+            badFrame(nowMs)
         }
+    }
+
+    private fun badFrame(nowMs: Long) {
+        badFrames++
+        if (state == TrackState.TRACKING && badFrames >= DEGRADE_AFTER_FRAMES) {
+            state = TrackState.DEGRADED
+            degradedSince = nowMs
+        } else if (state == TrackState.DEGRADED && nowMs - degradedSince >= LOST_AFTER_MS) state = TrackState.LOST
     }
 
     private fun detect(gray: Mat, q: List<Vec2>, handBox: Bbox?) {

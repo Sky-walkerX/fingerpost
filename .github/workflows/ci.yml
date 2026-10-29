@@ -25,4 +25,4 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew :core:guidance:test :core:protocol:test --console=plain
-      - run: ./gradlew :app:assembleDebug --console=plain
+      - run: ./gradlew :app:test :app:assembleDebug --console=plain

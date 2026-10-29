@@ -21,7 +21,8 @@ fun uprightBitmap(frame: AnalysisFrame, width: Int): Bitmap {
         postRotate(frame.rotationDegrees.toFloat())
         postScale(scale, scale)
     }
-    return Bitmap.createBitmap(frame.bitmap, crop.left, crop.top, crop.width(), crop.height(), matrix, true)
+    val result = Bitmap.createBitmap(frame.bitmap, crop.left, crop.top, crop.width(), crop.height(), matrix, true)
+    return if (result === frame.bitmap) result.copy(Bitmap.Config.ARGB_8888, false) else result
 }
 
 /** Grayscale and HSV value channel of an ARGB_8888 bitmap. Both must be released by the caller. */

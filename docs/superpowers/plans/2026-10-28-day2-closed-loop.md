@@ -397,13 +397,13 @@ Everything in Day 1's list still applies, plus:
   - `reanchor(serverQuad)` replaces the quad when a `layout.screenQuad` arrives.
   - **Output:** `currentQuad` (image px) and `imageToScreen: Homography?`, built from `Homography.imageToScreen(quad)` in `core:guidance`.
 
-- [ ] **Step 1: Implement**, with a debug overlay that draws the quad (in green while TRACKING).
+- [x] **Step 1: Implement**, with a debug overlay that draws the quad (in green while TRACKING).
 - [ ] **Step 2: Check on the device.** Point at the tablet showing the cooktop scene:
   - the quad locks within 2 s;
   - it follows a slow pan without jumping;
   - your hand over the screen doesn't drag it.
   - Note the results in progress.md.
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
   `git commit -m "feat(android): local screen quad estimate and KLT homography tracker"`
 
 ### Task D2-T10b (device): session client and mic streaming
@@ -428,12 +428,12 @@ Everything in Day 1's list still applies, plus:
   - Must be ≤ 400 KB; if it's larger, re-encode at quality 65.
   - **Day 2:** `full` frames go to `localhost` / dev only. Face covering arrives on Day 3, before any external tester session.
 
-- [ ] **Step 1: Implement.**
+- [x] **Step 1: Implement.**
 - [ ] **Step 2: Check on the device**, against the laptop gateway in mock mode, with `fingerpost.gatewayUrl=ws://<laptop-ip>:8080` in `~/.gradle/gradle.properties`:
   - hello gets `ready`;
   - speaking "start" gets a `transcript` and then `goal.ack`;
   - a keyframe gets `layout` and then `target` (mock e5).
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
   `git commit -m "feat(android): fp.v1 session client, mic streaming, keyframe encoder"`
 
 ### Task D2-T10c (device): guidance engine wiring (speech, tone, haptics)
@@ -474,9 +474,9 @@ Everything in Day 1's list still applies, plus:
 - **Camera pitch:** from `Sensor.TYPE_GRAVITY`, as `pitchBelowHorizonDeg = toDegrees(atan2(gz, gy))` mapped to [0, 90]. Check the value: phone flat facing down ≈ 90; upright ≈ 0.
 - **Press evidence (Day 2):** only the sim touch (`sim.touch` → `PressDetected(SIM)`). Screen-change and dwell come on Day 3.
 
-- [ ] **Step 1: Implement.**
+- [x] **Step 1: Implement.**
 - [ ] **Step 2: Check on the device** against the mock gateway. Run the whole loop on the tablet cooktop scene: start → say "boil" → frame → target → guided → ON → tap → verify → "Done."
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
   `git commit -m "feat(android): guidance engine wires state machine, cues, speech, tone, haptics"`
 
 ### Task D2-T10d (exit check): blindfolded proxy trials

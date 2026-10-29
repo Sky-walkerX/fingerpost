@@ -190,9 +190,10 @@ class CameraPipeline(
         analysis = null
     }
 
-    fun close() {
+    fun close(onDrained: () -> Unit = {}) {
         stop()
         closed = true
+        executor.execute(onDrained)
         executor.shutdown()
     }
 }
