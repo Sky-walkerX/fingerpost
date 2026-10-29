@@ -10,16 +10,19 @@ import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import io.github.fingerpost.guidance.OcrToken
 
-/** On-device OCR (Latin + Devanagari), word level, boxes normalized to the bitmap. Blocking: call off the UI thread. */
+/**
+ * On-device OCR (Latin + Devanagari), word level, boxes normalized to the bitmap. Blocking: call off the UI thread.
+ * null when either recognizer fails: the PIN gate can't vouch for that frame, so it must not be uploaded.
+ */
 class Ocr {
     private val latin = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private val deva = TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
 
-    fun recognize(bitmap: Bitmap): List<OcrToken> {
+    fun recognize(bitmap: Bitmap): List<OcrToken>? {
         val image = InputImage.fromBitmap(bitmap, 0)
         val words = ArrayList<Pair<String, Rect>>()
         for (recognizer in listOf(latin, deva)) {
-            val text = runCatching { Tasks.await(recognizer.process(image)) }.getOrNull() ?: continue
+            val text = runCatching { Tasks.await(recognizer.process(image)) }.getOrNull() ?: return null
             words += elements(text)
         }
         val unique = ArrayList<Pair<String, Rect>>()

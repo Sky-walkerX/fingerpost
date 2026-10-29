@@ -25,6 +25,9 @@ object PinGate {
         return if (cluster(grid.map { it.cy }, tol) in 3..4) PinGateReason.DIGIT_GRID else PinGateReason.NONE
     }
 
+    /** Key digits as the gate parses them; PIN-mode exit counts with the same rules (guidance-spec §10.1). */
+    fun digitCount(tokens: List<OcrToken>): Int = tokens.sumOf { digitTokens(it).size }
+
     /** One token per key digit: splits OCR-merged words across the box and drops phone-key letters. */
     private fun digitTokens(t: OcrToken): List<OcrToken> {
         val words = t.text.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }

@@ -15,8 +15,13 @@ class UploadGuard(
     @Volatile var pinMode = false; private set
     private var fewDigitsSince: Long? = null
 
-    /** Feed every OCR result (about 5 Hz). Keeps PIN mode state current even when nothing is being uploaded. */
-    fun observe(tokens: List<OcrToken>, nowMs: Long) {
+    /** Feed every OCR result (about 5 Hz). Keeps PIN mode state current even when nothing is being uploaded. null = OCR failed. */
+    @Synchronized
+    fun observe(tokens: List<OcrToken>?, nowMs: Long) {
+        if (tokens == null) {
+            fewDigitsSince = null
+            return
+        }
         if (PinGate.check(tokens) != PinGateReason.NONE) {
             fewDigitsSince = null
             if (!pinMode) {
@@ -26,7 +31,7 @@ class UploadGuard(
             return
         }
         if (!pinMode) return
-        if (digitCount(tokens) >= 5) {
+        if (PinGate.digitCount(tokens) >= 5) {
             fewDigitsSince = null
             return
         }
@@ -38,14 +43,15 @@ class UploadGuard(
         }
     }
 
-    /** False blocks the upload. Checks the frame's own tokens too, so the first PIN-pad frame never leaves. */
-    fun mayUpload(tokens: List<OcrToken>, nowMs: Long): Boolean {
+    /**
+     * False blocks the upload. Checks the frame's own tokens, so the first PIN-pad frame never leaves; a frame
+     * whose OCR failed (null) is never uploaded either, because it could not be checked.
+     */
+    @Synchronized
+    fun mayUpload(tokens: List<OcrToken>?, nowMs: Long): Boolean {
         observe(tokens, nowMs)
-        return !pinMode
+        return tokens != null && !pinMode
     }
-
-    private fun digitCount(tokens: List<OcrToken>) =
-        tokens.flatMap { it.text.trim().split(Regex("\\s+")) }.count { it.length == 1 && it[0] in '0'..'9' }
 
     private companion object { const val EXIT_AFTER_MS = 2_000L }
 }

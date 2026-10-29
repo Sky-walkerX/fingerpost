@@ -30,6 +30,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
     androidResources { noCompress += "task" }   // MediaPipe memory-maps the model
+    testOptions.unitTests.all { it.useJUnitPlatform() }
 }
 
 dependencies {
@@ -58,4 +59,7 @@ dependencies {
     implementation(libs.camerax.view)
     implementation(libs.mediapipe.tasks.vision)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.launcher)
 }

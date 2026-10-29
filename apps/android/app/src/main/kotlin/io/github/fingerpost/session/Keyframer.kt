@@ -30,11 +30,11 @@ class EncodedKeyframe(val header: KeyframeHeader, val jpeg: ByteArray)
 class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
     /**
      * [upright] is the frame the [tokens] and [quadPx] refer to (tokens frame-normalized, quad in its pixels).
-     * Blocking (face detection): call off the UI thread.
+     * [tokens] must be OCR of this very frame; null (OCR failed) blocks it. Blocking: call off the UI thread.
      */
     fun encode(upright: Bitmap, quadPx: List<Vec2>?, kind: KeyframeKind, purpose: KeyframePurpose,
-               tokens: List<OcrToken>, nowMs: Long): EncodedKeyframe? {
-        if (!guard.mayUpload(tokens, nowMs)) return null
+               tokens: List<OcrToken>?, nowMs: Long): EncodedKeyframe? {
+        if (tokens == null || !guard.mayUpload(tokens, nowMs)) return null
         return if (kind == KeyframeKind.SCREEN && quadPx != null) screen(upright, quadPx, purpose, tokens)
         else full(upright, quadPx, purpose, tokens)
     }

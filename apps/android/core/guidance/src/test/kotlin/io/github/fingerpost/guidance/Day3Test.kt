@@ -31,6 +31,7 @@ class PinGateTest {
     @Test fun passcodeWordingIsBlocked() {
         for (text in listOf("Passcode", "Enter password", "Contraseña", "पासवर्ड")) assertEquals(PinGateReason.PIN_TEXT, PinGate.check(listOf(OcrToken(text, 0.4, 0.1, 0.2, 0.05))), text)
     }
+    @Test fun digitCountUsesTheGateParsing() = assertEquals(6, PinGate.digitCount(listOf(OcrToken("1 2 3", 0.1, 0.1, 0.3, 0.05), OcrToken("4GHI", 0.1, 0.2, 0.1, 0.05), OcrToken("5 JKL", 0.2, 0.2, 0.1, 0.05), OcrToken("6", 0.3, 0.2, 0.1, 0.05), OcrToken("149", 0.5, 0.5, 0.1, 0.05))))
     @Test fun clusteringCountsGaps() { assertEquals(3, PinGate.cluster(listOf(0.1, 0.11, 0.5, 0.52, 0.9), 0.05)); assertEquals(0, PinGate.cluster(emptyList(), 0.1)) }
 }
 
