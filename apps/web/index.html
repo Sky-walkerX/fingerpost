@@ -1,2 +1,96 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fingerpost</title></head>
-<body><main><h1>Fingerpost</h1><p>Touchscreen guidance for blind and low-vision people. Beta coming soon.</p><p><a href="/sim/?scene=fastfood&seed=1">Kiosk simulator</a></p></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fingerpost</title>
+<meta name="description" content="Fingerpost guides a blind person's finger to the right button on any flat touchscreen, with voice, tone and vibration.">
+<style>
+  :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #cbd5e1; --accent: #facc15; --panel: #111827; --focus: #38bdf8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 1.125rem/1.6 system-ui, sans-serif; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; background: var(--fg); color: var(--bg); padding: 8px 12px; z-index: 1; }
+  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 32px; font-weight: 700; letter-spacing: .02em; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 48px 0 16px; }
+  h2 { font-size: 1.4rem; margin-top: 48px; }
+  .lede { color: var(--muted); font-size: 1.25rem; }
+  .badge { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: .95rem; font-weight: 600; }
+  ul { padding-left: 1.2em; }
+  form { background: var(--panel); border-radius: 12px; padding: 20px; margin-top: 16px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input, select, button { font: inherit; border-radius: 8px; }
+  input, select { width: 100%; padding: 12px; border: 2px solid #64748b; background: var(--bg); color: var(--fg); margin-bottom: 16px; }
+  button { background: var(--accent); color: #111; border: 0; padding: 12px 20px; font-weight: 700; cursor: pointer; min-height: 48px; }
+  .hp { position: absolute; left: -9999px; }
+  #thanks { font-weight: 600; }
+  footer { color: var(--muted); padding-top: 48px; padding-bottom: 48px; font-size: 1rem; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>Fingerpost</header>
+<main id="main">
+  <p><span class="badge">Beta coming November 2</span></p>
+  <h1>Find the right button on any touchscreen, without sight.</h1>
+  <p class="lede">Point your phone at a kiosk, a card terminal or an induction cooktop and say what you want to press. Fingerpost guides your finger there with speech, a rising tone and vibration, then checks that the press worked.</p>
+
+  <h2>Who it's for</h2>
+  <p>Blind and low-vision people who meet flat touchscreens with no buttons to feel: self-order kiosks, ticket machines, check-in screens and home appliances.</p>
+
+  <h2>What it does</h2>
+  <ul>
+    <li>Guides one finger to one button, or walks you through a whole order, step by step.</li>
+    <li>Reads the amount and waits for your spoken “yes” before any pay button.</li>
+    <li>Never sends your PIN anywhere. On a PIN pad, the camera stays on your phone and digits are spoken only into your earphones.</li>
+    <li>Free and open source. Works with TalkBack. English and Hindi, with Spanish to follow.</li>
+  </ul>
+
+  <h2 id="waitlist-heading">Get the beta</h2>
+  <p>Leave your email and we'll write once, when the Android beta is ready.</p>
+  <form id="waitlist" aria-labelledby="waitlist-heading" novalidate>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-error">
+    <p id="email-error" role="alert" hidden>Enter an email address like name@example.com.</p>
+    <label for="locale">Preferred language</label>
+    <select id="locale" name="locale">
+      <option value="en">English</option>
+      <option value="hi">हिन्दी (Hindi)</option>
+      <option value="es">Español (Spanish)</option>
+    </select>
+    <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+    <button type="submit">Join the waitlist</button>
+  </form>
+  <p id="thanks" role="status" tabindex="-1" hidden>Thanks. We'll email you when the beta is ready.</p>
+
+  <h2>Try the kiosk simulator</h2>
+  <p>Developers and testers can open the <a href="/sim/?scene=fastfood&amp;seed=1">practice kiosk</a> on a tablet or laptop.</p>
+</main>
+<footer>
+  <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
+  <p><a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
+</footer>
+<script type="module">
+  // Nothing is stored until the privacy page and the /v1/waitlist endpoint exist (Day 6).
+  const form = document.getElementById('waitlist');
+  const email = document.getElementById('email');
+  const error = document.getElementById('email-error');
+  const thanks = document.getElementById('thanks');
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (!email.checkValidity()) {
+      error.hidden = false;
+      email.setAttribute('aria-invalid', 'true');
+      email.focus();
+      return;
+    }
+    form.hidden = true;
+    thanks.hidden = false;
+    thanks.focus();
+  });
+</script>
+</body>
+</html>
