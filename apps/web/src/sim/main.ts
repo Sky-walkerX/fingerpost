@@ -2,16 +2,22 @@ import { applyTouch, currentScreen, exportRun, labelsFor, newRun } from './log.t
 import { CANVAS, type SimScene } from './model.ts';
 import { buildFastFood } from './scenes/fastfood.ts';
 import { buildPinPad, type PinLayout } from './scenes/pinpad.ts';
+import { buildTicket } from './scenes/ticket.ts';
+import { buildCooktop } from './scenes/cooktop.ts';
+import { postTouch } from './net.ts';
 
 const q = new URLSearchParams(location.search);
 const seed = Number(q.get('seed') ?? '1') || 1;
 const runId = q.get('run') ?? `run-${Date.now().toString(36)}`;
 const builders: Record<string, (seed: number) => SimScene> = {
   fastfood: buildFastFood,
+  ticket: buildTicket,
+  cooktop: buildCooktop,
   pinpad: (s) => buildPinPad(s, (q.get('layout') as PinLayout | null) ?? 'phone'),
 };
 const scene: SimScene = (builders[q.get('scene') ?? 'fastfood'] ?? buildFastFood)(seed);
-
+const gatewayUrl = q.get('gw'); // e.g. ?gw=http://192.168.1.20:8080 to relay touches to the linked app session
+const simToken = q.get('token') ?? undefined;
 const state = newRun(runId, scene);
 
 const app = document.getElementById('app')!;
@@ -50,7 +56,8 @@ addEventListener('pointerdown', (ev) => {
   fingers++;
   if (fingers === 3) holdTimer = window.setTimeout(showPanel, 1500); // hidden 3-finger long-press
   const p = toCanvas(ev);
-  applyTouch(state, { x: Math.round(p.x), y: Math.round(p.y), pointerId: ev.pointerId, ts: Date.now() });
+  const touch = applyTouch(state, { x: Math.round(p.x), y: Math.round(p.y), pointerId: ev.pointerId, ts: Date.now() });
+  if (gatewayUrl) void postTouch(touch, { gatewayUrl, ...(simToken ? { token: simToken } : {}) });
   render();
 });
 addEventListener('pointerup', () => { fingers = Math.max(0, fingers - 1); clearTimeout(holdTimer); });
