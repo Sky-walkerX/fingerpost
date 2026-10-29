@@ -13,24 +13,48 @@ import { SimEventBody, SimRegistry } from './sim/registry.ts';
 import { safeEqual } from './util/safe-equal.ts';
 import { probeAsrConnection, type AsrTimings } from './debug/asr-probe.ts';
 import { registerRegionRoutes } from './debug/region.ts';
+import { ChallengeStore } from './auth/challenges.ts';
+import { registerAuthRoutes, type AuthDeps } from './auth/routes.ts';
+import { verifySessionToken } from './auth/tokens.ts';
+import { loadGoogleRoots } from './auth/google-roots.ts';
+import { MemoryFlagStore, MemoryQuotaStore, type FlagStore, type QuotaStore } from './quota/ports.ts';
+import { DEFAULT_QUOTA, QuotaService } from './quota/service.ts';
 
-export interface AppOverrides { models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry; }
+export interface AppOverrides {
+  models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
+  /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
+  quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
+}
 
 export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: { level: cfg.LOG_LEVEL, redact: ['req.headers.authorization', 'req.headers["x-debug-token"]', 'req.headers["x-sim-token"]'] }, bodyLimit: 64 * 1024 });
   await app.register(websocket, { options: { maxPayload: 512 * 1024 } });
-  const models = o.models ?? (cfg.MODEL_MODE === 'live' ? liveModels(createMetaClient(cfg.META_API_KEY!)) : mockModels());
+
   const live = cfg.MODEL_MODE === 'live';
+  const models = o.models ?? (live ? liveModels(createMetaClient(cfg.META_API_KEY!)) : mockModels());
   const asr: AsrFactory = o.asr ?? (live ? (opts, sink) => openAsrRelay({ ...opts, apiKey: cfg.META_API_KEY! }, sink) : mockAsr());
   const sims = o.sims ?? new SimRegistry();
+  const now = o.now ?? Date.now;
+  const quota = new QuotaService(o.quotaStore ?? new MemoryQuotaStore(), o.flagStore ?? new MemoryFlagStore(),
+    { ...DEFAULT_QUOTA, dailyCapMicros: Math.round(cfg.DAILY_CAP_USD * 1e6) }, now);
+  const secret = cfg.SESSION_SECRET ? new TextEncoder().encode(cfg.SESSION_SECRET) : null;
+  if (cfg.AUTH_REQUIRED) {
+    registerAuthRoutes(app, {
+      challenges: o.auth?.challenges ?? new ChallengeStore(now),
+      verifyFirebaseIdToken: o.auth?.verifyFirebaseIdToken ?? (async () => null),
+      policy: o.auth?.policy ?? { trustedRoots: loadGoogleRoots(), packageName: 'io.github.fingerpost', signatureDigests: cfg.SIGNING_DIGESTS!.split(','), allowSoftware: cfg.ALLOW_SOFTWARE_ATTESTATION },
+      secret: secret!, now,
+    });
+  }
 
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
   if (cfg.DEBUG_TOKEN) {
     registerLatencyRoute(app, models, cfg.DEBUG_TOKEN);
-    registerRegionRoutes(app, cfg, models, o.asrProbe ?? (cfg.MODEL_MODE === 'live'
+    registerRegionRoutes(app, cfg, models, o.asrProbe ?? (live
       ? () => probeAsrConnection(cfg.META_API_KEY!) : async () => ({ connectMs: 0, readyMs: 0 })));
   }
 
+  // Simulator touches: open in mock/dev; in live mode only when SIM_TOKEN is set (fail closed).
   if (!live || cfg.SIM_TOKEN) app.post('/v1/sim/events', async (req, reply) => {
     const got = req.headers['x-sim-token'];
     if (cfg.SIM_TOKEN && !safeEqual(typeof got === 'string' ? got : undefined, cfg.SIM_TOKEN)) return reply.code(401).send({ error: 'bad sim token' });
@@ -40,14 +64,31 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   });
 
   app.get('/v1/session', { websocket: true }, (socket, req) => {
-    const { hub, dispose } = createSessionController({ send: (m) => socket.send(JSON.stringify(m)), models, asr, sims });
-    // One message at a time per session, in arrival order.
-    let queue: Promise<void> = Promise.resolve();
-    socket.on('message', (data: Buffer, isBinary: boolean) => {
-      req.log.debug({ sessionId: hub.id, bytes: data.length, binary: isBinary }, 'ws message');
-      queue = queue.then(() => (isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'))));
-    });
-    socket.on('close', dispose);
+    // Listen synchronously: the client may send hello before the async auth check finishes.
+    const early: Array<[Buffer, boolean]> = [];
+    let handle: ((data: Buffer, isBinary: boolean) => void) | null = null;
+    let dispose: (() => void) | null = null, closed = false;
+    socket.on('message', (data: Buffer, isBinary: boolean) => (handle ? handle(data, isBinary) : early.push([data, isBinary])));
+    socket.on('close', () => { closed = true; dispose?.(); });
+    void (async () => {
+      let claims;
+      if (cfg.AUTH_REQUIRED) {
+        const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
+        claims = token ? await verifySessionToken(secret!, token, now()) : null;
+        if (!claims) { socket.close(4401, 'auth required'); return; }
+      }
+      if (closed) return;
+      const session = createSessionController({ send: (m) => socket.send(JSON.stringify(m)), models, asr, sims, now, quota, ...(claims ? { claims } : {}) });
+      dispose = session.dispose;
+      const { hub } = session;
+      // One message at a time per session, in arrival order (a verify must never overtake its locate).
+      let queue: Promise<void> = Promise.resolve();
+      handle = (data, isBinary) => {
+        req.log.debug({ sessionId: hub.id, bytes: data.length, binary: isBinary }, 'ws message');
+        queue = queue.then(() => (isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'))));
+      };
+      for (const [d, b] of early.splice(0)) handle(d, b);
+    })();
   });
   return app;
 }

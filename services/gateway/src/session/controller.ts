@@ -3,7 +3,7 @@ import type { ServerMessage } from '@fingerpost/protocol';
 import type { AsrOptions, AsrRelay, AsrSink } from '../asr/relay.ts';
 import type { ModelPort } from '../models/port.ts';
 import type { SimRegistry } from '../sim/registry.ts';
-import type { QuotaPort, SessionClaims } from './types.ts';
+import type { QuotaPort, SessionClaims, StartResult } from './types.ts';
 import { SessionHub } from './hub.ts';
 import { SessionPipeline } from './pipeline.ts';
 
@@ -26,8 +26,13 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     d.send(message);
   };
   const usage = (u: Parameters<QuotaPort['recordUsage']>[0]) => { void d.quota?.recordUsage(u).catch(() => {}); };
+  // Authenticated sessions spend a daily task; unauthenticated (dev) sessions still obey the kill switch.
+  const quota = d.quota, claims = d.claims;
+  const beforeTask = quota && (claims
+    ? () => quota.startTask(claims.uid, claims.tier)
+    : async (): Promise<StartResult> => ((await quota.cloudEnabled()) ? { ok: true, tasksLeft: 0 } : { ok: false, code: 'cloud_paused' }));
   const pipeline = new SessionPipeline({ models: d.models, send, ...(d.now ? { now: d.now } : {}), onUsage: usage,
-    ...(d.quota && d.claims ? { beforeTask: () => d.quota!.startTask(d.claims!.uid, d.claims!.tier) } : {}) });
+    ...(beforeTask ? { beforeTask } : {}) });
   const closeRelay = () => {
     turn++;
     const old = relay;
