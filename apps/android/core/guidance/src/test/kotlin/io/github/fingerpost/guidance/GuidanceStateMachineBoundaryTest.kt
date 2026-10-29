@@ -143,4 +143,23 @@ class GuidanceStateMachineBoundaryTest {
         assertEquals(GState.IDLE, s.state)
         assertTrue(s.handle(GEvent.VerifyArrived(22, VerifyResult.OK, "Stale.")).isEmpty())
     }
+
+    @Test fun lostTrackingReturnsToFramingKeepingTheGoal() {
+        val s = GuidanceStateMachine().guiding()
+        s.onTarget()
+        assertEquals(GState.ON_TARGET, s.state)
+        val out = s.handle(GEvent.TrackingLost(30))
+        assertEquals(GState.FRAMING, s.state)
+        assertEquals(listOf(Effect.ToneOff, Effect.Haptic(HapticKind.LOST), Effect.Say(Prompts.HOLD_STEADY, Priority.STATE)), out)
+        assertEquals(listOf(Effect.SendKeyframe(KeyframePurpose.LOCATE)), s.handle(GEvent.Frame(31, true, true, null)))
+        assertEquals(GState.LOCATING, s.state)
+    }
+    @Test fun lostTrackingIsIgnoredWhileListeningOrFraming() {
+        val s = GuidanceStateMachine()
+        s.handle(GEvent.Start(0))
+        assertTrue(s.handle(GEvent.TrackingLost(1)).isEmpty())
+        s.handle(GEvent.GoalHeard(2, "start"))
+        assertTrue(s.handle(GEvent.TrackingLost(3)).isEmpty())
+        assertEquals(GState.FRAMING, s.state)
+    }
 }

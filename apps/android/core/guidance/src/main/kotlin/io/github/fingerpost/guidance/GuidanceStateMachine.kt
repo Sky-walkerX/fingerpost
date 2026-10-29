@@ -18,6 +18,8 @@ sealed interface GEvent {
     data class VerifyArrived(override val nowMs: Long, val result: VerifyResult, val say: String) : GEvent
     data class SpeechDone(override val nowMs: Long, val completionId: Long) : GEvent
     data class Abort(override val nowMs: Long) : GEvent
+    /** The screen tracker lost the quad (guidance-spec §2: LOST). Reacquire by framing again; the goal is kept. */
+    data class TrackingLost(override val nowMs: Long) : GEvent
     /** Timer tick, about every 100 ms. */
     data class Tick(override val nowMs: Long) : GEvent
 }
@@ -45,6 +47,7 @@ object Prompts {
     const val TAP = "Tap."
     const val PRESS_NOW = "Press now."
     const val OFFER_EXPLORE = "Having trouble? Say explore to hear what's on the screen."
+    const val HOLD_STEADY = "Hold the phone steady."
 }
 
 /**
@@ -87,6 +90,11 @@ class GuidanceStateMachine {
             if (state == GState.IDLE) return emptyList()
             go(GState.IDLE, ev.nowMs)
             return listOf(Effect.ToneOff, Effect.CloseMic)
+        }
+        if (ev is GEvent.TrackingLost) {
+            if (state != GState.LOCATING && state != GState.GUIDING && state != GState.ON_TARGET) return emptyList()
+            go(GState.FRAMING, ev.nowMs)
+            return listOf(Effect.ToneOff, Effect.Haptic(HapticKind.LOST), Effect.Say(Prompts.HOLD_STEADY, Priority.STATE))
         }
         val out = mutableListOf<Effect>()
         val now = ev.nowMs
