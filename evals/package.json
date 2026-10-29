@@ -6,8 +6,18 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "eval": "node --conditions=source src/run.ts"
+    "eval": "node --conditions=source src/run.ts",
+    "render-sim": "node --conditions=source scripts/render-sim.ts"
   },
-  "dependencies": { "@fingerpost/gateway": "workspace:*", "@fingerpost/protocol": "workspace:*", "zod": "4.6.7" },
-  "devDependencies": { "@types/node": "24.19.2", "typescript": "7.0.2", "vitest": "5.0.5" }
+  "dependencies": {
+    "@fingerpost/gateway": "workspace:*",
+    "@fingerpost/protocol": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "playwright": "1.64.1",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
 }

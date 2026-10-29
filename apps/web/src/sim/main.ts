@@ -19,6 +19,8 @@ const scene: SimScene = (builders[q.get('scene') ?? 'fastfood'] ?? buildFastFood
 const gatewayUrl = q.get('gw'); // e.g. ?gw=http://192.168.1.20:8080 to relay touches to the linked app session
 const simToken = q.get('token') ?? undefined;
 const state = newRun(runId, scene);
+// Eval dataset rendering (evals/scripts/render-sim.ts) reads ground truth through this hook.
+if (q.get('export') === '1') Object.assign(window, { __fp: { labels: () => labelsFor(currentScreen(state)), screenId: () => state.screenId } });
 
 const app = document.getElementById('app')!;
 document.head.insertAdjacentHTML('beforeend', `<style>
