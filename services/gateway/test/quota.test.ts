@@ -92,7 +92,7 @@ test('safeEqual compares in constant time and handles missing values', () => {
   expect(safeEqual(undefined, 'secret-123')).toBe(false);
 });
 
-import { clientKey } from '../src/auth/rate-limit.ts';
+import { clientKey, overflowKey } from '../src/auth/rate-limit.ts';
 
 test('limiter keys: IPv4 as is, IPv6 grouped by /56, mapped IPv4 unwrapped', () => {
   expect(clientKey('203.0.113.7')).toBe('203.0.113.7');
@@ -101,9 +101,21 @@ test('limiter keys: IPv4 as is, IPv6 grouped by /56, mapped IPv4 unwrapped', () 
   expect(clientKey('2001:db8:abcd:12ff::1')).not.toBe(clientKey('2001:db8:abcd:1300::1'));
 });
 
-test('a full limiter table evicts the oldest window instead of locking everyone out', () => {
-  const l = new FixedWindowLimiter(1, 60_000, () => T0);
+test('a full limiter table keeps every active window and counts new keys in a shared overflow bucket', () => {
+  const l = new FixedWindowLimiter(2, 60_000, () => T0);
   for (let i = 0; i < 10_000; i++) l.hit(`k${i}`);
-  expect(l.hit('fresh')).toBe(true);
-  expect(l.hit('k9999')).toBe(false);
+  expect([l.hit('k0'), l.hit('k0')]).toEqual([true, false]); // still counted, not evicted
+  expect([l.hit('new-1', '10.1.0.0/16'), l.hit('new-2', '10.1.0.0/16'), l.hit('new-3', '10.1.0.0/16')]).toEqual([true, true, false]);
+  expect(l.hit('new-4', '10.2.0.0/16')).toBe(true); // other prefixes are unaffected
+  expect(overflowKey('10.1.2.3')).toBe('10.1.0.0/16');
+  expect(overflowKey('2001:db8:abcd::1')).toBe('2001:db8::/32');
+});
+
+test('challenges: at most 5 outstanding per client; the oldest of that client is replaced', () => {
+  const s = new ChallengeStore(() => T0);
+  const other = s.issue('b')!;
+  const mine = Array.from({ length: 6 }, () => s.issue('a')!);
+  expect(s.take(mine[0]!.challengeId)).toBeNull();
+  expect(s.take(mine[5]!.challengeId)).toEqual(mine[5]!.nonce);
+  expect(s.take(other.challengeId)).toEqual(other.nonce);
 });
