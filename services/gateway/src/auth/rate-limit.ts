@@ -1,4 +1,6 @@
 const MAX_KEYS = 10_000;
+/** An overflow bucket aggregates a whole /16 or /32, so it gets proportionally more room than one client. */
+const OVERFLOW_FACTOR = 20;
 
 type Window = { n: number; windowStart: number };
 
@@ -20,20 +22,20 @@ export class FixedWindowLimiter {
       if (this.hits.size >= MAX_KEYS) {
         if (!this.overflow.has(overflowKey) && this.overflow.size >= MAX_KEYS) this.sweep(this.overflow, t);
         if (!this.overflow.has(overflowKey) && this.overflow.size >= MAX_KEYS) return false;
-        return this.count(this.overflow, overflowKey, t);
+        return this.count(this.overflow, overflowKey, t, this.limit * OVERFLOW_FACTOR);
       }
     }
-    return this.count(this.hits, key, t);
+    return this.count(this.hits, key, t, this.limit);
   }
 
-  private count(m: Map<string, Window>, key: string, t: number): boolean {
+  private count(m: Map<string, Window>, key: string, t: number, limit: number): boolean {
     const e = m.get(key);
     if (!e || t - e.windowStart >= this.windowMs) {
       m.set(key, { n: 1, windowStart: t });
       return true;
     }
     e.n++;
-    return e.n <= this.limit;
+    return e.n <= limit;
   }
 
   private sweep(m: Map<string, Window>, t: number) {

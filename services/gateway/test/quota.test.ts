@@ -105,7 +105,9 @@ test('a full limiter table keeps every active window and counts new keys in a sh
   const l = new FixedWindowLimiter(2, 60_000, () => T0);
   for (let i = 0; i < 10_000; i++) l.hit(`k${i}`);
   expect([l.hit('k0'), l.hit('k0')]).toEqual([true, false]); // still counted, not evicted
-  expect([l.hit('new-1', '10.1.0.0/16'), l.hit('new-2', '10.1.0.0/16'), l.hit('new-3', '10.1.0.0/16')]).toEqual([true, true, false]);
+  const shared = Array.from({ length: 41 }, (_, i) => l.hit(`new-${i}`, '10.1.0.0/16'));
+  expect(shared.filter(Boolean)).toHaveLength(40); // a /16 bucket holds 20 × the per-client limit
+  expect(shared.at(-1)).toBe(false);
   expect(l.hit('new-4', '10.2.0.0/16')).toBe(true); // other prefixes are unaffected
   expect(overflowKey('10.1.2.3')).toBe('10.1.0.0/16');
   expect(overflowKey('2001:db8:abcd::1')).toBe('2001:db8::/32');
