@@ -98,3 +98,19 @@ test('live mode without SIM_TOKEN does not expose the sim route', async () => {
   const r = await app.inject({ method: 'POST', url: '/v1/sim/events', payload: { runId: 'r', screenId: 's', x: 0, y: 0, u: 0, v: 0, elementId: null, ts: 1 } });
   expect(r.statusCode).toBe(404);
 });
+
+test('with the kill switch off, speech is refused before any ASR relay opens', async () => {
+  let opened = 0;
+  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { quotaStore: new MemoryQuotaStore(), flagStore: new MemoryFlagStore(false),
+    asr: () => { opened++; return { push() {}, end() {}, close() {} }; } });
+  await app.ready();
+  const ws = await app.injectWS('/v1/session');
+  const msgs: any[] = [];
+  ws.on('message', (d: Buffer) => msgs.push(JSON.parse(d.toString())));
+  ws.send(JSON.stringify(hello));
+  ws.send(encodeFrame({ type: 'audio', id: 'a1', ts: 2, seq: 0, sampleRate: 16000 }, new Uint8Array(640)));
+  for (let i = 0; i < 200 && !msgs.some((m) => m.type === 'error'); i++) await new Promise((r) => setTimeout(r, 5));
+  expect(msgs.find((m) => m.type === 'error')).toMatchObject({ code: 'cloud_paused' });
+  expect(opened).toBe(0);
+  ws.terminate();
+});

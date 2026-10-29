@@ -1,13 +1,13 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import type { Keyframe, ServerMessage } from '@fingerpost/protocol';
 import { MOCK_LAYOUT, mockModels } from '../src/models/mock/mock-models.ts';
 import type { ModelPort } from '../src/models/port.ts';
-import { labelJaccard, layoutFingerprint, SessionPipeline, simMatches } from '../src/session/pipeline.ts';
+import { labelJaccard, layoutFingerprint, MAX_CALLS_PER_TASK, SessionPipeline, simMatches, type PipelineDeps } from '../src/session/pipeline.ts';
 import { describePosition, listLabels } from '../src/resolve/describe.ts';
 
 const kf = (purpose: Keyframe['purpose'], id = 'k1'): Keyframe => ({ type: 'keyframe', id, ts: 1, kind: 'screen', imageSize: { w: 1000, h: 500 }, ocrTokens: [], purpose });
 const jpeg = new Uint8Array([0xff, 0xd8]);
-const run = (models: ModelPort = mockModels()) => { const sent: ServerMessage[] = []; return { p: new SessionPipeline({ models, send: (m) => sent.push(m), now: () => 42 }), sent }; };
+const run = (models: ModelPort = mockModels(), extra: Partial<PipelineDeps> = {}) => { const sent: ServerMessage[] = []; return { p: new SessionPipeline({ models, send: (m) => sent.push(m), now: () => 42, ...extra }), sent }; };
 
 test('goal → goal.ack with intent guide', () => {
   const { p, sent } = run();
@@ -74,7 +74,30 @@ test('verify when the screen changed → ok', async () => {
 
 test('model failure propagates so the hub can turn it into model_unavailable', async () => {
   const broken: ModelPort = { ...mockModels(), parseScreen: async () => { throw new Error('503'); } };
-  await expect(run(broken).p.onKeyframe(kf('locate'), jpeg)).rejects.toThrow('503');
+  const { p } = run(broken);
+  p.onGoal('start');
+  await expect(p.onKeyframe(kf('locate'), jpeg)).rejects.toThrow('503');
+});
+
+test('no billed call without a goal, without a charged task, past the per-task cap, or with the cloud paused', async () => {
+  const parse = vi.fn(mockModels().parseScreen);
+  let enabled = true;
+  const { p, sent } = run({ ...mockModels(), parseScreen: parse }, { cloudEnabled: async () => enabled });
+  await p.onKeyframe(kf('locate'), jpeg);
+  await p.onKeyframe(kf('verify', 'k0'), jpeg);
+  expect(parse).not.toHaveBeenCalled();
+  p.onGoal('start');
+  for (let i = 0; i < MAX_CALLS_PER_TASK + 1; i++) await p.onKeyframe(kf('verify', `v${i}`), jpeg);
+  expect(parse).not.toHaveBeenCalled();
+  await p.onKeyframe(kf('locate'), jpeg);
+  for (let i = 1; i < MAX_CALLS_PER_TASK; i++) await p.onKeyframe(kf('verify', `w${i}`), jpeg);
+  expect(parse).toHaveBeenCalledTimes(MAX_CALLS_PER_TASK);
+  await p.onKeyframe(kf('verify', 'over'), jpeg);
+  expect(sent.at(-1)).toMatchObject({ type: 'error', code: 'rate_limited' });
+  p.onGoal('timer'); enabled = false;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent.at(-1)).toMatchObject({ type: 'error', code: 'cloud_paused' });
+  expect(parse).toHaveBeenCalledTimes(MAX_CALLS_PER_TASK);
 });
 
 test('helpers: fingerprint is order-independent; jaccard; position words; label lists; sim id matching', () => {

@@ -6,6 +6,7 @@ import type { SimRegistry } from '../sim/registry.ts';
 import type { QuotaPort, SessionClaims, StartResult } from './types.ts';
 import { SessionHub } from './hub.ts';
 import { SessionPipeline } from './pipeline.ts';
+import { SPOKEN_ERRORS } from '../errors/spoken.ts';
 
 export type AsrFactory = (o: Omit<AsrOptions, 'apiKey'>, sink: AsrSink) => AsrRelay;
 export interface ControllerDeps {
@@ -32,7 +33,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     ? () => quota.startTask(claims.uid, claims.tier)
     : async (): Promise<StartResult> => ((await quota.cloudEnabled()) ? { ok: true, tasksLeft: 0 } : { ok: false, code: 'cloud_paused' }));
   const pipeline = new SessionPipeline({ models: d.models, send, ...(d.now ? { now: d.now } : {}), onUsage: usage,
-    ...(beforeTask ? { beforeTask } : {}) });
+    ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}) });
   const closeRelay = () => {
     turn++;
     const old = relay;
@@ -62,6 +63,13 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           if (!payload || audioEnded || awaitingEnd) break;
           audioBytes += payload.length;
           if (!relay) {
+            // ASR is billed too: a paused cloud refuses the utterance up front.
+            if (quota && !(await quota.cloudEnabled())) {
+              awaitingEnd = true;
+              send({ ...base(), type: 'error', code: 'cloud_paused', ...SPOKEN_ERRORS.cloud_paused });
+              break;
+            }
+            if (relay || disposed) break;
             const currentTurn = ++turn;
             const active = () => !disposed && currentTurn === turn;
             const error = () => {

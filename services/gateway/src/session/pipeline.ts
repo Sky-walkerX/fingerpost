@@ -20,7 +20,12 @@ export interface PipelineDeps {
   onUsage?: (u: Usage) => void;
   /** Called once per new goal before its first locate (Day 3: daily quota + kill switch). */
   beforeTask?: TaskGate;
+  /** The kill switch, checked (cached) before every billed keyframe, not only at task start. */
+  cloudEnabled?: () => Promise<boolean>;
 }
+
+/** Billed keyframes allowed per charged task (the agent's 20-step budget, design §4.3). */
+export const MAX_CALLS_PER_TASK = 20;
 
 /** sha256 of the sorted normalized labels, as "sh64:<16 hex>". Day 5 replaces this with SimHash (kiosk memory). */
 export function layoutFingerprint(elements: readonly LayoutElement[]): string {
@@ -47,6 +52,8 @@ export class SessionPipeline {
   private target: LayoutElement | null = null;
   private lastTap: { keyframeId: string | null; simElementId: string | null } = { keyframeId: null, simElementId: null };
   private taskCharged = false;
+  private everCharged = false;
+  private callsSinceCharge = 0;
   private hasSimTouch = false;
 
   private readonly d: PipelineDeps;
@@ -77,14 +84,32 @@ export class SessionPipeline {
     this.lastTap = { keyframeId: this.layout?.id ?? null, simElementId: elementId };
   }
 
+  private refuse(code: 'cloud_paused' | 'quota_exhausted' | 'rate_limited') {
+    this.d.send({ ...this.base(), type: 'error', code, ...SPOKEN_ERRORS[code] });
+  }
+
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
-    if (h.purpose === 'locate' && this.goal && !this.taskCharged) {
+    // Nothing to look for yet: don't spend a model call.
+    if (h.purpose === 'locate' && !this.goal) return;
+    if (h.purpose === 'locate' && !this.taskCharged) {
       const allowed = await this.d.beforeTask?.();
       if (allowed && !allowed.ok) {
-        this.d.send({ ...this.base(), type: 'error', code: allowed.code, ...SPOKEN_ERRORS[allowed.code] });
+        this.refuse(allowed.code);
         return;
       }
       this.taskCharged = true;
+      this.everCharged = true;
+      this.callsSinceCharge = 0;
+    }
+    // Verify keyframes ride on a charged task, with a per-task cap, so they can't be used to parse for free.
+    if (!this.everCharged) return;
+    if (++this.callsSinceCharge > MAX_CALLS_PER_TASK) {
+      this.refuse('rate_limited');
+      return;
+    }
+    if (this.d.cloudEnabled && !(await this.d.cloudEnabled())) {
+      this.refuse('cloud_paused');
+      return;
     }
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
