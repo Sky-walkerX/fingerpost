@@ -12,7 +12,7 @@ Product decisions are **locked** in `docs/design.md` §1. Don't change them. If 
 
 ## 2. Read order
 1. `docs/progress.md`: current day, task board, blockers, measurements.
-2. **The day plan for the current day:** `docs/superpowers/plans/2026-10-27-day1-foundations.md`, `…-day2-closed-loop.md` or `…-day3-gate-robustness.md`.
+2. **The day plan for the current day:** `docs/superpowers/plans/2026-10-27-day1-foundations.md`, `…-day2-closed-loop.md`, `…-day3-gate-robustness.md` or `2026-10-30-days4-7-parallel.md`.
 3. **Specs, only the sections your task cites:**
    - `docs/guidance-spec.md` (numbers and behaviour of guidance; it is authoritative over design.md);
    - `docs/protocol.md` (messages);
@@ -24,10 +24,10 @@ Product decisions are **locked** in `docs/design.md` §1. Don't change them. If 
    - Planning checked that each day's starting state typechecks and compiles, with only that day's tests failing.
 
 ## 3. How to pick up and finish a task
-**Completion gate (user requirement):** Finish every requirement of the current task, including its required live/device acceptance and final verification, before starting the next task. Copied assets, passing unit tests or a commit alone do not make a task complete. If a requirement is blocked, record it and tell the user what is needed; do not skip ahead unless the user explicitly reprioritizes the work. Day 2 starts only after Day 1 is complete, and Day 3 only after Day 2 is complete. Resolve contradictory task ordering before advancing a phase; never bypass a check to claim completion.
+**Completion gate (user requirement, revised 2026-10-29):** A task is `done` only when every requirement passes, including its live/device acceptance. Copied assets, passing unit tests or a commit alone do not make a task complete. A blocked requirement blocks **only the tasks that depend on it**: record it as `blocked` with what's needed, then continue with any other task whose dependencies are met. Lanes work in parallel (see `docs/superpowers/plans/2026-10-30-days4-7-parallel.md`). Never bypass a check to claim completion.
 
-1. **Choose:** in `docs/progress.md`, take the first task whose status is `todo` and whose "Depends on" tasks are all `done`.
-2. **Claim it:** set its status to `doing`, put your name or agent id in "Owner", and commit that one-line change: `chore(progress): claim D1-T2`.
+1. **Choose:** in `docs/progress.md`, take a task in your lane whose status is `todo` and whose "Depends on"/"Needs" tasks are all `done`.
+2. **Claim it:** say so at stand-up and put your name in "Owner" in the task's first real commit. No separate claim commits.
 3. **Work:** follow the task's steps **in order**:
    - Test steps come first.
    - Run the "verify it fails" command and confirm the failure matches what the plan says.
@@ -122,5 +122,5 @@ pnpm --filter @fingerpost/web dev            # open http://<laptop-ip>:5173/sim/
 ## 9. When you're stuck
 - After 2 failed attempts at the same error, stop.
   - Write a Blocker in progress.md: the task id, the exact command, the last 30 lines of output, and what you tried.
-  - Then report the blocker and stop task progression under the completion gate in §3. Resume after it is resolved or the user explicitly reprioritizes the work.
+  - Then mark the task `blocked` and move to another task whose dependencies are met (§3).
 - Never "fix" a failure by changing pinned versions, disabling type checks (`any`, `@ts-ignore`, `skipLibCheck` changes), or loosening a zod schema.
