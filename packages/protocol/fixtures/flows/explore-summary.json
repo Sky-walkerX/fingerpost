@@ -1,0 +1,243 @@
+{
+  "name": "explore-summary",
+  "scene": "fastfood",
+  "seed": 1,
+  "steps": [
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "hello",
+        "appVersion": "0.1.0",
+        "protocol": "fp.v1",
+        "locale": "en",
+        "mode": "explore",
+        "privacy": "normal",
+        "caps": {
+          "simRunId": "flow-explore-summary"
+        }
+      }
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "ready",
+        "sessionId": "*",
+        "quota": {
+          "tasksLeft": 30
+        },
+        "flags": {
+          "cloudEnabled": true,
+          "privateAvailable": false
+        }
+      }
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "goal",
+        "text": "What is on this screen?",
+        "source": "typed"
+      }
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "goal.ack",
+        "goal": "What is on this screen?",
+        "intent": "explore"
+      }
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "explore-menu",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "explore",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:9188f4ad6baa4f45",
+        "screenType": "menu",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "none",
+        "elements": [
+          {
+            "id": "burgers",
+            "label": "Burgers",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.1015625,
+                "v": 0.2775
+              },
+              {
+                "u": 0.3359375,
+                "v": 0.2775
+              },
+              {
+                "u": 0.3359375,
+                "v": 0.4275
+              },
+              {
+                "u": 0.1015625,
+                "v": 0.4275
+              }
+            ],
+            "textNorm": "burgers",
+            "confidence": 0.95
+          },
+          {
+            "id": "drinks",
+            "label": "Drinks",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.390625,
+                "v": 0.2675
+              },
+              {
+                "u": 0.625,
+                "v": 0.2675
+              },
+              {
+                "u": 0.625,
+                "v": 0.4175
+              },
+              {
+                "u": 0.390625,
+                "v": 0.4175
+              }
+            ],
+            "textNorm": "drinks",
+            "confidence": 0.95
+          },
+          {
+            "id": "sides",
+            "label": "Sides",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.6734375,
+                "v": 0.26625
+              },
+              {
+                "u": 0.9078125,
+                "v": 0.26625
+              },
+              {
+                "u": 0.9078125,
+                "v": 0.41625
+              },
+              {
+                "u": 0.6734375,
+                "v": 0.41625
+              }
+            ],
+            "textNorm": "sides",
+            "confidence": 0.95
+          },
+          {
+            "id": "cart",
+            "label": "View cart",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.67578125,
+                "v": 0.71125
+              },
+              {
+                "u": 0.91015625,
+                "v": 0.71125
+              },
+              {
+                "u": 0.91015625,
+                "v": 0.86125
+              },
+              {
+                "u": 0.67578125,
+                "v": 0.86125
+              }
+            ],
+            "textNorm": "view cart",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "say",
+        "text": "The menu has food and drinks across the top. The cart is at the bottom right. Say more for details.",
+        "priority": "info"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "goal",
+        "text": "more",
+        "source": "typed"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "say",
+        "text": "Across the top are burgers, drinks and sides.",
+        "priority": "info"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "abort"
+      }
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "finish",
+        "result": "aborted",
+        "say": "Stopped."
+      }
+    }
+  ]
+}

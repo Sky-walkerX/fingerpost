@@ -32,6 +32,8 @@ Real integration happens once a day, at 23:00.
 - the gate has passed or the cut is applied;
 - the PIN gate, OCR, framing, attestation, quota and auth-on deploy have landed.
 
+**User-directed local continuation (2026-10-30):** the user has no GCP account and requested local testing/future coding until cloud access returns. Independent mock-first work may proceed without claiming the Day 3 gate or deploy complete. All cloud/device/live acceptance and release gates remain open; [revalidation tracking](../../evals/cloud-revalidation.md) records the deferred checks.
+
 If the gate failed, apply the cut column in **Cut lines** before starting.
 
 ## Working agreement (all lanes)
@@ -136,8 +138,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - Create: `packages/protocol/fixtures/flows/{medium-cola,guide-start,explore-summary,go-back}.json`, `packages/protocol/test/flows.test.ts`.
 - Modify: `services/gateway/src/app.ts`, `services/gateway/src/models/meta-client.ts`, `services/gateway/src/asr/relay.ts`, `services/gateway/src/session/pipeline.ts`.
 
-- [ ] **Step 1: Write the flows.** `medium-cola` covers: hello → goal "order a medium cola" → goal.ack{task} → locate(home) → target start-order → verify ok → target drinks → … → confirm{summary:"Medium cola", amount:{value:149, currency:"INR"}} → confirm.reply{accepted} → target pay-card → verify ok → event{pinModeEntered} → finish{done}.
-- [ ] **Step 2: Write `flows.test.ts`.** Every message in every flow parses with `parseClientMessage`/`parseServerMessage`. Every `screen` is one of `home, menu, drink-size, pay, pin, done` (C4-1 adds `pin`).
+- [x] **Step 1: Write the flows.** Four synthetic scripts cover guide, task/confirm/PIN, explore and Back recovery. The final payment verification frame is still the safe pay panel before the PIN-entry event; no PIN image/audio is included. Future replay/simulator timing acceptance remains separate.
+- [x] **Step 2: Write `flows.test.ts`.** Nine TS checks validate all messages, screen markers, current-confirm acceptance, PIN upload exclusion, Back recovery and explore shape. Four additional Kotlin cases validate the same messages. All 57 TS/53 Kotlin protocol cases and recursive typecheck pass. No wire schema/model change.
 - [ ] **Step 3: Write failing gateway tests:**
   - `app.test.ts › abort is handled while a keyframe is in flight`: a mock `parseScreen` that never resolves, then `abort` → `finish{aborted}` within 50 ms, and no `target` afterwards.
   - `pipeline.test.ts › locate before any goal sends nothing billable`: no `parseScreen` call.

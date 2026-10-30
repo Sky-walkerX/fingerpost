@@ -1,0 +1,1103 @@
+{
+  "name": "medium-cola",
+  "scene": "fastfood",
+  "seed": 1,
+  "steps": [
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "hello",
+        "appVersion": "0.1.0",
+        "protocol": "fp.v1",
+        "locale": "en",
+        "mode": "task",
+        "privacy": "normal",
+        "caps": {
+          "simRunId": "flow-medium-cola"
+        }
+      }
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "ready",
+        "sessionId": "*",
+        "quota": {
+          "tasksLeft": 30
+        },
+        "flags": {
+          "cloudEnabled": true,
+          "privateAvailable": false
+        }
+      }
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "goal",
+        "text": "Order a medium cola and pay",
+        "source": "typed"
+      }
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "goal.ack",
+        "goal": "Order a medium cola and pay",
+        "intent": "task"
+      }
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "locate-home",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "locate",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "home"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:388266371dc9c7a8",
+        "screenType": "menu",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "none",
+        "elements": [
+          {
+            "id": "welcome",
+            "label": "Welcome to Fingerburger",
+            "role": "text",
+            "polygon": [
+              {
+                "u": 0.2765625,
+                "v": 0.12
+              },
+              {
+                "u": 0.7453125,
+                "v": 0.12
+              },
+              {
+                "u": 0.7453125,
+                "v": 0.245
+              },
+              {
+                "u": 0.2765625,
+                "v": 0.245
+              }
+            ],
+            "textNorm": "welcome to fingerburger",
+            "confidence": 0.95
+          },
+          {
+            "id": "start-order",
+            "label": "Start order",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.36328125,
+                "v": 0.48125
+              },
+              {
+                "u": 0.67578125,
+                "v": 0.48125
+              },
+              {
+                "u": 0.67578125,
+                "v": 0.68125
+              },
+              {
+                "u": 0.36328125,
+                "v": 0.68125
+              }
+            ],
+            "textNorm": "start order",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "home"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "target",
+        "elementId": "start-order",
+        "polygon": [
+          {
+            "u": 0.36328125,
+            "v": 0.48125
+          },
+          {
+            "u": 0.67578125,
+            "v": 0.48125
+          },
+          {
+            "u": 0.67578125,
+            "v": 0.68125
+          },
+          {
+            "u": 0.36328125,
+            "v": 0.68125
+          }
+        ],
+        "confidence": 0.95,
+        "say": "Found Start order."
+      },
+      "screen": "home"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "targetReached"
+      },
+      "screen": "home"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "tapDetected",
+        "detail": {
+          "evidence": "sim"
+        }
+      },
+      "screen": "home"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "sim.touch",
+        "runId": "flow-medium-cola",
+        "screenId": "home",
+        "x": 665,
+        "y": 465,
+        "u": 0.51953125,
+        "v": 0.58125,
+        "elementId": "start-order"
+      },
+      "screen": "home"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "verify-menu",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "verify",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:9188f4ad6baa4f45",
+        "screenType": "menu",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "none",
+        "elements": [
+          {
+            "id": "burgers",
+            "label": "Burgers",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.1015625,
+                "v": 0.2775
+              },
+              {
+                "u": 0.3359375,
+                "v": 0.2775
+              },
+              {
+                "u": 0.3359375,
+                "v": 0.4275
+              },
+              {
+                "u": 0.1015625,
+                "v": 0.4275
+              }
+            ],
+            "textNorm": "burgers",
+            "confidence": 0.95
+          },
+          {
+            "id": "drinks",
+            "label": "Drinks",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.390625,
+                "v": 0.2675
+              },
+              {
+                "u": 0.625,
+                "v": 0.2675
+              },
+              {
+                "u": 0.625,
+                "v": 0.4175
+              },
+              {
+                "u": 0.390625,
+                "v": 0.4175
+              }
+            ],
+            "textNorm": "drinks",
+            "confidence": 0.95
+          },
+          {
+            "id": "sides",
+            "label": "Sides",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.6734375,
+                "v": 0.26625
+              },
+              {
+                "u": 0.9078125,
+                "v": 0.26625
+              },
+              {
+                "u": 0.9078125,
+                "v": 0.41625
+              },
+              {
+                "u": 0.6734375,
+                "v": 0.41625
+              }
+            ],
+            "textNorm": "sides",
+            "confidence": 0.95
+          },
+          {
+            "id": "cart",
+            "label": "View cart",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.67578125,
+                "v": 0.71125
+              },
+              {
+                "u": 0.91015625,
+                "v": 0.71125
+              },
+              {
+                "u": 0.91015625,
+                "v": 0.86125
+              },
+              {
+                "u": 0.67578125,
+                "v": 0.86125
+              }
+            ],
+            "textNorm": "view cart",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "verify",
+        "re": "verify-menu",
+        "result": "ok",
+        "say": "Done."
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "target",
+        "elementId": "drinks",
+        "polygon": [
+          {
+            "u": 0.390625,
+            "v": 0.2675
+          },
+          {
+            "u": 0.625,
+            "v": 0.2675
+          },
+          {
+            "u": 0.625,
+            "v": 0.4175
+          },
+          {
+            "u": 0.390625,
+            "v": 0.4175
+          }
+        ],
+        "confidence": 0.95,
+        "say": "Found Drinks."
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "targetReached"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "tapDetected",
+        "detail": {
+          "evidence": "sim"
+        }
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "sim.touch",
+        "runId": "flow-medium-cola",
+        "screenId": "menu",
+        "x": 650,
+        "y": 274,
+        "u": 0.5078125,
+        "v": 0.3425,
+        "elementId": "drinks"
+      },
+      "screen": "menu"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "verify-size",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "verify",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:1104f8667fa96522",
+        "screenType": "menu",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "none",
+        "elements": [
+          {
+            "id": "small",
+            "label": "Small ₹99",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.090625,
+                "v": 0.27125
+              },
+              {
+                "u": 0.325,
+                "v": 0.27125
+              },
+              {
+                "u": 0.325,
+                "v": 0.42125
+              },
+              {
+                "u": 0.090625,
+                "v": 0.42125
+              }
+            ],
+            "textNorm": "small ₹99",
+            "confidence": 0.95
+          },
+          {
+            "id": "medium",
+            "label": "Medium ₹149",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.37734375,
+                "v": 0.25875
+              },
+              {
+                "u": 0.61171875,
+                "v": 0.25875
+              },
+              {
+                "u": 0.61171875,
+                "v": 0.40875
+              },
+              {
+                "u": 0.37734375,
+                "v": 0.40875
+              }
+            ],
+            "textNorm": "medium ₹149",
+            "confidence": 0.95
+          },
+          {
+            "id": "large",
+            "label": "Large ₹179",
+            "role": "button",
+            "polygon": [
+              {
+                "u": 0.66171875,
+                "v": 0.26375
+              },
+              {
+                "u": 0.89609375,
+                "v": 0.26375
+              },
+              {
+                "u": 0.89609375,
+                "v": 0.41375
+              },
+              {
+                "u": 0.66171875,
+                "v": 0.41375
+              }
+            ],
+            "textNorm": "large ₹179",
+            "confidence": 0.95
+          },
+          {
+            "id": "back",
+            "label": "Back",
+            "role": "back",
+            "polygon": [
+              {
+                "u": 0.09453125,
+                "v": 0.72125
+              },
+              {
+                "u": 0.26640625,
+                "v": 0.72125
+              },
+              {
+                "u": 0.26640625,
+                "v": 0.85875
+              },
+              {
+                "u": 0.09453125,
+                "v": 0.85875
+              }
+            ],
+            "textNorm": "back",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "verify",
+        "re": "verify-size",
+        "result": "ok",
+        "say": "Done."
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "target",
+        "elementId": "medium",
+        "polygon": [
+          {
+            "u": 0.37734375,
+            "v": 0.25875
+          },
+          {
+            "u": 0.61171875,
+            "v": 0.25875
+          },
+          {
+            "u": 0.61171875,
+            "v": 0.40875
+          },
+          {
+            "u": 0.37734375,
+            "v": 0.40875
+          }
+        ],
+        "confidence": 0.95,
+        "say": "Found Medium ₹149."
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "targetReached"
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "tapDetected",
+        "detail": {
+          "evidence": "sim"
+        }
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "sim.touch",
+        "runId": "flow-medium-cola",
+        "screenId": "drink-size",
+        "x": 633,
+        "y": 267,
+        "u": 0.49453125,
+        "v": 0.33375,
+        "elementId": "medium"
+      },
+      "screen": "drink-size"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "verify-pay",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "verify",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:8a7acffd8a239d75",
+        "screenType": "payment_entry",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "financial",
+        "elements": [
+          {
+            "id": "total",
+            "label": "Total ₹149",
+            "role": "text",
+            "polygon": [
+              {
+                "u": 0.25234375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.2525
+              },
+              {
+                "u": 0.25234375,
+                "v": 0.2525
+              }
+            ],
+            "textNorm": "total ₹149",
+            "confidence": 0.95
+          },
+          {
+            "id": "cancel",
+            "label": "Cancel",
+            "role": "cancel",
+            "polygon": [
+              {
+                "u": 0.1140625,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.795
+              },
+              {
+                "u": 0.1140625,
+                "v": 0.795
+              }
+            ],
+            "textNorm": "cancel",
+            "confidence": 0.95
+          },
+          {
+            "id": "pay-card",
+            "label": "Pay by card",
+            "role": "pay",
+            "polygon": [
+              {
+                "u": 0.59765625,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.8
+              },
+              {
+                "u": 0.59765625,
+                "v": 0.8
+              }
+            ],
+            "textNorm": "pay by card",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "verify",
+        "re": "verify-pay",
+        "result": "ok",
+        "say": "Done."
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "confirm-medium-cola",
+        "ts": 0,
+        "type": "confirm",
+        "summary": "Medium cola",
+        "amount": {
+          "value": 149,
+          "currency": "INR"
+        }
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "confirm.reply",
+        "re": "confirm-medium-cola",
+        "accepted": true,
+        "utterance": "yes"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "locate-confirmed-pay",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "locate",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:8a7acffd8a239d75",
+        "screenType": "payment_entry",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "financial",
+        "elements": [
+          {
+            "id": "total",
+            "label": "Total ₹149",
+            "role": "text",
+            "polygon": [
+              {
+                "u": 0.25234375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.2525
+              },
+              {
+                "u": 0.25234375,
+                "v": 0.2525
+              }
+            ],
+            "textNorm": "total ₹149",
+            "confidence": 0.95
+          },
+          {
+            "id": "cancel",
+            "label": "Cancel",
+            "role": "cancel",
+            "polygon": [
+              {
+                "u": 0.1140625,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.795
+              },
+              {
+                "u": 0.1140625,
+                "v": 0.795
+              }
+            ],
+            "textNorm": "cancel",
+            "confidence": 0.95
+          },
+          {
+            "id": "pay-card",
+            "label": "Pay by card",
+            "role": "pay",
+            "polygon": [
+              {
+                "u": 0.59765625,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.8
+              },
+              {
+                "u": 0.59765625,
+                "v": 0.8
+              }
+            ],
+            "textNorm": "pay by card",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "target",
+        "elementId": "pay-card",
+        "polygon": [
+          {
+            "u": 0.59765625,
+            "v": 0.625
+          },
+          {
+            "u": 0.86328125,
+            "v": 0.625
+          },
+          {
+            "u": 0.86328125,
+            "v": 0.8
+          },
+          {
+            "u": 0.59765625,
+            "v": 0.8
+          }
+        ],
+        "confidence": 0.95,
+        "say": "Found Pay by card."
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "targetReached"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "tapDetected",
+        "detail": {
+          "evidence": "sim"
+        }
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "sim.touch",
+        "runId": "flow-medium-cola",
+        "screenId": "pay",
+        "x": 935,
+        "y": 570,
+        "u": 0.73046875,
+        "v": 0.7125,
+        "elementId": "pay-card"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "verify-card",
+        "ts": 0,
+        "type": "keyframe",
+        "kind": "screen",
+        "purpose": "verify",
+        "imageSize": {
+          "w": 1280,
+          "h": 800
+        },
+        "ocrTokens": []
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "layout",
+        "fingerprint": "sh64:8a7acffd8a239d75",
+        "screenType": "payment_entry",
+        "rotation": 0,
+        "language": "en",
+        "sensitivity": "financial",
+        "elements": [
+          {
+            "id": "total",
+            "label": "Total ₹149",
+            "role": "text",
+            "polygon": [
+              {
+                "u": 0.25234375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.1275
+              },
+              {
+                "u": 0.72109375,
+                "v": 0.2525
+              },
+              {
+                "u": 0.25234375,
+                "v": 0.2525
+              }
+            ],
+            "textNorm": "total ₹149",
+            "confidence": 0.95
+          },
+          {
+            "id": "cancel",
+            "label": "Cancel",
+            "role": "cancel",
+            "polygon": [
+              {
+                "u": 0.1140625,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.62
+              },
+              {
+                "u": 0.3796875,
+                "v": 0.795
+              },
+              {
+                "u": 0.1140625,
+                "v": 0.795
+              }
+            ],
+            "textNorm": "cancel",
+            "confidence": 0.95
+          },
+          {
+            "id": "pay-card",
+            "label": "Pay by card",
+            "role": "pay",
+            "polygon": [
+              {
+                "u": 0.59765625,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.625
+              },
+              {
+                "u": 0.86328125,
+                "v": 0.8
+              },
+              {
+                "u": 0.59765625,
+                "v": 0.8
+              }
+            ],
+            "textNorm": "pay by card",
+            "confidence": 0.95
+          }
+        ],
+        "source": "model"
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "verify",
+        "re": "verify-card",
+        "result": "ok",
+        "say": "Done."
+      },
+      "screen": "pay"
+    },
+    {
+      "from": "client",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "event",
+        "kind": "pinModeEntered"
+      },
+      "screen": "pin"
+    },
+    {
+      "from": "server",
+      "msg": {
+        "id": "*",
+        "ts": 0,
+        "type": "finish",
+        "result": "done",
+        "say": "PIN entry is ready."
+      },
+      "screen": "pin"
+    }
+  ]
+}

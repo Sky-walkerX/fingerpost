@@ -4,6 +4,8 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** Day 2–3 Android integration resumed by the user on 2026-10-30; phone acceptance assigned to teammates; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
+**Latest priority (2026-10-30):** the user has no GCP account and explicitly requested local testing/future development, with cloud tests revalidated when the account returns. Continue independent local/mock coding; cloud checks remain deferred and tasks requiring them remain blocked. No device, quality or release gate is waived. See [revalidation checklist](evals/cloud-revalidation.md).
+
 **Historical completion audit (2026-10-28):** [all 37 tasks](task-audit.md); its implementation counts predate the incoming work recorded in [the sync inventory](evals/repository-sync-2026-10-30.md). D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2–T6 are complete under the user-directed phase exception. [Testing through T7 (2026-10-30)](evals/through-day2-t7-2026-10-30.md) verifies the live gateway flow; T7 still requires regional redeployment. Unfinished Day 1 requirements remain open. A blocker blocks dependents only, under AGENTS.md §3.
 
 **Day 1 readiness audit:** [full task and exit-check evidence](evals/day1-completion-audit.md), updated after engineering fixes `5d4a5aa`, `d0a4ed3` and `a27887d`. **Not complete:** 8/12 original Day 1 tasks complete; T0, T5, T6 and T7c remain blocked. The additional pulled-forward D2-T1 is complete. Only 1/5 exit checks passes (CI); tracking performance fails and real-photo quality, region decision and tablet acceptance remain unfulfilled.
@@ -64,7 +66,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 | Task | What | Lane | Needs | Status | Owner |
 |---|---|---|---|---|---|
-| B4-0 | Flow contracts + review hardening | B | – | todo | |
+| B4-0 | Flow contracts + review hardening | B | – | doing | Codex |
 | A4-0 | Single-hand tracking + thermal stride | A | – | todo | |
 | A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | todo | |
 | A4-2 | Device pay-confirm policy | A | – | todo | |
@@ -247,6 +249,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- Local continuation (2026-10-30) · User explicitly deferred GCP testing until an account is available and requested future development locally. Independent Days 4–7 mock-first coding may proceed; the Day 3 gate/deploy assumption is not asserted complete. Retain all cloud/device/live acceptance as open and revalidate them later. B4-0 adds Kotlin validation of shared flow messages alongside the planned TS tests; wire schemas/models are unchanged.
 - D2-T8 (2026-10-30) · User requested T7 and its following task. Prepared/verified independent local eval tooling while T7 cloud acceptance remains blocked; T8 stays blocked. Retained incoming metrics/evaluate implementations and existing tests instead of recreating TODO bodies. Hardened the finished CLI/label loader/report formatting to meet AGENTS.md privacy and boundary rules: content-free errors, anonymous filenames, path/symlink containment, validated options and reliable native CLI output. Thirty extra cases added; no metric, prompt, version or dependency changed.
 - D1-T0 / D1-T5 (2026-10-30) · User requested internet photos instead of supplying their own captures. Downloaded ten openly licensed real appliance-control photos, visually reviewed and JPEG/hash/preflight validated; sources/attribution remain local and ignored. This is an initial public-image corpus, not app-camera/field validation. No quality gate or regional crop is waived.
 - D2-T7 testing (2026-10-30) · Live acceptance used a loopback gateway with auth on, ephemeral issued JWT and memory stores because cloud/Firebase setup is unavailable. Models/ASR were real Standard APIs; this does not substitute for Step 5 deployment or attestation/Firestore acceptance. Corrected newly integrated constructor syntax for native Node and added a failing-first runtime regression/typecheck guard; no dependency, protocol or security-policy changes.
@@ -303,6 +306,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-30: User deferred unavailable GCP testing and requested local future development. Claimed B4-0 in this first real contract commit: four synthetic flow scripts and nine TS contract checks added, plus four Kotlin message-validation cases. All 57 TS protocol and 53 Kotlin protocol tests pass (no failed/skipped cases); recursive typecheck passes. These are future replay contracts, not a working multi-step agent or device/PIN acceptance. Cancellation/network hardening remains in progress; cloud revalidation checklist added.
 - 2026-10-30: Continuation implementation `43d787c` pushed under namanhere23; [CI run 41064801915](https://github.com/Sky-walkerX/fingerpost/actions/runs/41064801915) passes ts/android and watch exits 0. Confirms 363 TS/typecheck, 31 tooling, Kotlin/app checks and Android debug build; local production builds also pass. Working task gates remain T7 cloud/region and T8 real labels/live baseline. No task marked complete from code/CI alone.
 - 2026-10-30: D2-T8 independent local preparation verified at the user's continuation request: retained supplied/incoming metrics/evaluate logic, fixed CLI/input/report privacy after 25 red cases, and added 30 synthetic cases total. Native subprocess output loss reproduced and fixed with synchronous writes. All 36 eval/363 TS cases, recursive typechecks/builds and 31 tooling cases pass; documented mock command writes the expected 50% target-hit report. Safe real-baseline preflight exits 1 because private truth labels are absent, before any paid client. T7/cloud and T8/real-label/live acceptance remain blocked; no Day 1 requirement waived.
 - 2026-10-30: Resumed D2-T7 at the user's request; 44 targeted controller/ASR/socket tests pass. Added `--with-sim` deployment option for its required protected relay after two expected failing tests; seven deployment stub cases and shell syntax pass, with auth on/default relay disabled. Cloud CLI/project/billing/secret prerequisites and ADR-0003 remain missing, so Step 5/T7 stay blocked. No cloud command, account/billing change, new paid model call or completion waiver.
