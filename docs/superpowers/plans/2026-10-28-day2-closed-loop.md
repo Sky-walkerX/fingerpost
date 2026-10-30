@@ -322,6 +322,8 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 
 ### Task D2-T8: eval harness v1 (`evals/`)
+**Continuation status (2026-10-30):** the user requested T7 and this following task. Independent local tooling preparation/checks are verified below; T8 remains blocked on T7 deployment, real ground-truth labels and its live baseline. This does not complete or waive the dependency. See [implementation/command evidence](../../evals/day2-evaluator.md).
+
 **Files:**
 - `apply.sh 2 evals && pnpm install`.
 - **Finished:** `package.json`, `tsconfig.json`, `vitest.config.ts`, `src/dataset.ts` (the label file schema), `src/run.ts` (CLI), `datasets/mock-panel/**`, `test/metrics.test.ts`.
@@ -342,14 +344,16 @@ Everything in Day 1's list still applies, plus:
   - Each goal: run `resolveByText`. On a match, call `segmentByBox` on the element's pixel box. A hit means the polygon centre is inside the ground-truth box of the goal's label.
   - `screenTypeOk`, `gtSensitive` and `predSensitive` use `SENSITIVE`.
 
-- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/evals test`. Expected: 5 pass.
-- [ ] **Step 2: Mock run.** Run `pnpm --filter @fingerpost/evals eval --set mock-panel --mode mock --out ../docs/evals/report-mock.md`. Expected: target hit rate 50.0%.
+- [x] **Step 1: Confirm red, implement, confirm green.** Incoming metrics/evaluation implementation and its six passing tests retained; expanded checks reproduce 25 failures before hardening. Thirty additional synthetic cases now pass, including native output/error capture. All 36 eval cases, 363 recursive TS cases, typechecks and builds pass. No supplied test weakened.
+- [x] **Step 2: Mock run.** Run `pnpm --filter @fingerpost/evals eval --set mock-panel --mode mock --out ../docs/evals/report-mock.md`. Verified target hit rate 50.0%; numerical anonymous report regenerated. This is a synthetic harness check, not model quality.
 - [ ] **Step 3 (lane C, human + agent): label the real photos.**
   - Create `evals/datasets/day1/labels.json` for the D1 photos in the `LabelFile` format.
   - Elements: every control's box (normalized), label text exactly as printed, role and screenType, plus 1–3 `goals` per image.
   - Use the D2-T11 labeling page if it's ready. Aim for 20 images today and 60 by Day 3.
 - [ ] **Step 4: First live eval.** Run `set -a; source ../.env; set +a; pnpm --filter @fingerpost/evals eval --set day1 --mode live --out ../docs/evals/report-day2-baseline.md`. Commit the report.
+  - Preflight (2026-10-30) exits 1 with a content-free error because the private labels file is absent; no paid client/model call or live report. T7 deployment and the Day 1 timeout/quality gates remain open. Commands/evidence are in the continuation report.
 - [ ] **Step 5: Commit.**
+  - Local hardening/mock-report work is checkpointed separately; the completion commit still waits for the real labels/live baseline and prerequisite acceptance.
   `git commit -m "feat(evals): metrics, evaluate, CLI; baseline report"`
 
 ### Task D2-T9: sim scenes 2 and 4, and relaying touches to the gateway

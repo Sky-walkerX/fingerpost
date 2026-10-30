@@ -1,23 +1,57 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, writeSync } from 'node:fs';
 import { parseArgs } from 'node:util';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { z } from 'zod';
 import { createMetaClient, liveModels, mockModels, PARSE_PROMPT_ID } from '@fingerpost/gateway/eval-api';
 import { loadLabels } from './dataset.ts';
 import { evaluateItem } from './evaluate.ts';
 import { renderReport, summarize } from './metrics.ts';
 
-// pnpm --filter @fingerpost/evals eval --set mock-panel --mode mock --out ../docs/evals/report-mock.md
-const { values } = parseArgs({ args: process.argv.slice(2).filter((a) => a !== '--'), options: { set: { type: 'string' }, mode: { type: 'string', default: 'mock' }, out: { type: 'string' }, limit: { type: 'string' } } });
-if (!values.set || !values.out) { console.error('usage: --set <dataset dir name> --out <report.md> [--mode mock|live] [--limit N]'); process.exit(2); }
-const dir = new URL(`../datasets/${values.set}/`, import.meta.url);
-const labels = loadLabels(dir);
-const models = values.mode === 'live'
-  ? liveModels(createMetaClient(process.env.META_API_KEY ?? (console.error('META_API_KEY missing'), process.exit(2))))
-  : mockModels();
-const items = labels.items.slice(0, values.limit ? Number(values.limit) : undefined);
-const results = [];
-for (const item of items) { results.push(await evaluateItem(models, dir, item)); process.stdout.write('.'); }
-const summary = summarize(results);
-const out = new URL(values.out, `file://${process.cwd()}/`);
-mkdirSync(new URL('.', out), { recursive: true });
-writeFileSync(out, renderReport(`Eval: ${values.set} (${values.mode})`, summary, results, { date: new Date().toISOString(), prompt: PARSE_PROMPT_ID, mode: values.mode }));
-console.log(`\n${JSON.stringify(summary)}`);
+const Options = z.object({
+  set: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/),
+  mode: z.enum(['mock', 'live']).default('mock'),
+  out: z.string().min(1).endsWith('.md'),
+  limit: z.string().regex(/^[1-9]\d*$/).transform(Number).refine(Number.isSafeInteger).optional(),
+});
+
+/** Local evaluation CLI. Errors and reports must never expose provider content or private paths. */
+export async function main(args = process.argv.slice(2), env: NodeJS.ProcessEnv = process.env): Promise<number> {
+  let options: z.infer<typeof Options>;
+  try {
+    const { values } = parseArgs({ args: args.filter((arg) => arg !== '--'), options: {
+      set: { type: 'string' }, mode: { type: 'string', default: 'mock' }, out: { type: 'string' }, limit: { type: 'string' },
+    } });
+    options = Options.parse(values);
+  } catch {
+    writeSync(2, 'usage: --set <dataset dir name> --out <report.md> [--mode mock|live] [--limit N]\n');
+    return 2;
+  }
+  if (options.mode === 'live' && !env.META_API_KEY?.trim()) {
+    writeSync(2, 'META_API_KEY missing (configure the ignored local environment first)\n');
+    return 2;
+  }
+  try {
+    const dir = new URL(`../datasets/${options.set}/`, import.meta.url);
+    const labels = loadLabels(dir);
+    const models = options.mode === 'live' ? liveModels(createMetaClient(env.META_API_KEY!)) : mockModels();
+    const items = labels.items.slice(0, options.limit);
+    const results = [];
+    for (const item of items) {
+      results.push(await evaluateItem(models, dir, item));
+      writeSync(1, '.');
+    }
+    const summary = summarize(results);
+    const out = pathToFileURL(resolve(options.out));
+    mkdirSync(new URL('.', out), { recursive: true });
+    writeFileSync(out, renderReport(`Eval (${options.mode})`, summary, results,
+      { date: new Date().toISOString(), prompt: PARSE_PROMPT_ID, mode: options.mode }));
+    writeSync(1, `\n${JSON.stringify(summary)}\n`);
+    return 0;
+  } catch {
+    writeSync(2, 'Evaluation failed. Check the local dataset and model availability.\n');
+    return 1;
+  }
+}
+
+if (import.meta.main) process.exitCode = await main();
