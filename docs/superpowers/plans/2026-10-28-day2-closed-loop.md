@@ -8,6 +8,8 @@
 
 **Subsequent priorities (2026-10-28):** the user first restored Day 1 priority, then explicitly requested “So start implementing Day 2 coding”. Resume tasks with satisfied individual prerequisites; unfinished Day 1 requirements remain open. The user resolved T4 by choosing actual speech completion over the fixed timer; correct its plan/test accordingly.
 
+**Current priority (2026-10-31):** complete Day 2 implementation and local verification; defer GCP-only testing at the user's request. Independent local repairs may proceed while earlier cloud/tablet prerequisites remain unaccepted. See [current coding and acceptance evidence](../../evals/day2-local-completion-2026-10-31.md). No device, dataset, proxy or cloud requirement is waived.
+
 **Goal:** A voice-named button on the tablet replica is reached by a blindfolded proxy. The loop:
 - **Phone:** tracks the screen and the fingertip and guides with speech, tone and haptics.
 - **Gateway:** turns goal plus keyframe into layout plus target, relays speech to Voice Transcribe, and relays simulator touches.
@@ -270,7 +272,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(gateway): session pipeline: locate, ask, target, verify"`
 
 ### Task D2-T7: controller, Voice Transcribe relay, sim relay, Day 2 app
-**Status (updated 2026-10-30):** coding/local verification and live Step 4 pass. Step 5 remains blocked on human-owned cloud/billing/Firebase/secret setup and ADR-0003's measured region decision. Preserve this task as blocked until deployment acceptance passes.
+**Status (updated 2026-10-31):** local implementation repaired/verified, including full-frame coordinates, browser relay and mock endpointing. The historical 2026-10-30 Step 4 passed, but the current one-shot full-frame probe fails before target (Spark no ParseResult; ASR handshake and screen SAM pass). Step 4 needs current-policy revalidation. Step 5 remains deferred/blocked on cloud setup and ADR-0003. Preserve this task as blocked.
 
 **Files:**
 - `apply.sh 2` with:
@@ -314,11 +316,11 @@ Everything in Day 1's list still applies, plus:
 - [x] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test asr e2e`.
 - [x] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
 - [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. All 206 gateway cases and recursive typecheck/build pass; source/compiled localhost mock exchanges pass.
-- [x] **Step 4: Live check** (verified 2026-10-30). The real source gateway/WS path passed with live Standard Spark/SAM/Voice Transcribe, synthetic media, authentication on and ephemeral JWT, memory quota/flag stores, protected simulator touch and successful verification. The nine-field handshake accepted language bias and nonempty keywords unchanged. See [scope and numerical evidence](../../evals/through-day2-t7-2026-10-30.md). This isolated check does not verify Firebase/Firestore or cloud deployment. Normal live startup also needs the newer auth/Firebase settings in `docs/local-development.md`.
+- [ ] **Step 4: Live check — revalidation required at the repaired revision.** Historical pass (2026-10-30): real gateway/WS with Standard Spark/SAM/Voice Transcribe, synthetic media, ephemeral JWT/memory stores, protected simulator touch and verification; see [earlier evidence](../../evals/through-day2-t7-2026-10-30.md). Current full-frame diagnostic (2026-10-31): ASR handshake/screen SAM complete, Spark has no ParseResult and no target is emitted, 5,027 ms; exact upstream cause unretained. See [current evidence](../../evals/day2-local-completion-2026-10-31.md). Repeat the full flow under the current five-second policy after resolving the provider failure. Neither local result verifies Firebase/Firestore or GCP.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
 - [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region> <signing-digests> --with-sim` (current auth-on script). Finish the cloud/Firebase/IAM setup documented in `docs/local-development.md` first. A human first creates the private `sim-token` secret (`openssl rand -hex 16`) and grants the service account access. `--with-sim` adds the Secret Manager mapping without editing the script; omit it to leave the live sim route disabled. Open the sim with `&token=<value>` locally; never put that value in a report or commit.
   - [x] Revalidated 44 controller/ASR/real-socket tests (2026-10-30). Added two failing-first deployment tests; all seven stubbed deployment tests and shell syntax pass. Auth remains enabled and no real cloud command was run.
-- [x] **Step 6: Commit coding work.** Step 4 now passes; Step 5 remains blocked, so T7 is not complete.
+- [x] **Step 6: Commit coding work.** Local repair checkpointed; current Step 4 revalidation and Step 5 remain open, so T7 is not complete.
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 
 ### Task D2-T8: eval harness v1 (`evals/`)
@@ -357,6 +359,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(evals): metrics, evaluate, CLI; baseline report"`
 
 ### Task D2-T9: sim scenes 2 and 4, and relaying touches to the gateway
+**Local status (2026-10-31):** incoming implementation retained; supplied tests and actual three-button desktop browser relay pass after the gateway CORS fix. The required tablet check is still open; T9 remains blocked.
 **Files:**
 - `apply.sh 2` with `apps/web/src/sim/{net,main}.ts`, `apps/web/src/sim/scenes/{ticket,cooktop}.ts` and `apps/web/test/scenes2.test.ts`.
 - **Skeleton:** `net.ts` (`postTouch`).
@@ -369,11 +372,11 @@ Everything in Day 1's list still applies, plus:
   - Uses `AbortSignal.timeout`.
   - Returns `res.ok`, or `false` on any throw.
 
-- [ ] **Step 1: Copy, confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/web test`. Expected: 20 pass.
+- [x] **Step 1: Copy, confirm red, implement, confirm green.** Existing incoming implementation retained rather than overwritten/reverted. All supplied 20 web cases pass within the current 28-case suite. Missing browser preflight was reproduced by failing gateway CORS tests before repair; actual browser touches now arrive through the gateway.
 - [ ] **Step 2: Check on the tablet.** Open `http://<laptop-ip>:5173/sim/?scene=ticket&seed=2&run=run-demo&gw=http://<laptop-ip>:8080`, with the gateway running locally in mock mode.
   - Tap three buttons.
   - In the gateway logs (`LOG_LEVEL=debug`), you see the POSTs; `delivered: 0` until the app connects with `caps.simRunId = run-demo`.
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit local verification.** Existing feature source retained; task status still awaits Step 2. See the 2026-10-31 local evidence report.
   `git commit -m "feat(web): ticket machine and cooktop scenes, touch relay to the gateway"`
 
 ### Task D2-T10a (device): screen tracker and local quad estimate
@@ -485,6 +488,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(android): guidance engine wires state machine, cues, speech, tone, haptics"`
 
 ### Task D2-T10d (exit check): blindfolded proxy trials
+**Blocked (2026-10-31):** no connected test device or recorded human proxy trials. Mock scenario success is not substituted for this exit check.
 - [ ] **Run the trials.** Live gateway, tablet fast-food scene. A blindfolded teammate (a **proxy**) does 10 trials, each with a different target named by voice.
   - Record time-to-target (from the "Found …" speech to ON) and success in `docs/evals/daily.md`, with sim run ids.
   - **Pass:** at least 5 of 10, each under 20 s.

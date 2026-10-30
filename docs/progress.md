@@ -39,11 +39,11 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D2-T6 | Session pipeline | B | D2-T5 | done | Codex |
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | blocked | Codex |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | blocked | Codex |
-| D2-T9 | Sim scenes 2/4 + touch relay | C | D1-T6 | todo | |
+| D2-T9 | Sim scenes 2/4 + touch relay | C | D1-T6 | blocked | Codex |
 | D2-T10a | Screen tracker + local quad (device) | A | D2-T2 | blocked | Sky-walkerX |
 | D2-T10b | Session client + mic + keyframes (device) | A | D2-T1, D2-T7 | blocked | Sky-walkerX |
 | D2-T10c | Guidance engine wiring (device) | A | D2-T4, D2-T10a, D2-T10b | blocked | Sky-walkerX |
-| D2-T10d | Proxy trials (exit check) | C | D2-T10c | todo | |
+| D2-T10d | Proxy trials (exit check) | C | D2-T10c | blocked | Human |
 | D2-T11 | Labeling page, tester booking | C | D1-T6 | blocked | Codex |
 
 ## Day 3: `docs/superpowers/plans/2026-10-29-day3-gate-robustness.md`
@@ -111,6 +111,8 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
+
+- D2 completion (2026-10-31) · [Current implementation/local evidence](evals/day2-local-completion-2026-10-31.md): 415 TS/212 Android/31 tooling cases, builds/lint and two local protocol scenarios pass. Current one-shot live full-frame probe reaches ASR handshake and completes screen SAM, but Spark has no ParseResult and no target is emitted (5,027 ms, one Spark/one SAM request, no retries; exact upstream cause unretained). Do not treat historical Step 4 as current full-frame acceptance. No further paid retry made. GCP-only tests are deferred by the user; device count is zero, private real-photo labels are absent, and proxy trials/tester bookings need people. T9/T11 source is locally verified, not absent; their full acceptance remains blocked.
 
 - D1-T5 (2026-10-30): user-authorized ten-photo low-reasoning diagnostic and browser inspection now finish: 30/30 calls succeed, **6/10 correct targets**, below ≥8/10; Spark p50/p95 **9,655/14,907 ms**. Candidate rejected; reasoning remains omitted. The historical 15-second/one-retry client policy is now superseded by B4-0's planned five-second/zero-retry bound, which has no live acceptance yet. Original-policy smoke failed twice at Spark; the unchanged isolated request succeeds after 22,211 ms under a diagnostic bound. First full low diagnostic also timed out at sample 6 SAM box; completed repeat retained all results. The runner's lost-partial-evidence defect is fixed with five failing-first regressions. No prompt change or quality/latency waiver. No regional crop/cloud setup/candidate URLs. See [request/error evidence](evals/day1-public-images-2026-10-30.md) and [manual scores/metrics](evals/day1-smoke.md). Earlier missing-key/zero-photo entries are historical.
 
@@ -286,6 +288,7 @@ _(task id · what changed · why · who approved)_
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
+| 2026-10-31 | Day 2 local implementation repair | 415 TS +212 Android +31 tooling cases pass; typechecks/build/lint pass; two loopback scenes and three browser touches pass; live full-frame target, phone/tablet, labels/proxy and GCP checks remain open | docs/evals/day2-local-completion-2026-10-31.md |
 | 2026-10-30 | B4-0 local contracts/hardening | 389 TS +31 tooling cases pass; typechecks/builds/Android compatibility pass; compiled loopback abort 1.06 ms (one sample); cloud/device gates unchanged | docs/evals/day4-gateway-hardening.md |
 | 2026-10-30 | D2-T7/T8 local continuation | 44 targeted T7 cases; 363 total TS tests/typechecks/builds; 31 tooling tests; mock target hit 50%; labeled live baseline/cloud blocked | docs/evals/day2-evaluator.md |
 | 2026-10-30 | Spark API timeout diagnostic | Models/Spark HTTP 200; same-image default effort 22,211 ms /3,033 reasoning tokens; low effort 10,696 ms /1,229; one fetch each, no retries; production still 15,000 ms | docs/evals/day1-public-images-2026-10-30.md |
@@ -308,6 +311,8 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-31: Fresh CI at `b751bc0` exposed the web test resolver relying on local protocol build output. Added the existing workspace `source`/SSR conditions to web Vite configuration; all 415 TS cases and `pnpm check:day2` pass with protocol dist safely hidden/restored. Kept the contract test and build-free CI ordering; no test weakened or dependency changed. Remote verification of the repair follows the push.
+- 2026-10-31: Completed Day 2 coding review/repairs without advancing further Day 4 work. Retained T9 scenes/relay and verified actual three-touch desktop browser delivery; tablet acceptance remains blocked. Final local checks pass: 415 TS, 212 Android and 31 tooling cases, typechecks/builds/debug/lint, two source-native local scenarios and evaluator-compatible browser label export. One synthetic live probe passes ASR handshake/screen SAM but not Spark/target, so current live acceptance remains open. Ten real-panel JPEGs have no reviewed truth file; zero ADB devices; no proxy trials/bookings/GCP deployment. Reconciled statuses/checklists and recorded next actions; no incomplete task marked done.
 - 2026-10-31: D2-T11 labeling implementation verified and hardened after seven red export-boundary cases: malformed/unmatched goals and invalid boxes/files cannot be silently exported. Browser checks load a synthetic JPEG, draw/edit a box, select role/type, reject a malformed goal, copy evaluator-valid JSON, and clear stale state on a broken image. All 28 web cases/typecheck/build pass. Corrected EN/HI consent to disclose the current gateway/Meta image/audio processing and separate opt-in. No outreach, booking, participant data or real-photo ground truth invented; T11 remains blocked on human bookings.
 - 2026-10-31: D2-T10 Android wiring repaired: after a server anchor, locate/retry uploads now use rectified screen crops; tracking analysis fits inside the specified 640×360 bounds in both orientations. Added three failing-first capture-policy cases and two reproduced camera-roll failures before correcting pitch with all gravity axes. All 154 guidance +53 protocol +5 app cases pass; debug assembly and lint pass (zero errors/six existing warnings). Pure logic stays JVM-only; no dependency or guidance threshold change. Zero ADB devices, so camera/mic/TalkBack/physical-loop acceptance remains open.
 - 2026-10-31: D2-T7 local integration repair: six initial failing CORS/mock endpointing cases and eleven failing full-frame cases confirmed before fixes. Simulator-only stateless CORS retains live token enforcement; mock ASR now endpoints without the microphone's end signal. Full frames run Spark/screen SAM concurrently, publish a content-oriented screen quad and project layout/target geometry into that plane while keeping SAM prompts in image pixels. Late canceled calls still account usage. All 294 gateway cases/typechecks and two actual loopback cooktop/ticket scenarios pass; reusable `pnpm check:day2` added to CI. No GCP deployment or phone acceptance claimed.

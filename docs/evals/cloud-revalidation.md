@@ -12,6 +12,7 @@ On 2026-10-30 the user confirmed that no GCP account is currently available and 
 ## Repeat local checks at the revision to deploy
 
 - [ ] Frozen dependency install, recursive TypeScript tests/typecheck/build, Python tooling tests.
+- [ ] Run `pnpm check:day2` (synthetic loopback only), then separately repeat the real full-frame → screen anchor → target path. The 2026-10-31 live probe completed ASR handshake/screen SAM but failed before Spark/target; no current live pass is claimed.
 - [ ] Kotlin guidance/protocol/app tests and debug assembly; required device checks remain independent.
 - [ ] Verify no captures/credentials enter the upload context or Git changes.
 

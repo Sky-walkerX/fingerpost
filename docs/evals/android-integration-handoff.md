@@ -2,6 +2,8 @@
 
 Implementation and local checks are recorded here. Phone acceptance belongs to teammates, as requested by the user. No device or live-model result is claimed.
 
+**Update 2026-10-31:** Day 2 repairs add full-frame gateway projection/server quad, cropped subsequent locates, bounded tracking resolution and rotation-independent camera pitch. Local totals are now 154 guidance/53 protocol/five app tests; debug build/lint pass, with six existing warnings. Device acceptance is still open (zero ADB devices). The current live full-frame probe fails at Spark before target; see [current evidence](day2-local-completion-2026-10-31.md).
+
 ## Implemented
 
 - The session screen now owns a lifecycle-scoped guidance engine. Camera analysis feeds the screen tracker; fresh hand results feed pad compensation, homography, filtering, zones, speech, tone and haptics.
@@ -24,6 +26,8 @@ Final local run: 148 guidance, 49 protocol and 5 app cases pass with no failures
 New synthetic regressions cover fingertip geometry, duplicate/older hand timestamps, hand selection, off-screen input, filter reset, stale queued speech callbacks, PIN exit/reacquire and upload-guard boundaries. Tests contain synthetic labels only. No protocol schema or dependency version changed.
 
 ## Teammate acceptance checklist — pending
+
+The default mock ASR returns a fixed phrase and mock vision returns a fixed appliance layout. It is useful for transport/callback tests, not recognition of the cooktop camera view. `pnpm check:day2` injects actual scene ground truth for its synthetic protocol scenarios; a physical cooktop/Boil acceptance run needs matching vision output, not the default Start fixture. The current live provider failure must be resolved/revalidated for that run.
 
 1. Configure `fingerpost.gatewayUrl=ws://<laptop-ip>:8080` privately and run the mock gateway. Install the debug APK from `apps/android/app/build/outputs/apk/debug/app-debug.apk`.
 2. Verify microphone denial gives a usable next action; allow it in Settings and reopen. Confirm `ready`, the spoken question, final transcript and `goal.ack`. Confirm the mic does not capture the app's own prompts.

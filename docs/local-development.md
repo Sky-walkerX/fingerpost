@@ -71,6 +71,14 @@ Checked against Meta's [authentication guide](https://dev.meta.ai/docs/authentic
 
 An offline transport check confirms that the pinned SDK builds the documented Bearer header and the ASR handshake includes the same credential under `authorization.accessToken`. No live request is required for this check. A 401 from the model-list endpoint establishes an authentication rejection, but does not alone identify whether the credential is incomplete, invalid, revoked or otherwise unusable; use the full credential from the Model API dashboard and never print it while troubleshooting.
 
+## Cloud-free Day 2 verification
+
+From the repository root, `pnpm check:day2` starts temporary loopback gateways and exercises the actual cooktop/ticket scene definitions through voice-message endpointing, full-frame geometry, linked simulator delivery, verify and abort. It injects deterministic model fixtures and does not load `.env` or contact Meta/GCP. CI runs it too. A pass proves protocol coordination; it is not camera recognition, real speech transcription, phone acceptance or a proxy trial.
+
+For real-photo truth labeling, start `pnpm --filter @fingerpost/web dev` and open `http://localhost:5173/label/`. Select a local JPEG, draw each control box, enter the exact printed label and role, choose the screen type, then enter goals as `goal | label`. Copy JSON produces one evaluator item; combine reviewed items as `{"version":1,"items":[...]}` in ignored `evals/datasets/day1/labels.json`. Malformed goals or missing controls block export. The tool reads the file locally and sends no photo/label upload. Participant/camera captures must remain private.
+
+See [current coding/acceptance evidence](evals/day2-local-completion-2026-10-31.md) and [cloud revalidation](evals/cloud-revalidation.md). GCP checks may be deferred; real-data, live-provider and device checks remain separate.
+
 ## Gateway containers on this laptop
 
 Podman is installed. Its default container database still references an old home path, so Fingerpost uses a separate rootless store. This leaves existing containers untouched:
