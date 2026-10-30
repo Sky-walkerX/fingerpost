@@ -81,7 +81,7 @@ Second invocation's final output (exit 0):
 
 No further identical full diagnostic is needed: the complete run supplies the quality rejection. No claim is made about the internal cause of the earlier SAM timeout.
 
-Validation: **333 TS tests** pass (259 gateway, 48 protocol, 20 web, six evals), including all five new runner cases; recursive typecheck and gateway build pass. The full test command required loopback socket permission. Android/Python checks were not rerun for this TS evaluation-tool change; their previous results remain historical.
+Validation: **333 TS tests** pass (259 gateway, 48 protocol, 20 web, six evals), including all five new runner cases; recursive typecheck and gateway build pass. The full test command required loopback socket permission. Android/Python checks were not rerun locally for this TS evaluation-tool change. After pushing implementation ff3e5ff, [CI run 41061304203](https://github.com/Sky-walkerX/fingerpost/actions/runs/41061304203) passes both jobs, including frozen install, recursive TS checks, Python tooling, guidance/protocol/app tests and Android debug assembly. `gh run watch 41061304203 --interval 15 --exit-status` exits 0. This does not establish device acceptance or model accuracy beyond the reported manual review.
 
 ## Remaining work
 
