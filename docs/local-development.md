@@ -22,6 +22,10 @@ In Android Studio, open `apps/android`. This laptop's ignored `.idea/gradle.xml`
 
 For device checks, connect the phone with USB debugging enabled and check `~/Android/Sdk/platform-tools/adb devices -l`. Builds can run without a connected phone; camera, fingertip, TalkBack and latency acceptance require the actual device specified in the plan.
 
+Before future Android acceptance testing, tell the user a connected phone is needed so they can attach it. Report JVM tests, browser/simulator checks, physical-phone transport with mock responses, and physical-phone recognition with live models separately. None substitutes for another. Retain only generic device labels and numeric/boolean evidence; do not export camera previews, microphone audio or recognized text into test reports.
+
+For a physical phone over USB, `adb reverse tcp:8080 tcp:8080` forwards its localhost gateway port to the laptop. Build with `./scripts/android.sh :app:assembleDebug -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080 --console=plain`, install the debug APK and bind the development gateway to laptop loopback. The default `10.0.2.2` URL is for an emulator. Keep production authentication unchanged; a cloud-free development run does not verify Firebase or attestation.
+
 ## TypeScript on this laptop
 
 Node 24 is available in the bundled runtime. Pinned pnpm 11.10.0 is installed persistently in `~/.local/share/fingerpost/node-tools`:
