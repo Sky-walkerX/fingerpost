@@ -37,6 +37,8 @@ pnpm --filter @fingerpost/evals eval --set mock-panel --mode mock --out ../docs/
 
 Results: **363 TypeScript tests** (259 gateway, 48 protocol, 20 web, 36 evals), recursive typechecks/builds and **31 Python tooling tests** pass. Socket tests require loopback permission. Existing eval test files are unchanged. No dependency/version, protocol or Android source change was made; Android checks were not rerun locally.
 
+After pushing implementation `43d787c`, [CI run 41064801915](https://github.com/Sky-walkerX/fingerpost/actions/runs/41064801915) passes both jobs: frozen install, recursive TS checks, Python tooling, Kotlin guidance/protocol/app tests and debug assembly. `gh run watch 41064801915 --interval 15 --exit-status` exits 0. This verifies the code at that revision, including the preceding T7 deployment preparation; no device/cloud/live-baseline acceptance follows from CI.
+
 The fresh [mock report](report-mock.md) has the required **50.0% target hit rate** across two synthetic fixture images, precision 40%, recall 80%, screen-type accuracy 50% and PIN/payment recall 0%. The mock always returns an appliance layout, so the PIN miss is intentional test coverage. These are fixture outcomes, not live quality results. Cost is an estimate from planning rates; mock execution spends nothing. Latency is parsing only; target hits include the same Spark-box fallback as the gateway.
 
 ## Remaining gates
