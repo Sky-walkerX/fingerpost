@@ -86,6 +86,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
   - an X handle (`@fingerpost` or `@fingerpostapp`);
   - package id `io.github.fingerpost`. If GitHub won't give us that namespace, keep the id anyway: Android doesn't require domain ownership.
 - [ ] **Test photos:** photograph at least 10 appliance panels (microwave, induction cooktop, washing machine, AC remote screen). Use varied angles and light, with no faces or reflections of people.
+  - **2026-10-30 user-authorized substitute:** ten licensed, visually inspected internet appliance photos now reside in the ignored dataset, with source/attribution records. JPEG/hash/preflight checks pass. The private regional crop remains absent, so this setup item stays incomplete. See `docs/evals/day1-public-images-2026-10-30.md`.
   - Save as JPEG in `evals/datasets/day1/`.
   - Put one 1024×576 crop, at most 409,600 bytes, in `evals/datasets/private/day1/latency-sample.jpg` (gitignored). Leave the tracked four-byte synthetic placeholder unchanged; real captures must never replace committed fixtures.
 - [ ] **Testers:** send outreach (texts from D1-T8) to 10 or more groups. Log each in `docs/testers.md`.
@@ -265,6 +266,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
 **Safety preparation (verified 2026-10-28):** all photos under `evals/datasets/day1/` and `evals/datasets/private/` are ignored. Smoke preflights at least ten JPEG dimension headers before model calls. Only anonymous numerical outcomes go into `docs/evals/day1-smoke.md`; overlays stay in a unique ignored local run directory, with private file permissions. CLI errors never echo SDK response content. Regional diagnostics validate HTTP status and strict numerical responses, reject the placeholder image, and disable redirects. No live step below is complete from synthetic checks.
 
 - [ ] **Step 1: Run the smoke test.** Run `set -a; source .env; set +a; pnpm --filter @fingerpost/gateway smoke` (costs about $0.01 per image).
+  - **2026-10-30 attempted, not complete:** both full runs on the public ten-photo set failed before the first overlay; the instrumented retry reports a Spark request timeout. An isolated first-image Spark/SAM check passes. Retry limit reached; retain this unchecked until a complete run succeeds. Evidence: `docs/evals/day1-public-images-2026-10-30.md`.
   - Expected: `wrote docs/evals/day1-smoke.md` plus local `evals/datasets/private/day1-smoke/<run>/sample-*.svg` overlays. Never stage the overlays or dataset.
   - The numerical tables give Spark, SAM box and SAM text p50/p95, tokens per parse and estimated cost per image using the Day 1 planning rates; this is not measured billing.
 - [ ] **Step 2: Inspect the private overlays.** Open each SVG locally in a browser. Blue is all Spark boxes, orange identifies the selected box prompt, and green is the SAM target. This preserves review context without putting recognized labels into Git.
