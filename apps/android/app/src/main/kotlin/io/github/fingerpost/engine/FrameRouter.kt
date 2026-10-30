@@ -39,6 +39,7 @@ class FrameRouter(
     private val ocr = Ocr()
     private val faces = FaceCover()
     private val keyframer = Keyframer(guard, faces)
+    private val capturePolicy = CapturePolicy()
     private val worker = Executors.newSingleThreadExecutor()
     private val busy = AtomicBoolean(false)
     private val closed = AtomicBoolean(false)
@@ -60,7 +61,7 @@ class FrameRouter(
         if (closed.get()) { frame.bitmap.recycle(); return }
         var transferred = false
         try {
-            val bitmap = uprightBitmap(frame, 640)
+            val bitmap = uprightBitmap(frame, 640, 360)
             try {
                 val mats = FrameMats.of(bitmap)
                 try {
@@ -72,6 +73,7 @@ class FrameRouter(
                         stability = QuadStability()
                         dimensions = width to height
                         latestTokens = null
+                        capturePolicy.reset()
                     }
                     fun pixels(q: List<Vec2>) = q.map { Vec2(it.x * width, it.y * height) }
                     val handBoxes = hands.samples.value.mapNotNull { sample ->
@@ -82,6 +84,7 @@ class FrameRouter(
                         Bbox(boxes.minOf { it.minX }, boxes.minOf { it.minY }, boxes.maxOf { it.maxX }, boxes.maxOf { it.maxY })
                     }
                     tracker.update(mats.gray, handBox, now)
+                    if (tracker.state == TrackState.LOST) capturePolicy.reset()
                     var anchorApplied = false
                     anchor.getAndSet(null)?.let { received ->
                         val motion = received.captureQuad?.let { captured ->
@@ -91,6 +94,7 @@ class FrameRouter(
                             else received.quad.mapNotNull(motion::map)
                         if (moved.size == 4 && Homography.imageToScreen(moved) != null) {
                             tracker.reanchor(moved)
+                            capturePolicy.anchored()
                             anchorApplied = true
                         }
                     }
@@ -125,7 +129,9 @@ class FrameRouter(
                                 val next = request.get()
                                 if (next != null && !guard.pinMode && tokens != null) {
                                     val quadPx = normalized?.map { Vec2(it.x * full.width, it.y * full.height) }
-                                    val kind = if (next.purpose == KeyframePurpose.VERIFY && quadPx != null) KeyframeKind.SCREEN else KeyframeKind.FULL
+                                    val purpose = if (next.purpose == KeyframePurpose.VERIFY) io.github.fingerpost.guidance.KeyframePurpose.VERIFY
+                                        else io.github.fingerpost.guidance.KeyframePurpose.LOCATE
+                                    val kind = if (capturePolicy.kind(quadPx != null, purpose) == CaptureKind.SCREEN) KeyframeKind.SCREEN else KeyframeKind.FULL
                                     val encoded = keyframer.encode(full, quadPx, kind, next.purpose, tokens,
                                         SystemClock.elapsedRealtime(), gateTokens)
                                     if (encoded != null && !closed.get() && request.compareAndSet(next, null))

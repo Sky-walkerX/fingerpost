@@ -3,6 +3,7 @@ package io.github.fingerpost.vision
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import io.github.fingerpost.camera.AnalysisFrame
+import io.github.fingerpost.guidance.FrameTransform
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
@@ -13,10 +14,12 @@ fun uprightSize(frame: AnalysisFrame): Pair<Int, Int> =
     if (frame.rotationDegrees % 180 == 0) frame.crop.width() to frame.crop.height()
     else frame.crop.height() to frame.crop.width()
 
-/** Upright copy of the frame scaled to [width] px wide. The caller owns (and recycles) the result. */
-fun uprightBitmap(frame: AnalysisFrame, width: Int): Bitmap {
+/** Upright copy, optionally fitted inside a height bound without padding or stretching. Caller recycles it. */
+fun uprightBitmap(frame: AnalysisFrame, width: Int, maxHeight: Int? = null): Bitmap {
     val crop = frame.crop
-    val scale = width.toFloat() / uprightSize(frame).first
+    val (uprightWidth, uprightHeight) = uprightSize(frame)
+    val scale = if (maxHeight == null) width.toFloat() / uprightWidth
+        else FrameTransform.fitCenter(uprightWidth, uprightHeight, width, maxHeight).scale
     val matrix = Matrix().apply {
         postRotate(frame.rotationDegrees.toFloat())
         postScale(scale, scale)

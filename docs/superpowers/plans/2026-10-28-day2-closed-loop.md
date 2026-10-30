@@ -476,7 +476,7 @@ Everything in Day 1's list still applies, plus:
   - `ON_TARGET` → `EFFECT_HEAVY_CLICK` twice, 120 ms apart.
   - `LOST` → `createOneShot(300, DEFAULT_AMPLITUDE)`.
   - Use `VibratorManager` on API 31+ and `Vibrator` on 29–30.
-- **Camera pitch:** from `Sensor.TYPE_GRAVITY`, as `pitchBelowHorizonDeg = toDegrees(atan2(gz, gy))` mapped to [0, 90]. Check the value: phone flat facing down ≈ 90; upright ≈ 0.
+- **Camera pitch:** from `Sensor.TYPE_GRAVITY`, as `pitchBelowHorizonDeg = toDegrees(atan2(abs(gz), hypot(gx, gy)))`. Check the value: phone flat facing down ≈ 90; upright ≈ 0. The earlier portrait-only `gy` denominator incorrectly treats a slightly tilted landscape phone as flat; the 2026-10-31 correction follows guidance-spec §6 and has failing-first rotation regressions. The 55° wording threshold is unchanged.
 - **Press evidence (Day 2):** only the sim touch (`sim.touch` → `PressDetected(SIM)`). Screen-change and dwell come on Day 3.
 
 - [x] **Step 1: Implement.**

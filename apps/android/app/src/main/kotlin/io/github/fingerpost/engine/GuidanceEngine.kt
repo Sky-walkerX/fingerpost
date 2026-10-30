@@ -18,8 +18,6 @@ import io.github.fingerpost.protocol.*
 import io.github.fingerpost.safety.UploadGuard
 import io.github.fingerpost.session.*
 import io.github.fingerpost.vision.*
-import kotlin.math.abs
-import kotlin.math.atan2
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,7 +74,7 @@ class GuidanceEngine(
     private val gravity = object : SensorEventListener {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         override fun onSensorChanged(event: SensorEvent) {
-            pitch = Math.toDegrees(atan2(abs(event.values[2].toDouble()), abs(event.values[1].toDouble())))
+            pitch = cameraPitchBelowHorizon(event.values[0].toDouble(), event.values[1].toDouble(), event.values[2].toDouble())
         }
     }
     private val client = SessionClient(

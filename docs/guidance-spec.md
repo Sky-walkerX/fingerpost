@@ -16,7 +16,7 @@ This spec defines how the device turns camera frames and server targets into fin
 - Corner order follows the content orientation the server reports (`layout.rotation ∈ {0, 90, 180, 270}`).
 
 ## 2.0 Local screen-quad estimate (framing, before any upload)
-Framing needs a quad without a server round trip. Candidates, scored per frame at 10 Hz on a 640×360 downscale:
+Framing needs a quad without a server round trip. Candidates, scored per frame at 10 Hz on a downscale fitted inside 640×360, preserving aspect ratio in portrait and landscape without padding or stretching:
 1. **OpenCV contour:** Canny → `findContours` → `approxPolyDP` (ε = 2% of perimeter) → convex 4-gons covering 8–90% of the frame.
 2. **Content bounds:** the convex hull of ML Kit OCR boxes plus bright regions (Otsu threshold on the V channel), expanded 6%. This covers black-glass cooktops and panels with weak edges.
 
@@ -83,6 +83,7 @@ Rules:
 
 ## 6. Upright vs flat screens
 The phone's gravity vector (from `TYPE_GRAVITY`) and the camera pitch decide which wording applies:
+- Pitch below the horizon is `degrees(atan2(abs(gz), hypot(gx, gy)))`, so rolling the phone between portrait and landscape does not change the tilt.
 - **Flat:** camera pitch more than 55° below the horizon, i.e. looking down at a cooktop or counter terminal. Use **forward/back** for the v axis: "forward" means away from the user.
 - **Upright:** use **up/down**.
 
