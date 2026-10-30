@@ -9,7 +9,12 @@ const PER_CLIENT = 5;
 export class ChallengeStore {
   private readonly m = new Map<string, { nonce: Uint8Array; exp: number; client: string }>();
   private readonly byClient = new Map<string, string[]>();
-  constructor(private readonly now: () => number = Date.now, private readonly ttlMs = 5 * 60_000) {}
+  private readonly now: () => number;
+  private readonly ttlMs: number;
+  constructor(now: () => number = Date.now, ttlMs = 5 * 60_000) {
+    this.now = now;
+    this.ttlMs = ttlMs;
+  }
 
   /**
    * null only when the global table is full (the caller answers 503). With the per-client cap and the per-prefix

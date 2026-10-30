@@ -10,7 +10,14 @@ const StatusList = z.object({ entries: z.record(z.string(), z.unknown()) });
 export class RevocationList {
   private serials: Set<string> | null = null;
   private loadedAt = 0;
-  constructor(private readonly fetchImpl: typeof fetch = fetch, private readonly now: () => number = Date.now, private readonly maxAgeMs = 24 * 60 * 60_000) {}
+  private readonly fetchImpl: typeof fetch;
+  private readonly now: () => number;
+  private readonly maxAgeMs: number;
+  constructor(fetchImpl: typeof fetch = fetch, now: () => number = Date.now, maxAgeMs = 24 * 60 * 60_000) {
+    this.fetchImpl = fetchImpl;
+    this.now = now;
+    this.maxAgeMs = maxAgeMs;
+  }
 
   async refresh(): Promise<void> {
     const res = await this.fetchImpl(STATUS_URL, { signal: AbortSignal.timeout(10_000) });

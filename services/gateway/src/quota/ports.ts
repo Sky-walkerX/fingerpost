@@ -18,7 +18,9 @@ export class MemoryQuotaStore implements QuotaStore {
 }
 export class MemoryFlagStore implements FlagStore {
   reads = 0;
-  constructor(public enabled = true, public reason = '') {}
+  enabled: boolean;
+  reason: string;
+  constructor(enabled = true, reason = '') { this.enabled = enabled; this.reason = reason; }
   async getCloudEnabled() { this.reads++; return this.enabled; }
   async setCloudEnabled(enabled: boolean, reason: string) { this.enabled = enabled; this.reason = reason; }
 }

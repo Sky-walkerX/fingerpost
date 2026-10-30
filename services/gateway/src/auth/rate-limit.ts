@@ -12,7 +12,14 @@ type Window = { n: number; windowStart: number };
 export class FixedWindowLimiter {
   private readonly hits = new Map<string, Window>();
   private readonly overflow = new Map<string, Window>();
-  constructor(private readonly limit: number, private readonly windowMs: number, private readonly now: () => number = Date.now) {}
+  private readonly limit: number;
+  private readonly windowMs: number;
+  private readonly now: () => number;
+  constructor(limit: number, windowMs: number, now: () => number = Date.now) {
+    this.limit = limit;
+    this.windowMs = windowMs;
+    this.now = now;
+  }
 
   /** true = allowed. */
   hit(key: string, overflowKey = '*'): boolean {

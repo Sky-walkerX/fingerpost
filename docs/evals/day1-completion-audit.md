@@ -1,5 +1,7 @@
 # Day 1 completion audit — 2026-10-28
 
+**Snapshot notice:** implementation descriptions and test counts below refer to the dated audit. Later incoming Android/gateway integration is inventoried in [the sync report](repository-sync-2026-10-30.md). [Testing through D2-T7 on 2026-10-30](through-day2-t7-2026-10-30.md) records working live model access, integration results and the remaining acceptance gates. Earlier missing-key and unimplemented-pipeline statements are historical.
+
 **Decision: Day 1 is not complete. The user subsequently explicitly authorized starting Day 2 despite these unfinished requirements; no Day 1 check is waived or marked passed.** Eight of the 12 original Day 1 tasks are complete within their documented scope; four remain incomplete. One of the five Day 1 exit checks passes. These counts are checklist results, not an estimate of product completion.
 
 Implementation audited: gateway/evaluation/deployment fixes in `5d4a5aa`/`a27887d` and tracking-tool/CI fixes in `d0a4ed3`, on `main`. Existing audit drafts were preserved and updated. This pass includes implementation fixes as well as documentation; it does not claim live or device acceptance. It compares [the Day 1 plan](../superpowers/plans/2026-10-27-day1-foundations.md), [the completion rules](../../AGENTS.md), specifications, active implementation, tests, build outputs, CI and previously recorded device acceptance. Plan assets alone do not count as implemented features. Local checks below were executed during this audit; historical checks are identified separately.

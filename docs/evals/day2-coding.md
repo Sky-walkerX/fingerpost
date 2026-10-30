@@ -1,6 +1,6 @@
 # Day 2 coding verification — 2026-10-28
 
-The user explicitly resumed Day 2 coding while Day 1 remains incomplete. No Day 1 acceptance result changed. D2-T4, T5 and T6 are complete within their standalone logic scope. T7's coding/local checks pass; its required live acceptance and redeployment are blocked.
+The user explicitly resumed Day 2 coding while Day 1 remains incomplete. D2-T4, T5 and T6 are complete within their standalone logic scope. The original implementation/validation below is dated 2026-10-28. **Update 2026-10-30:** T7's live Step 4 now passes; regional redeployment remains blocked. See [current checks, startup fix and live results](through-day2-t7-2026-10-30.md).
 
 ## Implemented and verified
 
@@ -25,14 +25,10 @@ Failing-first checks confirmed 7 supplied +10 boundary T5 TODO failures; 15 supp
 - Both Node 24 source and compiled gateways complete that mock flow through real localhost HTTP/WebSocket connections. External model calls: **zero**. Local socket tests require permission to listen on loopback.
 - `git diff --check` passes. [CI at implementation c1be57e](https://github.com/Sky-walkerX/fingerpost/actions/runs/40664266695) passes both ts/android jobs, including frozen install, all TS/tooling/JVM tests and the Android debug build. Later documentation-only changes are not part of that run.
 
-## Remaining gate
+## Remaining gate (updated 2026-10-30)
 
-The live configuration preflight exits 2:
+Private Meta credentials now work. The live gateway Step 4 passed with actual Spark/SAM/Voice Transcribe, synthetic speech/image input, authenticated session traffic and protected simulator press/verification. The local check used memory stores and an ephemeral issued JWT; it does not verify Firebase login, hardware attestation, Firestore or the deployed service.
 
-```text
-Invalid gateway config: META_API_KEY: META_API_KEY is required when MODEL_MODE=live
-```
+ADR-0003 remains proposed; there is no approved region to redeploy to. The user confirmed photos and cloud setup are not ready. T7 Step 5 stays unchecked and T7 stays blocked until D1-T5 regional evidence/decision and cloud prerequisites are complete. Blocked work gates its dependents under the current AGENTS.md rules.
 
-The root ignored `.env` is absent. No live voice request, real model-quality check, cloud deployment or new device acceptance was attempted. ADR-0003 remains proposed; there is no approved region to redeploy to. T7 Steps 4/5 therefore remain unchecked and T7 stays blocked. Next: privately configure the human account/key/cloud prerequisites, complete D1-T5 regional evidence/decision, then run T7's live handshake/session check and redeployment. Do not progress to T8 under the task completion gate until that is resolved or explicitly reprioritized.
-
-These components are not yet wired into the Android app. The development build remains a camera/fingertip/tone prototype; the later guidance-engine, PIN gate, authentication and payment-confirmation work remains pending.
+Subsequent incoming commits contain Android guidance-engine, session/microphone, PIN and auth integration. Their device acceptance remains open and assigned to teammates; see [integration handoff](android-integration-handoff.md). Their presence does not complete Day 1 performance or Day 2's phone/tablet closed loop.

@@ -24,7 +24,9 @@ Requested by the user: pull the latest changes and retain a record of what chang
 
 The Android device acceptance checklist is in [the integration handoff](android-integration-handoff.md). The presence of these implementations does not complete their required device checks. Some older task-board/audit summaries remain historical and should not be used as proof that incoming code is absent or accepted.
 
-## Current live-test findings
+## Initial live-test findings (superseded)
+
+The following describes the first post-sync probe. The user subsequently corrected the private credential: model access, speech transcription and the live gateway flow now pass. See [current testing through D2-T7](through-day2-t7-2026-10-30.md). The earlier 401 is no longer an open blocker.
 
 The private root environment now contains a configured `META_API_KEY`; its value is never printed. A request to the official `GET https://api.meta.ai/v1/models` endpoint returned **401 Unauthorized**. Local format checks found no surrounding/internal whitespace, extra quote characters or added Bearer prefix. The existing bounded live Voice Transcribe handshake probe also failed; **zero audio bytes** were sent. Its fixed error does not establish a separate provider error code. No successful model access, transcription or quality result is claimed.
 

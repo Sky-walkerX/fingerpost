@@ -18,7 +18,16 @@ export const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 export class QuotaService implements QuotaPort {
   private cache: { value: boolean; at: number } | null = null;
-  constructor(private readonly store: QuotaStore, private readonly flags: FlagStore, private readonly cfg: QuotaConfig = DEFAULT_QUOTA, private readonly now: () => number = Date.now) {}
+  private readonly store: QuotaStore;
+  private readonly flags: FlagStore;
+  private readonly cfg: QuotaConfig;
+  private readonly now: () => number;
+  constructor(store: QuotaStore, flags: FlagStore, cfg: QuotaConfig = DEFAULT_QUOTA, now: () => number = Date.now) {
+    this.store = store;
+    this.flags = flags;
+    this.cfg = cfg;
+    this.now = now;
+  }
 
   async cloudEnabled(): Promise<boolean> {
     const now = this.now();

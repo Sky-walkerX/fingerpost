@@ -69,6 +69,7 @@ Needs people, credentials or money. Agents mark dependent tasks `blocked` until 
     - `export ANDROID_HOME="$HOME/Library/Android/sdk"`
   - Gradle comes from the committed wrapper, so there's no separate Gradle install.
 - [ ] **Meta Model API:**
+  - **2026-10-30 evidence:** private key accepted (models HTTP 200; live Spark/SAM/Voice Transcribe integration passes). Credit claim/balance remains unverified, so this setup item is not complete. See `docs/evals/through-day2-t7-2026-10-30.md`.
   - Create a key at dev.meta.ai and claim the $150 credits.
   - In the repo root: `printf 'META_API_KEY=%s\n' '<key>' > .env`
   - **Check:** `set -a; source .env; set +a; curl -s https://api.meta.ai/v1/models -H "Authorization: Bearer $META_API_KEY" | head -c 400` lists `muse-spark-1.3`.

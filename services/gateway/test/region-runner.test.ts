@@ -11,7 +11,8 @@ const target = { type: 'target', id: 't', ts: 1, elementId: 'e5', polygon: [{ u:
 class ScriptSocket extends EventTarget implements DiagnosticSocket {
   sent: (string | Uint8Array)[] = [];
   closed = false;
-  constructor(private readonly reply: (data: string | Uint8Array) => unknown) { super(); }
+  private readonly reply: (data: string | Uint8Array) => unknown;
+  constructor(reply: (data: string | Uint8Array) => unknown) { super(); this.reply = reply; }
   close() { this.closed = true; }
   send(data: string | Uint8Array) {
     this.sent.push(data);

@@ -6,7 +6,8 @@ const SHARDS = 10;
 
 /** users/{uid} {quotaDay, tasksToday}; spend/{day}/shards/{0..9} {micros}; design §4.9. */
 export class FirestoreQuotaStore implements QuotaStore {
-  constructor(private readonly db: Firestore) {}
+  private readonly db: Firestore;
+  constructor(db: Firestore) { this.db = db; }
 
   async incrementTasks(uid: string, day: string): Promise<number> {
     const ref = this.db.collection('users').doc(uid);
@@ -29,7 +30,8 @@ export class FirestoreQuotaStore implements QuotaStore {
 
 /** config/runtime {cloudEnabled, reason, updatedAt}. The budget-alert job writes the same document. */
 export class FirestoreFlagStore implements FlagStore {
-  constructor(private readonly db: Firestore) {}
+  private readonly db: Firestore;
+  constructor(db: Firestore) { this.db = db; }
   async getCloudEnabled(): Promise<boolean> {
     const snap = await this.db.collection('config').doc('runtime').get();
     return (snap.get('cloudEnabled') as boolean | undefined) ?? true;

@@ -314,10 +314,10 @@ Everything in Day 1's list still applies, plus:
 - [x] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test asr e2e`.
 - [x] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
 - [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. All 206 gateway cases and recursive typecheck/build pass; source/compiled localhost mock exchanges pass.
-- [ ] **Step 4: Live check** (needs the D1 key). Run `set -a; source .env; set +a; MODEL_MODE=live pnpm --filter @fingerpost/gateway dev` and connect any WS client.
+- [x] **Step 4: Live check** (verified 2026-10-30). The real source gateway/WS path passed with live Standard Spark/SAM/Voice Transcribe, synthetic media, authentication on and ephemeral JWT, memory quota/flag stores, protected simulator touch and successful verification. The nine-field handshake accepted language bias and nonempty keywords unchanged. See [scope and numerical evidence](../../evals/through-day2-t7-2026-10-30.md). This isolated check does not verify Firebase/Firestore or cloud deployment. Normal live startup also needs the newer auth/Firebase settings in `docs/local-development.md`.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
-- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region>`. To use the sim against the live gateway, first create a `sim-token` secret (`openssl rand -hex 16`), add `SIM_TOKEN=sim-token:latest` to `--set-secrets`, and open the sim with `&token=<value>`. Without it, live mode has no sim route at all.
-- [x] **Step 6: Commit coding work.** Live Steps 4/5 remain blocked; this commit does not complete the task.
+- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region> <signing-digests>` (current auth-on script). Finish the cloud/Firebase/IAM setup documented in `docs/local-development.md` first. To use the sim against the live gateway, first create a `sim-token` secret (`openssl rand -hex 16`), add `SIM_TOKEN=sim-token:latest` to `--set-secrets`, and open the sim with `&token=<value>`. Without it, live mode has no sim route at all.
+- [x] **Step 6: Commit coding work.** Step 4 now passes; Step 5 remains blocked, so T7 is not complete.
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 
 ### Task D2-T8: eval harness v1 (`evals/`)
