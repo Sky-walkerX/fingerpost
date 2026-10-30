@@ -1,6 +1,6 @@
 # Verification through D2-T7 — 2026-10-30
 
-**Later same-day follow-up:** the user requested public internet photos. Ten JPEGs are now downloaded and validated; full photo-smoke attempts remain blocked on a Spark timeout. See [the dataset and command/output evidence](day1-public-images-2026-10-30.md). Zero-photo observations below describe this earlier test snapshot.
+**Later same-day follow-up:** ten requested public JPEGs are downloaded and validated. Original-policy smoke attempts time out at Spark. A complete experimental low-reasoning diagnostic now finishes all 30 calls, but browser review scores **6/10 correct targets** (required ≥8/10); production settings remain unchanged. See [the scores/profile](day1-smoke.md) and [command/output evidence](day1-public-images-2026-10-30.md). Zero-photo observations and test counts below describe this earlier integration snapshot; the smoke-runner follow-up passes 333 TS tests, typecheck and gateway build.
 
 Owner: Codex. Scope: repeat available checks through D2-T7, exercise live Meta integration, fix failures, and retain unmet acceptance requirements. The user confirmed the real-photo dataset and Cloud Run setup are not ready and requested all other available checks. Incoming work through `f6daf08` is preserved; this pass starts from `b95e204`.
 

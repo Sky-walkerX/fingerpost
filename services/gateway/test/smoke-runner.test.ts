@@ -75,3 +75,85 @@ test('missing target masks remain failures to review rather than fabricated qual
   expect(report).toContain('Target polygons present: 0/10');
   expect(report).toContain('Correct target polygons: pending manual review');
 });
+
+test('a failed parse is counted, redacted and does not discard the other nine samples', async () => {
+  const paths = setup();
+  const models = mockModels();
+  const parse = vi.spyOn(models, 'parseScreen');
+  parse.mockRejectedValueOnce(new Error('synthetic-private-response-and-key'));
+  await expect(runSmoke(models, paths)).rejects.toThrow('Live smoke incomplete: one or more model calls failed');
+  expect(parse).toHaveBeenCalledTimes(10);
+  const report = readFileSync(paths.report, 'utf8');
+  expect(report).toContain('Samples completed without model errors: 9/10');
+  expect(report).toContain('Failed model calls: 1');
+  expect(report).toContain('Spark failed');
+  expect(report).not.toContain('synthetic-private');
+  expect(readdirSync(paths.privateOutput)).toHaveLength(9);
+});
+
+test('failed segmentation stages are recorded independently and still fail the run', async () => {
+  const paths = setup();
+  const models = mockModels();
+  const box = vi.spyOn(models, 'segmentByBox');
+  const text = vi.spyOn(models, 'segmentByText');
+  box.mockRejectedValueOnce(new Error('synthetic-private-box-response'));
+  text.mockRejectedValueOnce(new Error('synthetic-private-text-response'));
+  await expect(runSmoke(models, paths)).rejects.toThrow('Live smoke incomplete');
+  expect(box).toHaveBeenCalledTimes(10);
+  expect(text).toHaveBeenCalledTimes(10);
+  const report = readFileSync(paths.report, 'utf8');
+  expect(report).toContain('Failed model calls: 2');
+  expect(report).toContain('SAM box failed');
+  expect(report).toContain('SAM text failed');
+  expect(report).toContain('Target polygons present: 9/10');
+  expect(report).not.toContain('synthetic-private');
+  expect(readdirSync(paths.privateOutput)).toHaveLength(10);
+});
+
+test('completed box overlay and partial numeric report exist before the text call finishes', async () => {
+  const paths = setup();
+  const models = mockModels();
+  const original = models.segmentByText;
+  let checked = false;
+  models.segmentByText = async (...args) => {
+    if (!checked) {
+      checked = true;
+      expect(readFileSync(join(paths.privateOutput, 'sample-001.svg'), 'utf8')).toContain('stroke="#16a34a"');
+      const partial = readFileSync(paths.report, 'utf8');
+      expect(partial).toContain('Run status: in progress');
+      expect(partial).toContain('Target polygons present: 1/10');
+      expect(partial).toContain('pending');
+    }
+    return original(...args);
+  };
+  await runSmoke(models, paths);
+  expect(checked).toBe(true);
+  expect(readFileSync(paths.report, 'utf8')).toContain('Run status: completed');
+});
+
+test('all failed parses retain an honest report with no successful latency or zero-cost claim', async () => {
+  const paths = setup();
+  const models = mockModels();
+  vi.spyOn(models, 'parseScreen').mockRejectedValue(new Error('synthetic-private-response'));
+  const box = vi.spyOn(models, 'segmentByBox');
+  await expect(runSmoke(models, paths)).rejects.toThrow('Live smoke incomplete');
+  expect(box).not.toHaveBeenCalled();
+  const report = readFileSync(paths.report, 'utf8');
+  expect(report).toContain('Samples completed without model errors: 0/10');
+  expect(report).toContain('Failed model calls: 10');
+  expect(report).toContain('not measured');
+  expect(report).toContain('Failed or unfinished calls may also be billed');
+});
+
+test('the active parse is visible in the checkpoint while its result is still pending', async () => {
+  const paths = setup();
+  const models = mockModels();
+  const original = models.parseScreen;
+  vi.spyOn(models, 'parseScreen').mockImplementationOnce(async (...args) => {
+    const partial = readFileSync(paths.report, 'utf8');
+    expect(partial).toContain('Samples attempted: 1/10');
+    expect(partial).toContain('Spark pending');
+    return original(...args);
+  });
+  await runSmoke(models, paths);
+});

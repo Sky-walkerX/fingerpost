@@ -57,8 +57,34 @@ Commands: `node --conditions=source /tmp/fingerpost-spark-timeout-check.mts` and
 
 No production timeout, retry setting, reasoning parameter, prompt, dependency or acceptance criterion changed. The API check is complete; the ten-image smoke/quality gate remains incomplete. Next: evaluate explicit reasoning effort over the full corpus and manually score correctness before adopting a production setting. Any longer offline evaluation budget must remain bounded and must not be reported as a fix for real-time latency.
 
+## Full-corpus follow-up
+
+The user authorized the next evaluation. The first explicit-low attempt completed five photos, then timed out at the sixth SAM box request under the temporary 60-second bound. This exposed a runner defect: a failed later call discarded the final report and could prevent a completed box overlay from being written. Five new synthetic regression tests were added failing-first; the runner now checkpoints anonymous metrics/overlays, records failed stages, continues independent samples and still rejects the run if any model call fails. Failed calls are explicitly excluded from success percentiles and may still incur billing.
+
+The next diagnostic completed all ten photos and 30 calls with zero retries/errors. Manual browser review scores **6/10 correct targets**, below the unchanged ≥8/10 gate. Spark p50/p95 is **9,655/14,907 ms**. The complete profile, sample scores and numerical tables are in [the smoke report](day1-smoke.md). The candidate is rejected; production request settings and prompts remain unchanged. No default-policy ten-photo acceptance, closed-loop latency or regional deployment is claimed.
+
+Both diagnostic commands were `node --conditions=source /tmp/fingerpost-evaluate-low.mts`. The temporary harness wraps the existing model port and runner, adds only explicit low reasoning plus the diagnostic deadline/retry bound, loads the private key with `parseEnv`, and prints numeric stages or a fixed error classification. The second invocation uses the corrected runner; no failed call is retried within either invocation. First invocation's final output (exit 1):
+
+```json
+{"sample":6,"stage":"spark","ms":12720,"elements":12,"inputTokens":2355,"outputTokens":2017}
+{"complete":false,"sample":6,"stage":"sam-box","errorKind":"APIConnectionTimeoutError"}
+```
+
+Second invocation's final output (exit 0):
+
+```json
+{"sample":10,"stage":"spark","ms":7718,"elements":13,"inputTokens":2413,"outputTokens":1600}
+{"sample":10,"stage":"sam-box","ms":2863,"polygonPresent":true}
+{"sample":10,"stage":"sam-text","ms":2102,"polygonPresent":false}
+{"complete":true,"samples":10,"requestTimeoutMs":60000,"maxRetries":0,"reasoningEffort":"low"}
+```
+
+No further identical full diagnostic is needed: the complete run supplies the quality rejection. No claim is made about the internal cause of the earlier SAM timeout.
+
+Validation: **333 TS tests** pass (259 gateway, 48 protocol, 20 web, six evals), including all five new runner cases; recursive typecheck and gateway build pass. The full test command required loopback socket permission. Android/Python checks were not rerun for this TS evaluation-tool change; their previous results remain historical.
+
 ## Remaining work
 
-- D1-T5 Steps 1/2 remain incomplete. The API diagnostic confirms valid responses can exceed the current deadline; evaluate request/reasoning settings and inspect all ten private overlays before recording the ≥8/10 quality gate. Do not change the prompt or weaken acceptance to hide the failure.
+- D1-T5 production-policy smoke/quality acceptance remains incomplete. The ten-photo low-reasoning diagnostic and inspection are finished, but 6/10 accuracy fails. Correct the localization issues through the documented evaluation workflow before adopting a request or prompt change; do not weaken the gate.
 - The approved 1,024×576 regional crop, cloud setup, two matching-revision deployments, 20 samples per region and ADR-0003 remain pending.
-- No application/source code changed in this preparation. Dataset checks and live attempts were run; unrelated unit/build suites were not rerun for a download/documentation-only change.
+- The original download/API investigation changed documentation only. This follow-up changes the smoke runner and adds five synthetic regressions; model requests and application behavior are unchanged.
