@@ -491,7 +491,8 @@ Everything in Day 1's list still applies, plus:
 - [ ] **Commit.** `git commit -m "docs(evals): day 2 proxy trials"`
 
 ### Task D2-T11 (lane C): labeling page and booking
-- [ ] **Labeling page.** Create `apps/web/label/index.html` and `apps/web/src/label/main.ts`:
+**Local implementation status (2026-10-31):** incoming labeling code retained and repaired; eight evaluator-contract/export tests and actual browser drawing/export/error checks pass. EN/HI consent now describes current image/audio processing and separate permission. Bookings remain human-owned, so the full task stays blocked.
+- [x] **Labeling page.** Create `apps/web/label/index.html` and `apps/web/src/label/main.ts`:
   - load a local JPEG (file input);
   - drag to draw boxes;
   - for each box, enter the label, a role (select from the protocol roles) and screenType;
@@ -500,7 +501,7 @@ Everything in Day 1's list still applies, plus:
   - Add it to `vite.config.ts` as an input (`label: 'label/index.html'`).
   - No tests needed; it's an internal tool. Record it in progress.md.
 - [ ] **Book testers.** Book sessions for Days 4–6 in `docs/testers.md`, and write `docs/consent-form.md` translations if they're missing.
-- [ ] **Commit.** `git commit -m "feat(web): labeling tool for eval datasets"`
+- [x] **Commit.** Existing feature retained; repair checkpoint: `fix(web): validate Day 2 labels and disclose connected processing`.
 
 ---
 
