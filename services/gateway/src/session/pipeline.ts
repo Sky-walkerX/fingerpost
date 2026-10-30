@@ -6,6 +6,7 @@ import type { Usage } from '../quota/cost.ts';
 import { SPOKEN_ERRORS } from '../errors/spoken.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { describePosition, listLabels } from '../resolve/describe.ts';
+import { fullFrameCoordinates } from './screen-coordinates.ts';
 
 /** Sim element ids are kebab-case versions of their labels ("pay-card" ↔ "Pay by card"). */
 export const simMatches = (simElementId: string, el: LayoutElement) => tokenSetRatio(simElementId.replaceAll('-', ' '), el.label) >= 0.8;
@@ -154,11 +155,25 @@ export class SessionPipeline {
     }
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
-    const parsed = await whileActive(this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
-      .then((result) => { this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; }), signal);
-    if (parsed === CANCELLED || signal.aborted) return;
-    const layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout,
-      fingerprint: layoutFingerprint(parsed.layout.elements), source: 'model' });
+    const parse = this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
+      .then((result) => { this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
+    const screen = h.kind === 'full' ? this.d.models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
+      .then((result) => { this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
+    const result = await whileActive(Promise.all([parse, screen]), signal);
+    if (result === CANCELLED || signal.aborted) return;
+    const [parsed, screenMask] = result;
+    const coordinates = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
+    if (h.kind === 'full' && !coordinates) {
+      this.d.send({ ...this.base(), type: 'ask', question: "I can't find the screen. Hold the phone steady and try again.", options: [] });
+      return;
+    }
+    const elements = coordinates ? parsed.layout.elements.flatMap((element) => {
+      const polygon = coordinates.toScreen(element.polygon);
+      return polygon ? [{ ...element, polygon }] : [];
+    }) : parsed.layout.elements;
+    const layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout, elements,
+      ...(coordinates ? { screenQuad: coordinates.screenQuad } : {}),
+      fingerprint: layoutFingerprint(elements), source: 'model' });
     this.layout = layout;
     this.d.send(layout);
     if (signal.aborted) return;
@@ -179,15 +194,17 @@ export class SessionPipeline {
       return;
     }
     const element = resolved.element;
-    const us = element.polygon.map(({ u }) => u), vs = element.polygon.map(({ v }) => v);
+    const original = parsed.layout.elements.find(({ id }) => id === element.id)!;
+    const us = original.polygon.map(({ u }) => u), vs = original.polygon.map(({ v }) => v);
     const mask = await whileActive(this.d.models.segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
     }).then((result) => { this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
     if (mask === CANCELLED || signal.aborted) return;
-    const polygon = mask.polygon ?? element.polygon;
+    const refined = mask.polygon && (coordinates ? coordinates.toScreen(mask.polygon) : mask.polygon);
+    const polygon = refined || element.polygon;
     const target = Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon,
-      confidence: Math.min(element.confidence, mask.polygon ? mask.confidence ?? element.confidence : element.confidence),
+      confidence: Math.min(element.confidence, refined ? mask.confidence ?? element.confidence : element.confidence),
       say: `Found ${element.label}, ${describePosition(polygon)}.` });
     this.target = element;
     this.d.send(target);

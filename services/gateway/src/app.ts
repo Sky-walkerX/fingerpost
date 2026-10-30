@@ -59,13 +59,21 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   }
 
   // Simulator touches: open in mock/dev; in live mode only when SIM_TOKEN is set (fail closed).
-  if (!live || cfg.SIM_TOKEN) app.post('/v1/sim/events', async (req, reply) => {
-    const got = req.headers['x-sim-token'];
-    if (cfg.SIM_TOKEN && !safeEqual(typeof got === 'string' ? got : undefined, cfg.SIM_TOKEN)) return reply.code(401).send({ error: 'bad sim token' });
-    const body = SimEventBody.safeParse(req.body);
-    if (!body.success) return reply.code(400).send({ error: 'invalid sim event' });
-    return { delivered: sims.publish(body.data) };
-  });
+  if (!live || cfg.SIM_TOKEN) {
+    // The tablet page and gateway use different origins. This stateless route uses an explicit token,
+    // never browser cookies; keep its CORS permission separate from auth/debug/session endpoints.
+    app.options('/v1/sim/events', async (_req, reply) => reply
+      .header('access-control-allow-origin', '*').header('access-control-allow-methods', 'POST')
+      .header('access-control-allow-headers', 'content-type, x-sim-token').code(204).send());
+    app.post('/v1/sim/events', async (req, reply) => {
+      reply.header('access-control-allow-origin', '*');
+      const got = req.headers['x-sim-token'];
+      if (cfg.SIM_TOKEN && !safeEqual(typeof got === 'string' ? got : undefined, cfg.SIM_TOKEN)) return reply.code(401).send({ error: 'bad sim token' });
+      const body = SimEventBody.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: 'invalid sim event' });
+      return { delivered: sims.publish(body.data) };
+    });
+  }
 
   app.get('/v1/session', { websocket: true }, (socket, req) => {
     // Listen synchronously: the client may send hello before the async auth check finishes.
