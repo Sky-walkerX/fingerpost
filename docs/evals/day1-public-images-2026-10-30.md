@@ -40,8 +40,25 @@ Second command: `node --conditions=source /tmp/fingerpost-public-smoke.mts`. Thi
 
 `createMetaClient` currently sets a 15,000 ms request timeout and one SDK retry. The successful isolated Spark duration includes SDK/transport work; no internal provider/compute breakdown was measured. The second full attempt confirms a request deadline failure, not a rejected key or invalid JPEG. The cause of the first generic failure is unconfirmed. After the two failed full attempts, retries stopped under AGENTS.md §9.
 
+## User-requested API timeout investigation
+
+The user explicitly resumed investigation of the Meta/Spark timeout. Two controlled diagnostics used the same first JPEG, locale, system/user prompt, strict JSON schema and Standard Spark 1.3 model. Each had a temporary 60,000 ms diagnostic deadline and **zero retries**; production settings were not changed. Model-list requests returned HTTP 200 and confirmed Spark availability.
+
+| Diagnostic | Spark HTTP | Fetches | Headers ms | Complete parse ms | Input tokens | Output tokens | Reasoning tokens | Elements |
+|---|---|---|---|---|---|---|---|---|
+| Existing request; reasoning omitted/model-set | 200 | 1 | 22,198 | 22,211 | 2,413 | 4,850 | 3,033 | 27 |
+| Same request with explicit `reasoning_effort: low` | 200 | 1 | 10,676 | 10,696 | 2,413 | 2,691 | 1,229 | 22 |
+
+Commands: `node --conditions=source /tmp/fingerpost-spark-timeout-check.mts` and the same command with `low`. The temporary harness loaded credentials with `parseEnv`, overrode only its own client deadline/retry policy, and printed numeric status/timing/usage fields. For the low-effort diagnostic it added that one request field. It retained no image response text, thinking content, labels, key or request/session ids.
+
+**Confirmed:** the unchanged image request can succeed after 22.2 seconds, beyond the production client's 15-second deadline. Authentication, this JPEG and the strict response schema are accepted. This reproduces a mismatch between the configured deadline and a valid request's observed completion time. It does not identify how much time belongs to network, provider queueing, image processing or model reasoning, nor prove the cause of every earlier generic failure.
+
+**Measured lead for improvement:** explicit low reasoning completed in 10.7 seconds on this image with fewer reasoning tokens. Meta documents that omitted effort is model-set and that effort controls reasoning depth; its exact default level is unspecified. See the [Chat Completions guide](https://dev.meta.ai/docs/protocols/chat-completions) and [reasoning/token guide](https://dev.meta.ai/docs/cookbook/reasoning-thinking-tokens). These are single, sequential requests; service load/cache effects are not isolated, and a different element count does not prove better or worse accuracy. Neither request establishes latency percentiles or the project's interactive SLOs.
+
+No production timeout, retry setting, reasoning parameter, prompt, dependency or acceptance criterion changed. The API check is complete; the ten-image smoke/quality gate remains incomplete. Next: evaluate explicit reasoning effort over the full corpus and manually score correctness before adopting a production setting. Any longer offline evaluation budget must remain bounded and must not be reported as a fix for real-time latency.
+
 ## Remaining work
 
-- D1-T5 Steps 1/2 remain incomplete. Investigate the Spark deadline on real-panel inputs, then rerun all ten and inspect the private overlays before recording the ≥8/10 quality gate. Do not change the prompt or weaken acceptance to hide the failure.
+- D1-T5 Steps 1/2 remain incomplete. The API diagnostic confirms valid responses can exceed the current deadline; evaluate request/reasoning settings and inspect all ten private overlays before recording the ≥8/10 quality gate. Do not change the prompt or weaken acceptance to hide the failure.
 - The approved 1,024×576 regional crop, cloud setup, two matching-revision deployments, 20 samples per region and ADR-0003 remain pending.
 - No application/source code changed in this preparation. Dataset checks and live attempts were run; unrelated unit/build suites were not rerun for a download/documentation-only change.
