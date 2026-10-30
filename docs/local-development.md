@@ -26,6 +26,10 @@ Before future Android acceptance testing, tell the user a connected phone is nee
 
 For a physical phone over USB, `adb reverse tcp:8080 tcp:8080` forwards its localhost gateway port to the laptop. Build with `./scripts/android.sh :app:assembleDebug -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080 --console=plain`, install the debug APK and bind the development gateway to laptop loopback. The default `10.0.2.2` URL is for an emulator. Keep production authentication unchanged; a cloud-free development run does not verify Firebase or attestation.
 
+If Android refuses the universal debug APK for insufficient storage, add `-Pfingerpost.debugAbi=<abi>` using the connected phone's `ro.product.cpu.abi`. This optional debug-only filter packages just that architecture's native libraries; default and release packaging stay unchanged. It preserves phone files/app data. Supported values are `arm64-v8a`, `armeabi-v7a`, `x86` and `x86_64`.
+
+The [physical-device safety regression](evals/day2-device-2026-10-31.md) uses Android's actual regex engine, which differs from the JDK. Build `:app:assembleDebugAndroidTest`, install its APK alongside the app, then run `adb -d shell am instrument -w io.github.fingerpost.test/io.github.fingerpost.DeviceSafetyRunner`. It needs no camera/network or additional dependency. CI compiles this APK; a physical device executes the checks.
+
 ## TypeScript on this laptop
 
 Node 24 is available in the bundled runtime. Pinned pnpm 11.10.0 is installed persistently in `~/.local/share/fingerpost/node-tools`:

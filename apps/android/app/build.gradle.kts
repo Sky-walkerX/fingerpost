@@ -17,11 +17,18 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "io.github.fingerpost.DeviceSafetyRunner"
         // ws://<laptop LAN IP>:8080 for local dev; the Cloud Run wss:// URL for releases. Set fingerpost.gatewayUrl in ~/.gradle/gradle.properties.
         buildConfigField("String", "GATEWAY_URL", "\"${providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"}\"")
     }
     buildTypes {
-        debug { manifestPlaceholders["cleartext"] = "true" }    // a laptop gateway over ws://
+        debug {
+            manifestPlaceholders["cleartext"] = "true" // a laptop gateway over ws://
+            providers.gradleProperty("fingerpost.debugAbi").orNull?.let { abi ->
+                require(abi in setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")) { "Unsupported debug ABI" }
+                ndk { abiFilters += abi }
+            }
+        }
         release { isMinifyEnabled = false; manifestPlaceholders["cleartext"] = "false" }
     }
     buildFeatures { compose = true; buildConfig = true }

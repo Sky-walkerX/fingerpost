@@ -2,6 +2,8 @@
 
 Implementation and local checks are recorded here. Phone acceptance belongs to teammates, as requested by the user. No device or live-model result is claimed.
 
+**Later physical-phone update (2026-10-31):** the user connected a phone and resumed agent-run acceptance. Actual camera/OCR found an Android-only PIN-regex initialization crash, now fixed with eight failing-first/passing device checks. Current JVM count is 214. Camera/session checks remain partial: severe thermal throttling returns, and microphone/quad/full-loop/human TalkBack checks remain open. See [physical-device evidence](day2-device-2026-10-31.md). Earlier zero-device and teammate-only notes below describe the preceding handoff.
+
 **Update 2026-10-31:** Day 2 repairs add full-frame gateway projection/server quad, cropped subsequent locates, bounded tracking resolution and rotation-independent camera pitch. Local totals are now 154 guidance/53 protocol/five app tests; debug build/lint pass, with six existing warnings. Device acceptance is still open (zero ADB devices). The current live full-frame probe fails at Spark before target; see [current evidence](day2-local-completion-2026-10-31.md).
 
 ## Implemented

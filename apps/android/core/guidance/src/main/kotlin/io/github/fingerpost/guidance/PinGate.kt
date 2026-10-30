@@ -11,7 +11,11 @@ enum class PinGateReason { NONE, DIGIT_GRID, PIN_TEXT }
  * elsewhere on screen can't hide a keypad (only columns holding ≥ 2 digits form the grid).
  */
 object PinGate {
-    private val pinText = Regex("(?U)\\b(pin|enter pin|पिन|clave|nip|passcode|password|contraseña|पासवर्ड)\\b", RegexOption.IGNORE_CASE)
+    // Android's ICU rejects Java's (?U) flag; explicit Unicode boundaries also preserve Hindi vowel marks.
+    private const val WORD = "\\p{L}\\p{M}\\p{Nd}\\p{Nl}\\p{Pc}\\u200C\\u200D"
+    private val pinText = Regex("(?:^|[^$WORD])" +
+        "(?:pin|enter pin|पिन|clave|nip|passcode|password|contraseña|पासवर्ड)" +
+        "(?=$|[^$WORD])", RegexOption.IGNORE_CASE)
     private val keyLabel = Regex("^[0-9][A-Za-z]{0,4}$")
 
     fun check(tokens: List<OcrToken>): PinGateReason {

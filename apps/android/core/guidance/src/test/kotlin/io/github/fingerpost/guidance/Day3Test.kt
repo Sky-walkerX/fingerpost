@@ -18,6 +18,14 @@ class PinGateTest {
         assertEquals(PinGateReason.PIN_TEXT, PinGate.check(listOf(OcrToken("Introduzca su clave", 0.4, 0.1, 0.2, 0.05))))
     }
     @Test fun wordsContainingPinAreNotBlocked() = assertEquals(PinGateReason.NONE, PinGate.check(listOf(OcrToken("Spinach", 0.1, 0.1, 0.1, 0.05), OcrToken("Pinball", 0.1, 0.3, 0.1, 0.05))))
+    @Test fun unicodeWordContinuationsAreNotPinWording() {
+        for (text in listOf("पिनकोड", "clavecito", "pin_1", "pin\u0301", "épin", "pin９"))
+            assertEquals(PinGateReason.NONE, PinGate.check(listOf(OcrToken(text, 0.1, 0.1, 0.2, 0.05))), text)
+    }
+    @Test fun punctuationSeparatesPinWording() {
+        for (text in listOf("(PIN)", "¡CONTRASEÑA!", "पिन:", "Enter PIN."))
+            assertEquals(PinGateReason.PIN_TEXT, PinGate.check(listOf(OcrToken(text, 0.1, 0.1, 0.2, 0.05))), text)
+    }
     @Test fun sixDigitsAreNotEnough() = assertEquals(PinGateReason.NONE, PinGate.check(keypad(listOf("1", "2", "3", "4", "5", "6"))))
     @Test fun digitsInOneRowAreNotAKeypad() =
         assertEquals(PinGateReason.NONE, PinGate.check((0..9).map { OcrToken("$it", 0.05 + it * 0.09, 0.5, 0.03, 0.06) }))

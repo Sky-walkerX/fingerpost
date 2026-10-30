@@ -2,6 +2,8 @@
 
 The user requested completion of Day 2 implementation, using local testing where possible and deferring GCP-only checks. Existing implementations were read and retained; missing integration behavior was repaired. **Local coding checks pass. Day 2 acceptance is not complete.** The current live full-frame probe failed, and device, real-data and human checks below remain open.
 
+**Subsequent physical-phone check:** a connected device exposed a PIN-gate regex crash that the JDK tests missed. Fixed and verified with eight failing-first/passing Android instrumentation checks; JVM total is now 214. The app runs camera/OCR after repair, but severe thermal throttling returns and full device acceptance remains open. See [device results](day2-device-2026-10-31.md); the zero-device observations in the original audit below are historical.
+
 ## Implementation reviewed and repaired
 
 | Task | Implementation evidence | Remaining acceptance |
