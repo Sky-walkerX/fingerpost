@@ -23,8 +23,9 @@ A new child-process regression first failed with that exact error in `auth/chall
 | Native source entry point | Mock `src/server.ts` starts and answers `/healthz`; stderr empty |
 | Fresh gateway container build/run | Frozen production dependency install/build passes; compiled mock voice → target → simulator press → verify passes; health valid; UID 1000; verification container removed |
 | `bash -n infra/deploy-gateway.sh`; `git diff --check` | Pass |
+| Remote CI at `e022a3b` | [Run 41053622591](https://github.com/Sky-walkerX/fingerpost/actions/runs/41053622591): `ts` and `android` both successful; `gh run watch 41053622591 --interval 15 --exit-status` exits 0 |
 
-No tests were skipped, weakened or deleted. Gradle's plugin configuration checks marked SKIPPED are not test cases. These commands use Node 24, pnpm 11.10.0 and the installed JDK 21/SDK via the repository launcher. Container checks use the repository Dockerfile and the isolated rootless Podman store described in `docs/local-development.md`. All model-independent suites stay offline. Remote CI is checked after pushing the verified changes.
+No tests were skipped, weakened or deleted. Gradle's plugin configuration checks marked SKIPPED are not test cases. These commands use Node 24, pnpm 11.10.0 and the installed JDK 21/SDK via the repository launcher. Container checks use the repository Dockerfile and the isolated rootless Podman store described in `docs/local-development.md`. All model-independent suites stay offline. CI independently verifies frozen installation, TS/tooling/Kotlin/app tests and the debug build at the implementation revision; this subsequent evidence update changes documentation only.
 
 ## Actual live gateway exchange
 

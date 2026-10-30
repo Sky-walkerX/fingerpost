@@ -43,7 +43,7 @@ The [Day 1 completion audit](docs/evals/day1-completion-audit.md) confirms **8/1
 | Incoming Android/auth/eval work | Screen tracking, session/mic/keyframes, guidance engine, PIN checks, auth/quota, eval harness and extra simulator scenes are in source. Local checks pass; required device/cloud acceptance is separate. See [sync inventory](docs/evals/repository-sync-2026-10-30.md) and [device handoff](docs/evals/android-integration-handoff.md). |
 | D1-T8: CI and tester preparation | Complete; weekly Dependabot config, 45-minute session protocol, English/Hindi consent/outreach drafts and organization-only tracker checked. Both CI jobs pass at audit revision 2480252, including the new Python tooling checks. No invitations sent or testers booked. |
 | Laptop toolchain | JDK 21 and pinned pnpm installed; Android Studio project paths configured. SDK Platforms 36/37 and Build Tools 36.0.0 available. Use `scripts/android.sh`; see `docs/local-development.md`. |
-| CI | Both jobs green at [Day 2 implementation c1be57e](https://github.com/Sky-walkerX/fingerpost/actions/runs/40664266695). Frozen install, typechecks, all TS/tooling/Kotlin tests and Android debug build pass. |
+| CI | Both jobs green at [startup fix/live verification e022a3b](https://github.com/Sky-walkerX/fingerpost/actions/runs/41053622591). Frozen install, typechecks, all TS/tooling/Kotlin/app tests and Android debug build pass. |
 | Accounts: Meta API key + credits, Modal credits, GCP projects, Firebase | Meta access verified; credit balance and remaining human/cloud setup are unverified or incomplete (D1-T0) |
 | Testers | Outreach has no recorded completion; human-only task |
 
