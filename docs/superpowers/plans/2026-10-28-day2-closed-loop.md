@@ -270,7 +270,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(gateway): session pipeline: locate, ask, target, verify"`
 
 ### Task D2-T7: controller, Voice Transcribe relay, sim relay, Day 2 app
-**Status (2026-10-28):** coding/local verification complete, required live ASR acceptance and redeployment blocked. No Meta key is configured and ADR-0003 is still proposed. Preserve this task as blocked until Steps 4/5 pass.
+**Status (updated 2026-10-30):** coding/local verification and live Step 4 pass. Step 5 remains blocked on human-owned cloud/billing/Firebase/secret setup and ADR-0003's measured region decision. Preserve this task as blocked until deployment acceptance passes.
 
 **Files:**
 - `apply.sh 2` with:
@@ -316,7 +316,8 @@ Everything in Day 1's list still applies, plus:
 - [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. All 206 gateway cases and recursive typecheck/build pass; source/compiled localhost mock exchanges pass.
 - [x] **Step 4: Live check** (verified 2026-10-30). The real source gateway/WS path passed with live Standard Spark/SAM/Voice Transcribe, synthetic media, authentication on and ephemeral JWT, memory quota/flag stores, protected simulator touch and successful verification. The nine-field handshake accepted language bias and nonempty keywords unchanged. See [scope and numerical evidence](../../evals/through-day2-t7-2026-10-30.md). This isolated check does not verify Firebase/Firestore or cloud deployment. Normal live startup also needs the newer auth/Firebase settings in `docs/local-development.md`.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
-- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region> <signing-digests>` (current auth-on script). Finish the cloud/Firebase/IAM setup documented in `docs/local-development.md` first. To use the sim against the live gateway, first create a `sim-token` secret (`openssl rand -hex 16`), add `SIM_TOKEN=sim-token:latest` to `--set-secrets`, and open the sim with `&token=<value>`. Without it, live mode has no sim route at all.
+- [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region> <signing-digests> --with-sim` (current auth-on script). Finish the cloud/Firebase/IAM setup documented in `docs/local-development.md` first. A human first creates the private `sim-token` secret (`openssl rand -hex 16`) and grants the service account access. `--with-sim` adds the Secret Manager mapping without editing the script; omit it to leave the live sim route disabled. Open the sim with `&token=<value>` locally; never put that value in a report or commit.
+  - [x] Revalidated 44 controller/ASR/real-socket tests (2026-10-30). Added two failing-first deployment tests; all seven stubbed deployment tests and shell syntax pass. Auth remains enabled and no real cloud command was run.
 - [x] **Step 6: Commit coding work.** Step 4 now passes; Step 5 remains blocked, so T7 is not complete.
   `git commit -m "feat(gateway): session controller, Voice Transcribe relay, sim touch relay"`
 

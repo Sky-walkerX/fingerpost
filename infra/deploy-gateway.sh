@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ $# -ne 3 ]]; then
-  printf '%s\n' 'Usage: infra/deploy-gateway.sh <project> <asia-south1|us-central1> <signing-digests>' >&2
+if [[ $# -lt 3 || $# -gt 4 || ( $# -eq 4 && "$4" != --with-sim ) ]]; then
+  printf '%s\n' 'Usage: infra/deploy-gateway.sh <project> <asia-south1|us-central1> <signing-digests> [--with-sim]' >&2
   exit 2
 fi
 project_id=$1
@@ -25,10 +25,14 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 git_sha=$(git rev-parse --short HEAD)
 image="$region-docker.pkg.dev/$project_id/fp/gateway:$git_sha"
+secrets='META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest,SESSION_SECRET=session-secret:latest'
+if [[ ${4:-} == --with-sim ]]; then
+  secrets+=',SIM_TOKEN=sim-token:latest'
+fi
 
 gcloud builds submit . --project "$project_id" --region "$region" \
   --config infra/cloudbuild.yaml --ignore-file .gcloudignore --substitutions "_IMAGE=$image"
 gcloud run deploy fingerpost-gateway --project "$project_id" --region "$region" --image "$image" \
   --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 3 --allow-unauthenticated \
-  --set-secrets META_API_KEY=meta-api-key:latest,DEBUG_TOKEN=debug-token:latest,SESSION_SECRET=session-secret:latest \
+  --set-secrets "$secrets" \
   --set-env-vars "^;^MODEL_MODE=live;GIT_SHA=$git_sha;AUTH_REQUIRED=true;SIGNING_DIGESTS=$signing_digests;FIREBASE_PROJECT_ID=$project_id;DAILY_CAP_USD=12"

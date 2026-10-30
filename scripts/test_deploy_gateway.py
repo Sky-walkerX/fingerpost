@@ -96,6 +96,24 @@ else:
                 self.assertIn("^;^MODEL_MODE=live;GIT_SHA=abc1234;AUTH_REQUIRED=true;SIGNING_DIGESTS=" + DIGEST
                               + ";FIREBASE_PROJECT_ID=synthetic-project;DAILY_CAP_USD=12", deploy)
                 self.assertNotIn("ALLOW_UNAUTHENTICATED_LIVE", " ".join(deploy))
+                self.assertNotIn("SIM_TOKEN", " ".join(deploy))
+
+    def test_simulator_opt_in_uses_secret_manager_and_keeps_auth_enabled(self):
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST, "--with-sim")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        _, deploy = self.commands()
+        secrets = deploy[deploy.index("--set-secrets") + 1]
+        self.assertIn("SIM_TOKEN=sim-token:latest", secrets.split(","))
+        self.assertIn("SESSION_SECRET=session-secret:latest", secrets.split(","))
+        self.assertIn("AUTH_REQUIRED=true", " ".join(deploy))
+        self.assertNotIn("ALLOW_UNAUTHENTICATED_LIVE", " ".join(deploy))
+
+    def test_simulator_opt_in_still_rejects_an_uncommitted_revision(self):
+        self.environment["FP_TEST_DIRTY"] = " M synthetic-file\n"
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST, "--with-sim")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("Commit and verify", result.stderr)
+        self.assertEqual(self.commands(), [])
 
     def test_deploy_failure_propagates(self):
         self.environment["FP_TEST_DEPLOY_EXIT"] = "19"
