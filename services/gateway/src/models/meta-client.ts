@@ -5,7 +5,7 @@ export const MODELS = { spark: 'muse-spark-1.3', sparkFallback: 'muse-spark-1.2'
 
 /** Standard mode only. Never use a "-contributor" model id: frames show users' surroundings. */
 export function createMetaClient(apiKey: string): OpenAI {
-  return new OpenAI({ apiKey, baseURL: META_BASE_URL, timeout: 15_000, maxRetries: 1 });
+  return new OpenAI({ apiKey, baseURL: META_BASE_URL, timeout: 5_000, maxRetries: 0 });
 }
 
 export const toDataUrl = (bytes: Uint8Array, mime: 'image/jpeg' | 'image/png' = 'image/jpeg') =>

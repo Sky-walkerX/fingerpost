@@ -27,6 +27,25 @@ export interface PipelineDeps {
 /** Billed keyframes allowed per charged task (the agent's 20-step budget, design §4.3). */
 export const MAX_CALLS_PER_TASK = 20;
 
+const CANCELLED = Symbol('cancelled');
+
+/** Release the session queue even if a model ignores cancellation; still consume its eventual result. */
+function whileActive<T>(work: Promise<T>, signal: AbortSignal): Promise<T | typeof CANCELLED> {
+  return new Promise((resolve, reject) => {
+    const cancel = () => resolve(CANCELLED);
+    if (signal.aborted) cancel();
+    else signal.addEventListener('abort', cancel, { once: true });
+    work.then((value) => {
+      signal.removeEventListener('abort', cancel);
+      resolve(signal.aborted ? CANCELLED : value);
+    }, (error: unknown) => {
+      signal.removeEventListener('abort', cancel);
+      if (signal.aborted) resolve(CANCELLED);
+      else reject(error);
+    });
+  });
+}
+
 /** sha256 of the sorted normalized labels, as "sh64:<16 hex>". Day 5 replaces this with SimHash (kiosk memory). */
 export function layoutFingerprint(elements: readonly LayoutElement[]): string {
   const labels = elements.map((element) => element.textNorm ?? element.label.toLowerCase()).sort();
@@ -55,6 +74,7 @@ export class SessionPipeline {
   private everCharged = false;
   private callsSinceCharge = 0;
   private hasSimTouch = false;
+  private task = new AbortController();
 
   private readonly d: PipelineDeps;
   constructor(d: PipelineDeps) { this.d = d; }
@@ -70,12 +90,27 @@ export class SessionPipeline {
   }
 
   onGoal(text: string): void {
+    this.task.abort();
+    this.task = new AbortController();
     this.goal = text;
     this.taskCharged = false;
     this.target = null;
     this.hasSimTouch = false;
     this.lastTap = { keyframeId: null, simElementId: null };
     this.d.send({ ...this.base(), type: 'goal.ack', goal: text, intent: 'guide' });
+  }
+
+  abort(): void {
+    this.task.abort();
+    this.task = new AbortController();
+    this.goal = null;
+    this.layout = null;
+    this.target = null;
+    this.taskCharged = false;
+    this.everCharged = false;
+    this.callsSinceCharge = 0;
+    this.hasSimTouch = false;
+    this.lastTap = { keyframeId: null, simElementId: null };
   }
 
   /** The sim reported a touch for this session's run. Remembered as press evidence for the next verify. */
@@ -89,10 +124,12 @@ export class SessionPipeline {
   }
 
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
+    const signal = this.task.signal;
     // Nothing to look for yet: don't spend a model call.
     if (h.purpose === 'locate' && !this.goal) return;
     if (h.purpose === 'locate' && !this.taskCharged) {
-      const allowed = await this.d.beforeTask?.();
+      const allowed = await whileActive(Promise.resolve(this.d.beforeTask?.()), signal);
+      if (allowed === CANCELLED || signal.aborted) return;
       if (allowed && !allowed.ok) {
         this.refuse(allowed.code);
         return;
@@ -107,18 +144,24 @@ export class SessionPipeline {
       this.refuse('rate_limited');
       return;
     }
-    if (this.d.cloudEnabled && !(await this.d.cloudEnabled())) {
-      this.refuse('cloud_paused');
-      return;
+    if (this.d.cloudEnabled) {
+      const enabled = await whileActive(this.d.cloudEnabled(), signal);
+      if (enabled === CANCELLED || signal.aborted) return;
+      if (!enabled) {
+        this.refuse('cloud_paused');
+        return;
+      }
     }
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
-    const parsed = await this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) });
-    this.d.onUsage?.({ kind: 'spark', ...parsed.usage });
+    const parsed = await whileActive(this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
+      .then((result) => { this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; }), signal);
+    if (parsed === CANCELLED || signal.aborted) return;
     const layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout,
       fingerprint: layoutFingerprint(parsed.layout.elements), source: 'model' });
     this.layout = layout;
     this.d.send(layout);
+    if (signal.aborted) return;
     if (h.purpose === 'verify') {
       this.verify(h, before, layout);
       return;
@@ -137,11 +180,11 @@ export class SessionPipeline {
     }
     const element = resolved.element;
     const us = element.polygon.map(({ u }) => u), vs = element.polygon.map(({ v }) => v);
-    const mask = await this.d.models.segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
+    const mask = await whileActive(this.d.models.segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
-    });
-    this.d.onUsage?.({ kind: 'sam_image', images: 1 });
+    }).then((result) => { this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
+    if (mask === CANCELLED || signal.aborted) return;
     const polygon = mask.polygon ?? element.polygon;
     const target = Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon,
       confidence: Math.min(element.confidence, mask.polygon ? mask.confidence ?? element.confidence : element.confidence),

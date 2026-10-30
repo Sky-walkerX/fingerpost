@@ -64,7 +64,15 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           audioBytes += payload.length;
           if (!relay) {
             // ASR is billed too: a paused cloud refuses the utterance up front.
-            if (quota && !(await quota.cloudEnabled())) {
+            const openingTurn = turn;
+            let enabled: boolean;
+            try { enabled = quota ? await quota.cloudEnabled() : true; }
+            catch (error) {
+              if (disposed || openingTurn !== turn) break;
+              throw error;
+            }
+            if (disposed || openingTurn !== turn) break;
+            if (!enabled) {
               awaitingEnd = true;
               send({ ...base(), type: 'error', code: 'cloud_paused', ...SPOKEN_ERRORS.cloud_paused });
               break;
@@ -106,7 +114,12 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           else if (relay && !audioEnded) { audioEnded = true; relay.end(); }
           break;
         case 'keyframe': if (payload) await pipeline.onKeyframe(message, payload); break;
-        case 'abort': closeRelay(); send({ ...base(), type: 'finish', result: 'aborted', say: 'Stopped.' }); break;
+        case 'abort':
+          closeRelay();
+          pipeline.abort();
+          keywords = [];
+          send({ ...base(), type: 'finish', result: 'aborted', say: 'Stopped.' });
+          break;
       }
     },
   } });
@@ -114,6 +127,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     if (disposed) return;
     disposed = true;
     closeRelay();
+    pipeline.abort();
     unsubscribe?.();
     unsubscribe = undefined;
     keywords = [];

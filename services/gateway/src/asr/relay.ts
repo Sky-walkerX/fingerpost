@@ -23,7 +23,7 @@ export function handshake(o: AsrOptions) {
  * buffered (max 5 s, the API's backlog limit). The first speechComplete is the final; the stream then ends.
  */
 export function openAsrRelay(o: AsrOptions, sink: AsrSink): AsrRelay {
-  const socket = new WebSocket(o.url ?? ASR_URL);
+  const socket = new WebSocket(o.url ?? ASR_URL, { handshakeTimeout: 5_000 });
   const buffered: Uint8Array[] = [];
   let bufferedBytes = 0, ended = false, finished = false;
   const release = () => { buffered.length = 0; bufferedBytes = 0; };

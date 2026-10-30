@@ -140,17 +140,17 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 
 - [x] **Step 1: Write the flows.** Four synthetic scripts cover guide, task/confirm/PIN, explore and Back recovery. The final payment verification frame is still the safe pay panel before the PIN-entry event; no PIN image/audio is included. Future replay/simulator timing acceptance remains separate.
 - [x] **Step 2: Write `flows.test.ts`.** Nine TS checks validate all messages, screen markers, current-confirm acceptance, PIN upload exclusion, Back recovery and explore shape. Four additional Kotlin cases validate the same messages. All 57 TS/53 Kotlin protocol cases and recursive typecheck pass. No wire schema/model change.
-- [ ] **Step 3: Write failing gateway tests:**
+- [x] **Step 3: Write failing gateway tests:** Initial 11 failures/one pass confirmed; 17 new cases cover cancellation, startup/backlog/quota races and SDK/ASR bounds. See [local evidence](../../evals/day4-gateway-hardening.md).
   - `app.test.ts › abort is handled while a keyframe is in flight`: a mock `parseScreen` that never resolves, then `abort` → `finish{aborted}` within 50 ms, and no `target` afterwards.
   - `pipeline.test.ts › locate before any goal sends nothing billable`: no `parseScreen` call.
   - `asr-boundaries.test.ts › connect timeout errors after 5 s`: fake timers.
-- [ ] **Step 4: Implement:**
+- [x] **Step 4: Implement:**
   - In `app.ts`, handle `abort` outside the per-session queue. Give `SessionPipeline` an `AbortController` per task and drop results from a cancelled task.
   - Set `timeout: 5_000, maxRetries: 0` in `createMetaClient`.
   - Use `new WebSocket(url, { handshakeTimeout: 5_000 })` in the relay.
   - In `onKeyframe`, return early when `purpose === 'locate' && !this.goal`.
-- [ ] **Step 5: Verify:** `pnpm -r test` → all green.
-- [ ] **Step 6: Commit** (two commits):
+- [x] **Step 5: Verify:** `pnpm -r test` → 389 passed; recursive typechecks/builds, 31 tooling cases, Android compatibility and compiled loopback smoke pass. No live/cloud/device acceptance is claimed.
+- [x] **Step 6: Commit** (two commits):
   - `test(protocol): day 4 flow scripts`
   - `fix(gateway): abort bypasses queue, 5 s model timeouts, ASR connect timeout`
 

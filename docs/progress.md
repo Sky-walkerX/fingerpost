@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim ownership in the first real task commit; no separate claim commits (see AGENTS.md §3).
 
-**Current phase:** Day 2–3 Android integration resumed by the user on 2026-10-30; phone acceptance assigned to teammates; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
+**Current phase:** Independent Days 4–7 local/mock development authorized on 2026-10-30 while GCP is unavailable; Day 2–3 Android phone acceptance remains assigned to teammates; all unfinished Day 1 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
 **Latest priority (2026-10-30):** the user has no GCP account and explicitly requested local testing/future development, with cloud tests revalidated when the account returns. Continue independent local/mock coding; cloud checks remain deferred and tasks requiring them remain blocked. No device, quality or release gate is waived. See [revalidation checklist](evals/cloud-revalidation.md).
 
@@ -66,7 +66,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 | Task | What | Lane | Needs | Status | Owner |
 |---|---|---|---|---|---|
-| B4-0 | Flow contracts + review hardening | B | – | doing | Codex |
+| B4-0 | Flow contracts + review hardening | B | – | done | Codex |
 | A4-0 | Single-hand tracking + thermal stride | A | – | todo | |
 | A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | todo | |
 | A4-2 | Device pay-confirm policy | A | – | todo | |
@@ -112,7 +112,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
 
-- D1-T5 (2026-10-30): user-authorized ten-photo low-reasoning diagnostic and browser inspection now finish: 30/30 calls succeed, **6/10 correct targets**, below ≥8/10; Spark p50/p95 **9,655/14,907 ms**. Reject candidate; production remains 15-second/one-retry with reasoning omitted. Original-policy smoke failed twice at Spark; the unchanged isolated request succeeds after 22,211 ms under a diagnostic bound. First full low diagnostic also timed out at sample 6 SAM box; completed repeat retained all results. The runner's lost-partial-evidence defect is fixed with five failing-first regressions. No prompt change or quality/latency waiver. No regional crop/cloud setup/candidate URLs. See [request/error evidence](evals/day1-public-images-2026-10-30.md) and [manual scores/metrics](evals/day1-smoke.md). Earlier missing-key/zero-photo entries are historical.
+- D1-T5 (2026-10-30): user-authorized ten-photo low-reasoning diagnostic and browser inspection now finish: 30/30 calls succeed, **6/10 correct targets**, below ≥8/10; Spark p50/p95 **9,655/14,907 ms**. Candidate rejected; reasoning remains omitted. The historical 15-second/one-retry client policy is now superseded by B4-0's planned five-second/zero-retry bound, which has no live acceptance yet. Original-policy smoke failed twice at Spark; the unchanged isolated request succeeds after 22,211 ms under a diagnostic bound. First full low diagnostic also timed out at sample 6 SAM box; completed repeat retained all results. The runner's lost-partial-evidence defect is fixed with five failing-first regressions. No prompt change or quality/latency waiver. No regional crop/cloud setup/candidate URLs. See [request/error evidence](evals/day1-public-images-2026-10-30.md) and [manual scores/metrics](evals/day1-smoke.md). Earlier missing-key/zero-photo entries are historical.
 
 - D2-T10a/b/c, D3-T1/T2/T3/T8 · Android implementation and local checks pass; phone acceptance remains assigned to teammates. See [integration handoff](evals/android-integration-handoff.md). Firebase configuration/credential checks remain human-owned. No live/device task is marked done.
 - D3-T4 · Reacquire, glare coaching and self-voicing are integrated; focus/exposure metering, persisted onboarding and the ten-minute TalkBack acceptance remain unimplemented or unverified.
@@ -285,6 +285,7 @@ _(task id · what changed · why · who approved)_
 ## Measurements
 | Date | What | Value | Where |
 |---|---|---|---|
+| 2026-10-30 | B4-0 local contracts/hardening | 389 TS +31 tooling cases pass; typechecks/builds/Android compatibility pass; compiled loopback abort 1.06 ms (one sample); cloud/device gates unchanged | docs/evals/day4-gateway-hardening.md |
 | 2026-10-30 | D2-T7/T8 local continuation | 44 targeted T7 cases; 363 total TS tests/typechecks/builds; 31 tooling tests; mock target hit 50%; labeled live baseline/cloud blocked | docs/evals/day2-evaluator.md |
 | 2026-10-30 | Spark API timeout diagnostic | Models/Spark HTTP 200; same-image default effort 22,211 ms /3,033 reasoning tokens; low effort 10,696 ms /1,229; one fetch each, no retries; production still 15,000 ms | docs/evals/day1-public-images-2026-10-30.md |
 | 2026-10-30 | Public Day 1 dataset | 10 unique valid JPEGs, 2,140,026 bytes; complete source/license records; full smoke blocked on Spark timeout, no quality score | docs/evals/day1-public-images-2026-10-30.md |
@@ -306,6 +307,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-30: B4-0 complete in its documented local scope: four shared flow contracts plus cancellation, stale-result/quota guards and five-second/no-SDK-retry model/ASR limits. Confirmed 11 initial expected failures and later startup/quota race regressions before fixes; all 17 added gateway cases and 389 total TS cases pass. Typechecks/builds, 31 tooling cases and Android compatibility pass (Android outputs up to date; stored results 148/53/5). Native compiled loopback health/abort pass, one abort sample 1.06 ms. No dependency/prompt/wire change or paid/cloud/device test. Model policy requires live revalidation; router/fallback remains B4-1/B5-3. See [evidence and limits](evals/day4-gateway-hardening.md).
 - 2026-10-30: User deferred unavailable GCP testing and requested local future development. Claimed B4-0 in this first real contract commit: four synthetic flow scripts and nine TS contract checks added, plus four Kotlin message-validation cases. All 57 TS protocol and 53 Kotlin protocol tests pass (no failed/skipped cases); recursive typecheck passes. These are future replay contracts, not a working multi-step agent or device/PIN acceptance. Cancellation/network hardening remains in progress; cloud revalidation checklist added.
 - 2026-10-30: Continuation implementation `43d787c` pushed under namanhere23; [CI run 41064801915](https://github.com/Sky-walkerX/fingerpost/actions/runs/41064801915) passes ts/android and watch exits 0. Confirms 363 TS/typecheck, 31 tooling, Kotlin/app checks and Android debug build; local production builds also pass. Working task gates remain T7 cloud/region and T8 real labels/live baseline. No task marked complete from code/CI alone.
 - 2026-10-30: D2-T8 independent local preparation verified at the user's continuation request: retained supplied/incoming metrics/evaluate logic, fixed CLI/input/report privacy after 25 red cases, and added 30 synthetic cases total. Native subprocess output loss reproduced and fixed with synchronous writes. All 36 eval/363 TS cases, recursive typechecks/builds and 31 tooling cases pass; documented mock command writes the expected 50% target-hit report. Safe real-baseline preflight exits 1 because private truth labels are absent, before any paid client. T7/cloud and T8/real-label/live acceptance remain blocked; no Day 1 requirement waived.

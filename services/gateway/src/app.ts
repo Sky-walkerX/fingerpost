@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
-import { PROTOCOL } from '@fingerpost/protocol';
+import { LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
 import type { Config } from './config.ts';
 import { registerLatencyRoute } from './debug/latency.ts';
 import { createMetaClient } from './models/meta-client.ts';
@@ -82,14 +82,43 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
         if (!claims) { socket.close(4401, 'auth required'); return; }
       }
       if (closed) return;
-      const session = createSessionController({ send: (m) => socket.send(JSON.stringify(m)), models, asr, sims, now, quota, ...(claims ? { claims } : {}) });
+      let ready = false, helloQueued = false;
+      let markReady!: () => void;
+      const handshake = new Promise<void>((resolve) => { markReady = resolve; });
+      const session = createSessionController({ send: (m) => {
+        if (m.type === 'ready') { ready = true; markReady(); }
+        socket.send(JSON.stringify(m));
+      }, models, asr, sims, now, quota, ...(claims ? { claims } : {}) });
       dispose = session.dispose;
       const { hub } = session;
-      // One message at a time per session, in arrival order (a verify must never overtake its locate).
+      // Ordinary messages stay ordered; a validated abort cancels the in-flight task and its backlog.
       let queue: Promise<void> = Promise.resolve();
+      let generation = 0;
       handle = (data, isBinary) => {
+        if (closed) return;
         req.log.debug({ sessionId: hub.id, bytes: data.length, binary: isBinary }, 'ws message');
-        queue = queue.then(() => (isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'))));
+        let isHello = false;
+        if (!isBinary && data.length <= LIMITS.textBytes) {
+          let json: unknown;
+          try { json = JSON.parse(data.toString('utf8')); } catch { /* The hub reports malformed messages. */ }
+          const parsed = parseClientMessage(json);
+          if (parsed.ok && parsed.msg.type === 'hello') { isHello = true; helloQueued = true; }
+          if (parsed.ok && parsed.msg.type === 'abort' && (ready || helloQueued)) {
+            generation++;
+            const abortedIn = generation;
+            // An early abort must wait for hello, but never for the queued model work after it.
+            queue = (ready ? Promise.resolve() : handshake).then(() => {
+              if (closed || abortedIn !== generation) return;
+              return hub.onText(data.toString('utf8'));
+            });
+            return;
+          }
+        }
+        const receivedIn = generation;
+        queue = queue.then(() => {
+          if (closed || (receivedIn !== generation && !(isHello && !ready))) return;
+          return isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'));
+        });
       };
       for (const [d, b] of early.splice(0)) handle(d, b);
     })();
