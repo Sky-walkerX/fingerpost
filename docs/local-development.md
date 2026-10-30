@@ -59,6 +59,18 @@ pnpm --filter @fingerpost/gateway dev
 
 Only `.env.example` is committed. `.env` and `.env.*` are ignored. Cloud Run deployments obtain credentials from Secret Manager, with `meta-api-key` mapped to `META_API_KEY` and `debug-token` to `DEBUG_TOKEN`; never put provider credentials in the Android app.
 
+### API key versus access token
+
+Checked against Meta's [authentication guide](https://dev.meta.ai/docs/authentication), [API reference](https://dev.meta.ai/docs/api-reference), [Voice schemas](https://dev.meta.ai/docs/api-reference/voice/schemas), [speech guide](https://dev.meta.ai/docs/speech-to-text) and [Muse Code authentication](https://dev.meta.ai/docs/muse-code/auth) on 2026-10-30:
+
+- Meta's API examples name the environment variable `MODEL_API_KEY`; Fingerpost deliberately reads `META_API_KEY`. Store the complete Model API credential there, not its dashboard name, numeric key id or only one part of the secret. Current authentication documentation shows `LLM_<numeric-id>_<secret>`; preserve the credential exactly as issued rather than changing separators to fit an example. Quote it in `.env` when loading through a shell.
+- Spark/SAM HTTP requests use `Authorization: Bearer <full-key>`. The configured SDK adds the prefix; do not include `Bearer ` in the saved value.
+- Voice Transcribe uses the **same key** in the first JSON frame: `authorization.accessToken = "Bearer <full-key>"`. Its HTTP Authorization header is ignored. The name `accessToken` does not introduce a second credential or an OAuth exchange. Both the application relay and regional probe already send this field.
+- Muse Code's browser login is a separate CLI authentication option; the gateway uses direct Model API authentication. Do not copy browser session tokens or cookies into the app configuration.
+- Fingerpost's Firebase ID token, attestation/session JWT and `SESSION_SECRET` secure the phone-to-gateway connection. They are separate from the Meta key. Newer live gateway configuration defaults to `AUTH_REQUIRED=true`, requiring `SESSION_SECRET` and `SIGNING_DIGESTS`, plus Firebase/cloud setup for the deployed server. The Meta key alone does not finish that setup; keep the auth protections enabled for production.
+
+An offline transport check confirms that the pinned SDK builds the documented Bearer header and the ASR handshake includes the same credential under `authorization.accessToken`. No live request is required for this check. A 401 from the model-list endpoint establishes an authentication rejection, but does not alone identify whether the credential is incomplete, invalid, revoked or otherwise unusable; use the full credential from the Model API dashboard and never print it while troubleshooting.
+
 ## Gateway containers on this laptop
 
 Podman is installed. Its default container database still references an old home path, so Fingerpost uses a separate rootless store. This leaves existing containers untouched:
