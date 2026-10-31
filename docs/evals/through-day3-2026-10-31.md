@@ -17,6 +17,10 @@ Test first: **10 expected tutorial/metering TODO failures** (156 earlier guidanc
 
 Result: **166 guidance +53 protocol +7 app =226 JVM cases**, zero failures/errors/skips; debug APK, instrumentation APK and lint pass. An initial compilation found the support query belongs to CameraInfo, not CameraControl; corrected it without changing CameraX. Physical tutorial gestures/audibility/persistence, real metering and the required ten-minute TalkBack session are still unverified. No device acceptance is inferred from these local tests.
 
+## D3-T1 Firebase CI completion
+
+The existing OCR/face/keyframer implementation is retained. Added the missing optional GitHub Actions secret preparation. It decodes base64, validates the Android package, writes only a new ignored configuration file with mode 0600, and prints no configuration content. Missing secret preserves the existing Firebase-free build. Four tests fail at the TODO first; after implementation all **35 Python tooling tests** pass. No real Google configuration or credential is supplied, written or committed; Firebase/live device acceptance remains open.
+
 ## Remaining external gates
 
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.

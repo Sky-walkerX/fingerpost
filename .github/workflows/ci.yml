@@ -25,5 +25,9 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare optional Firebase configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: python3 ../../scripts/prepare-google-services.py
       - run: ./gradlew :core:guidance:test :core:protocol:test --console=plain
       - run: ./gradlew :app:test :app:assembleDebug :app:assembleDebugAndroidTest --console=plain

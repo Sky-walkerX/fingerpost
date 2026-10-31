@@ -50,7 +50,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | D3-T0 | Noon tech gate | C | D2-T10c | todo | |
-| D3-T1 | OCR, face covering, OCR tokens (device) | A | D2-T10b | blocked | Sky-walkerX |
+| D3-T1 | OCR, face covering, OCR tokens (device) | A | D2-T10b | blocked | Sky-walkerX / Codex |
 | D3-T2 | PIN gate + two-source agreement | A | D3-T1 | blocked | Sky-walkerX |
 | D3-T3 | Screen-change evidence + framing coach | A | D2-T10c | blocked | Sky-walkerX |
 | D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | blocked | Sky-walkerX / Codex |
@@ -322,6 +322,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-31: D3-T1 retains existing OCR/face/keyframe integration and adds the missing optional Firebase CI configuration step. Four failing-first Python tests verify decoding/package validation, mode 0600, absent-secret behavior and protection of existing files; all 35 tooling checks pass. No private configuration is created or committed. Firebase credentials and physical OCR/face/PIN acceptance remain open.
 - 2026-10-31: D3-T4 coding: ten tutorial/metering TODO regressions and two DataStore persistence TODO regressions fail first, then pass. Added first-launch spoken tutorial, correlated completion/repeat/skip, persisted completion, delayed camera/session startup, and stable-quad AF/AE using preview coordinates. Full Android JVM/APK/test APK/lint verification passes; physical ten-minute accessibility/focus acceptance still pending. No real-guidance or prior-day completion claimed.
 - 2026-10-31: Continued phone testing exposes a stopped local gateway/missing USB route; implemented `pnpm dev:phone`, automatic forwarding recovery and explicit spoken practice notice. All 13 regressions pass (initial 11 and the notice reproduce failures first; live-mode exclusion already passes); 428 TS cases, recursive typecheck/build and both local scenarios pass. Removed/restored the real USB route and reran two camera-free physical session checks successfully. User confirms Guiding/speech but reports wrong guidance; fixed mock coordinates cannot establish remote recognition. One bounded synthetic live Spark request times out at 5,011 ms; no live phone recognition/whole-task pass. See device report.
 - 2026-10-31: USB reconnect completes the tracking repair's physical verification: six OpenCV, eight safety and two speech checks pass on the installed APK. User reports Connecting during setup; corrected USB forwarding, verified two more camera-free installed-client checks, then observed actual UI hello/ready and 16 audio chunks. Added reusable session diagnostic with strict loopback/no-media guard. All 18 physical checks are separate from real-panel/voice/press acceptance. CI at 70633fe passes both jobs; tasks remain blocked on their remaining acceptance.

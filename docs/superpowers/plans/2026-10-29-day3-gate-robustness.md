@@ -88,12 +88,12 @@ Everything from Days 1–2 still applies, plus:
 - **Keyframer:** the header's `ocrTokens` = tokens normalized to the **uploaded** image, at most 400, text at most 200 chars.
   - For a `screen` (rectified) keyframe, map tokens through the same perspective transform.
 
-- [ ] **Step 1: Implement.**
+- [x] **Step 1: Implement.** Existing Latin/Devanagari OCR, face covering and keyframe token transforms retained; added the missing optional Firebase CI preparation with failing-first privacy/package/overwrite checks. No credential is committed; absent secret still builds the local/mock app.
 - [ ] **Step 2: Check on the device.**
   - Logcat (debug build only) shows token counts, never the text.
   - On the tablet PIN pad scene, 10 digit tokens are found.
   - A face held in view is black in the saved debug JPEG. Save it to app cache only; never upload it while testing.
-- [ ] **Step 3: Commit:** `git commit -m "feat(android): on-device OCR (Latin + Devanagari), face covering, OCR tokens in keyframes"`
+- [x] **Step 3: Commit coding:** existing integration retained; CI completion checkpoint uses `chore(android): prepare private Firebase CI configuration`. Step 2/Firebase setup and prerequisite acceptance remain open.
 
 ### Task D3-T2: PIN gate and two-source agreement (pure Kotlin, then device integration)
 **Files:**

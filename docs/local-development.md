@@ -59,6 +59,16 @@ pnpm -r test
 
 Other machines can use their own Node 24 installation with pnpm 11.10.0. Full tests may remain red for planned skeletons; `docs/progress.md` records which tasks are implemented and which checks remain pending.
 
+## Firebase Android build configuration
+
+D3-T1's CI step reads `GOOGLE_SERVICES_JSON` as base64-encoded Firebase Android configuration. A credential holder downloads the real file for `io.github.fingerpost`, keeps it in ignored `apps/android/app/google-services.json`, and sets the GitHub Actions secret privately. The preparation script checks the package, creates the file with mode 0600 and never prints its contents or overwrites an existing file. If the secret is absent, CI continues the existing Firebase-free local/mock build; this does not establish Firebase authentication acceptance. Local builds already pick up the ignored file when present.
+
+```sh
+base64 -w 0 apps/android/app/google-services.json | gh secret set GOOGLE_SERVICES_JSON
+```
+
+Account/app creation and secret setup remain human-owned. Do not paste configuration or credentials into chat or commit them.
+
 ## Private gateway environment
 
 The root [`.env.example`](../.env.example) contains offline defaults and commented placeholders for the settings currently implemented. Create your private copy from the repository root; `cp -n` preserves an existing `.env`:
