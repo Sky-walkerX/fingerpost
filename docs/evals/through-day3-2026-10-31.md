@@ -2,6 +2,8 @@
 
 The user requests the remaining Day 2 work and development through Day 3. Existing code is retained and checked against the plans. GCP testing remains explicitly deferred; current Spark timeout, tracking performance and unperformed human/device gates are not waived. **Day 2 and Day 3 are not fully accepted.**
 
+**Later coding follow-up:** the subsequent audit's accounting/expiry/deployment findings are repaired and locally validated in [the coding completion checkpoint](day3-coding-completion.md): 470 TS/36 tooling checks and seven local Firestore groups pass. Its changes are held locally, without pushing. Counts and CI links below describe the earlier implementation checkpoint.
+
 ## D3-T4 implementation
 
 - Added a four-instruction spoken first-launch tutorial, including the spec's screen-relative directions. Matching TTS completion advances it; repeat invalidates the old callback, skip finishes it, and stale completions cannot skip a line. Backgrounding stops speech and returning repeats the current instruction.
