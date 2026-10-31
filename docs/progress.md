@@ -40,7 +40,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D2-T7 | Controller, ASR relay, sim relay | B | D2-T6 | blocked | Codex |
 | D2-T8 | Eval harness + labels + baseline | C | D2-T7 | blocked | Codex |
 | D2-T9 | Sim scenes 2/4 + touch relay | C | D1-T6 | blocked | Codex |
-| D2-T10a | Screen tracker + local quad (device) | A | D2-T2 | blocked | Sky-walkerX |
+| D2-T10a | Screen tracker + local quad (device) | A | D2-T2 | blocked | Sky-walkerX / Codex |
 | D2-T10b | Session client + mic + keyframes (device) | A | D2-T1, D2-T7 | blocked | Sky-walkerX |
 | D2-T10c | Guidance engine wiring (device) | A | D2-T4, D2-T10a, D2-T10b | blocked | Sky-walkerX |
 | D2-T10d | Proxy trials (exit check) | C | D2-T10c | blocked | Human |
@@ -111,6 +111,8 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
+
+- D2-T10a (2026-10-31, user retry): wrong green outline appears before speech. `reanchor` prematurely sets TRACKING before 12-inlier validation; six physical OpenCV regressions reproduce four failures/two passes. Implemented ACQUIRING/validated-H gating and candidate/tracking labels; final Android JVM tests, APK/test builds and lint pass. Final physical check/install is unverified: session ended without a result and refreshed `adb devices` inventory has **zero authorized devices**. Requested USB reconnect; do not mark the repair/device task complete or the final APK installed. Local candidate selection and mock fixed coordinates still cannot establish AC-remote identity/alignment. See [device report](evals/day2-device-2026-10-31.md).
 
 - Android acceptance (2026-10-31, resumed): one authorized physical phone connected; thermal state cooled from 3 to 1, and the user confirmed unlocked/non-sensitive practice view. Real launch exposed Android rejecting PinGate's Java-only `(?U)` regex flag. Eight physical instrumentation checks reproduce failure, then all eight pass after portable Unicode-boundary repair. Smaller debug-only ABI packaging resolves `INSTALL_FAILED_INSUFFICIENT_STORAGE` without clearing user data. The fixed app stays alive through 27 tracker/OCR samples and completes `hello`/`ready`; zero audio/keyframes observed. Thermal status returns to 3, with 4–10 FPS log samples; app stopped to cool. Mic/quad/full-loop/TalkBack acceptance remains open. See [actual device evidence](evals/day2-device-2026-10-31.md).
 
@@ -315,6 +317,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-31: User's physical retries now verify actual microphone/keyframe transport: 34 audio chunks/21,760 bytes; six JPEG keyframes/574,040 bytes (three full/three screen); six mock layout/target pairs. Recorded only metadata. This supersedes the earlier zero-upload observation, not recognition/guide-to-press acceptance. User then reports immediate wrong green outline; reproduced premature TRACKING in four of six device OpenCV checks and implemented validity gating. Final native rerun awaits reconnect; no task marked done.
 - 2026-10-31: Actual phone testing found/fixed a PIN-safety initialization crash missed by JDK tests. Eight on-device regressions fail first, then eight pass after replacing unsupported `(?U)` with explicit Unicode boundaries; added two JVM boundary tests. 214 JVM cases, builds/lint and TS typecheck pass; no dependency/protocol change. Reduced debug APK fits after universal update storage rejection. Real camera/OCR and hello/ready run, but mic/frame flow remains unverified and severe thermal throttling returns; stopped the app, retained numeric evidence only. No device task marked complete.
 - 2026-10-31: User requested real Android testing and connected a phone. Current debug build/install and USB gateway forwarding pass; initial severe thermal status prevents a valid performance run. Asked for cooling before camera tests. Future device testing must request connection first and distinguish physical-phone, mock-transport, browser and JVM evidence. [CI run 41115002895](https://github.com/Sky-walkerX/fingerpost/actions/runs/41115002895) passes both jobs at `c17f4ef`; this does not complete phone acceptance.
 - 2026-10-31: Fresh CI at `b751bc0` exposed the web test resolver relying on local protocol build output. Added the existing workspace `source`/SSR conditions to web Vite configuration; all 415 TS cases and `pnpm check:day2` pass with protocol dist safely hidden/restored. Kept the contract test and build-free CI ordering; no test weakened or dependency changed. Remote verification of the repair follows the push.

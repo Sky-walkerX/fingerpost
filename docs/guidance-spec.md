@@ -31,6 +31,7 @@ Rules:
 3. **Update H:** frame-to-frame homography by RANSAC with a 3 px reprojection threshold. **Valid** only with at least 12 inliers and a corner displacement under 25% of quad size.
 4. **Re-anchor** to the server quad whenever a keyframe result arrives. The keyframe's capture-time H is used to carry server polygons into the current frame.
 5. **States:**
+   - A new local/server anchor remains **ACQUIRING** until an optical-flow update passes the existing ≥12-inlier validation. It must not be displayed as valid `TRACKING` or supply a usable H before that check. This is initialization, not evidence that the desired appliance/screen has been identified.
    - `TRACKING`;
    - `DEGRADED`: fewer than 12 inliers for 5 or more consecutive frames; the last good H is kept and the cue "hold the phone steady" is spoken;
    - `LOST`: more than 1 s in DEGRADED; go back to FRAMING.

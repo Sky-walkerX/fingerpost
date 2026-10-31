@@ -134,6 +134,8 @@ fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = 
             if (BuildConfig.DEBUG && current != null) {
                 val performance by current.hands.performance.collectAsStateWithLifecycle()
                 Text(String.format(Locale.ROOT, "%d fps · %d ms", performance.fps, performance.inferenceMs), color = Color.Yellow)
+                if (status.quad != null) Text(if (status.tracking) "Tracking rectangle" else "Screen candidate",
+                    color = if (status.tracking) Color.Green else Color.Yellow)
             }
         }
     }

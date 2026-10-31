@@ -10,15 +10,16 @@ import io.github.fingerpost.safety.UploadGuard
 
 /** Runs the safety boundary on Android's regex engine, without a camera, network or test dependency. */
 class DeviceSafetyRunner : Instrumentation() {
-    private var speechOnly = false
+    private var checkKind: String? = null
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
-        speechOnly = arguments?.getString("check") == "speech"
+        checkKind = arguments?.getString("check")
         start()
     }
 
     override fun onStart() {
-        if (speechOnly) { DeviceSpeechCheck.run(this); return }
+        if (checkKind == "speech") { DeviceSpeechCheck.run(this); return }
+        if (checkKind == "tracking") { DeviceTrackingCheck.run(this); return }
         var passed = 0
         val failures = mutableListOf<String>()
         fun check(name: String, test: () -> Unit) {

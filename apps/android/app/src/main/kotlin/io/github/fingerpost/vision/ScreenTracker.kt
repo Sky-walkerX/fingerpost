@@ -17,7 +17,7 @@ import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
 
-enum class TrackState { NONE, TRACKING, DEGRADED, LOST }
+enum class TrackState { NONE, ACQUIRING, TRACKING, DEGRADED, LOST }
 
 /**
  * guidance-spec §2: KLT features inside the screen quad (hand excluded), RANSAC homography frame to frame,
@@ -26,7 +26,7 @@ enum class TrackState { NONE, TRACKING, DEGRADED, LOST }
 class ScreenTracker {
     var quad: List<Vec2>? = null; private set
     var state = TrackState.NONE; private set
-    val imageToScreen: Homography? get() = quad?.let { Homography.imageToScreen(it) }
+    var imageToScreen: Homography? = null; private set
 
     private var prev: Mat? = null
     private var prevPts: MatOfPoint2f? = null
@@ -36,7 +36,9 @@ class ScreenTracker {
     /** Replaces the quad (local estimate or server `layout.screenQuad`); features are re-detected next frame. */
     fun reanchor(newQuad: List<Vec2>) {
         quad = newQuad
-        state = TrackState.TRACKING
+        imageToScreen = null
+        // A stable contour or server anchor proposes geometry; only inlier-backed motion validates tracking.
+        state = TrackState.ACQUIRING
         badFrames = 0
         prevPts?.release()
         prevPts = null
@@ -44,6 +46,7 @@ class ScreenTracker {
 
     fun reset() {
         quad = null
+        imageToScreen = null
         state = TrackState.NONE
         prev?.release()
         prev = null
@@ -101,9 +104,9 @@ class ScreenTracker {
                     val candidate = moved.toArray().map { Vec2(it.x, it.y) }
                     val size = minOf((current[1] - current[0]).length, (current[3] - current[0]).length)
                     val valid = candidate.all { it.x.isFinite() && it.y.isFinite() } &&
-                        candidate.indices.all { (candidate[it] - current[it]).length < size * 0.25 } &&
-                        Homography.imageToScreen(candidate) != null
-                    if (valid) { quad = candidate; inlierTo = inliers }
+                        candidate.indices.all { (candidate[it] - current[it]).length < size * 0.25 }
+                    val transform = if (valid) Homography.imageToScreen(candidate) else null
+                    if (transform != null) { quad = candidate; imageToScreen = transform; inlierTo = inliers }
                     corners.release(); moved.release()
                 }
             }
@@ -123,7 +126,7 @@ class ScreenTracker {
 
     private fun badFrame(nowMs: Long) {
         badFrames++
-        if (state == TrackState.TRACKING && badFrames >= DEGRADE_AFTER_FRAMES) {
+        if ((state == TrackState.ACQUIRING || state == TrackState.TRACKING) && badFrames >= DEGRADE_AFTER_FRAMES) {
             state = TrackState.DEGRADED
             degradedSince = nowMs
         } else if (state == TrackState.DEGRADED && nowMs - degradedSince >= LOST_AFTER_MS) state = TrackState.LOST
