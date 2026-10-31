@@ -296,6 +296,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
 - [ ] **Step 4: Commit:** `git commit -m "feat(gateway): quotas, spend kill switch, authenticated sessions"`
 
 ### Task D3-T8 (device): attestation client, Firebase anonymous auth, authenticated socket
+**Implementation update (2026-10-31):** retained the existing Firebase/Keystore client and added the missing proactive socket refresh at the token's original 12-minute cache deadline; reconnecting does not extend that deadline. Local WebSocket regression fails before repair, then passes. Actual Firebase configuration, hardware tier and live auth acceptance remain unverified.
 **Files:** create `app/src/main/kotlin/io/github/fingerpost/session/Auth.kt`. Modify `SessionClient.kt`.
 
 **Requirements:**
@@ -322,10 +323,10 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 - **Base URL:** HTTP calls use the gateway base, `BuildConfig.GATEWAY_URL` with `ws`→`http` and `wss`→`https`.
 - **Signing digest for the server:** run `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android` and take the SHA256 line → remove colons → lowercase. Put it in the dev `SIGNING_DIGESTS`. The release keystore digest is added on Day 6.
 
-- [ ] **Step 1: Implement.**
+- [x] **Step 1: Implement.** Existing client retained; proactive refresh, timer cancellation, accurate closed state and response bounds added. Full Android tests/build/lint pass; no actual Firebase/hardware result is inferred.
 - [ ] **Step 2: Check locally.** Run the gateway with `MODEL_MODE=live AUTH_REQUIRED=true SESSION_SECRET=… SIGNING_DIGESTS=<debug digest>`, plus real Firebase credentials (`gcloud auth application-default login`).
   - The app connects, and logs `tier=hardware`. An emulator only gets in with `ALLOW_SOFTWARE_ATTESTATION=true` added locally (tier `software`); never set that on Cloud Run.
-- [ ] **Step 3: Commit:** `git commit -m "feat(android): Key Attestation + Firebase anonymous auth for authenticated sessions"`
+- [x] **Step 3: Commit coding:** `git commit -m "feat(android): Key Attestation + Firebase anonymous auth for authenticated sessions"`. Step 2 remains open.
 
 ### Task D3-T9: deploy with auth on
 - [ ] **Secrets:**

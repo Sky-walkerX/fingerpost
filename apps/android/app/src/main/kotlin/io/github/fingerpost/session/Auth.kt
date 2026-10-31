@@ -33,7 +33,7 @@ class Auth(private val context: Context, private val baseUrl: String = BuildConf
     private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
     private var token: String? = null
-    private var expiresAt = 0L
+    @Volatile private var expiresAt = 0L
 
     suspend fun token(): String? = mutex.withLock {
         if (token != null && System.currentTimeMillis() < expiresAt) return token
@@ -43,6 +43,9 @@ class Auth(private val context: Context, private val baseUrl: String = BuildConf
 
     /** Call on `error{code:auth_expired}` or a 4401 close. */
     suspend fun invalidate() = mutex.withLock { token = null }
+
+    /** A socket reconnect must retain the token's original refresh deadline. */
+    fun refreshAfterMs(): Long = (expiresAt - System.currentTimeMillis()).coerceAtLeast(0)
 
     private suspend fun fetch(): String? {
         if (FirebaseApp.getApps(context).isEmpty()) return null
@@ -55,6 +58,7 @@ class Auth(private val context: Context, private val baseUrl: String = BuildConf
             val chain = attest(nonce)
             val body = json.encodeToString(AttestRequest.serializer(), AttestRequest(challenge.challengeId, chain, idToken))
             val issued = json.decodeFromString<AttestResponse>(post("/v1/auth/attest", body))
+            require(issued.token.isNotBlank() && issued.expiresIn in 1..900 && issued.tier in setOf("hardware", "software"))
             expiresAt = System.currentTimeMillis() + minOf(issued.expiresIn, 12 * 60) * 1000L
             if (BuildConfig.DEBUG) Log.i(TAG, "tier=${issued.tier}")
             issued.token

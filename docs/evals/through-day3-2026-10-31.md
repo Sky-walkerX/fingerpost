@@ -32,6 +32,14 @@ pnpm -r typecheck
 
 These use real cryptographic signatures and synthetic certificate chains/local sockets. They do not replace the required human Google-root fingerprint comparison or actual Firebase/hardware checks. The original source predates this continuation; its initial red history is unavailable and is not invented.
 
+## D3-T8 authenticated socket refresh
+
+The existing Firebase/Keystore client cached a token for 12 minutes but did not refresh an already-connected socket. Added a renewal job for authenticated connections, using the Auth cache's original deadline so reconnects cannot extend it. The timer is canceled on connection loss, explicit reconnect and close; close publishes disconnected. Auth responses must contain a nonempty token, the expected tier and a positive lifetime within 900 seconds.
+
+Two JVM tests use an actual local RFC 6455 upgrade fixture and synthetic tokens: renewal initially fails while the unauthenticated development case already passes. After repair, both pass, including new Authorization data on the renewed connection, no renewal in unauthenticated mode and no requests after close. Test-only deadlines are shortened; production retains the plan's 12-minute refresh/15-minute token values. No Firebase service or device key is simulated as an acceptance pass.
+
+Final Android checkpoint: **166 guidance +53 protocol +9 app =228 JVM cases**, zero failures/errors/skips; debug APK, test APK and lint pass (**0 errors, 7 advisories**). Physical Firebase/hardware attestation/token refresh still needs real setup and remains open.
+
 ## Remaining external gates
 
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.

@@ -41,6 +41,7 @@ class SessionClient(
     private val token: suspend () -> String? = { null },
     private val url: String = BuildConfig.GATEWAY_URL + "/v1/session",
     private val onAuthExpired: suspend () -> Unit = {},
+    private val refreshAfterMs: () -> Long = { 12 * 60_000L },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val http = OkHttpClient.Builder().pingInterval(15, TimeUnit.SECONDS).build()
@@ -53,6 +54,7 @@ class SessionClient(
     @Volatile private var closed = false
     private var backoffMs = 500L
     private var reconnect: Job? = null
+    private var refresh: Job? = null
 
     fun start() {
         closed = false
@@ -74,6 +76,11 @@ class SessionClient(
             backoffMs = 500L
             mutableConnected.value = true
             webSocket.send(encodeClientMessage(hello()))
+            refresh?.cancel()
+            if (response.request.header("Authorization") != null) refresh = scope.launch {
+                delay(refreshAfterMs().coerceAtLeast(0))
+                if (!closed && webSocket === socket) reconnect()
+            }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -95,6 +102,7 @@ class SessionClient(
     private fun scheduleReconnect(from: WebSocket, authExpired: Boolean = false) {
         if (from !== socket) return
         mutableConnected.value = false
+        refresh?.cancel()
         socket = null
         if (closed) return
         val wait = (backoffMs * (0.75 + Random.nextDouble() * 0.5)).toLong()
@@ -113,6 +121,7 @@ class SessionClient(
 
     fun reconnect() {
         reconnect?.cancel()
+        refresh?.cancel()
         val previous = socket
         socket = null
         mutableConnected.value = false
@@ -123,6 +132,8 @@ class SessionClient(
     fun close() {
         closed = true
         reconnect?.cancel()
+        refresh?.cancel()
+        mutableConnected.value = false
         socket?.close(1000, null)
         socket = null
         scope.cancel()

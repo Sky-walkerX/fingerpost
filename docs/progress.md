@@ -57,7 +57,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D3-T5 | Key Attestation verifier | B | D2-T7 | todo | |
 | D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | blocked | Codex |
 | D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | todo | |
-| D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX |
+| D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX / Codex |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
 
@@ -324,6 +324,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-31: D3-T8 repair: authenticated sockets now renew at the cached token's original 12-minute deadline, cancel renewal on disconnect/close, and report disconnected after close. Retained Firebase/Keystore implementation; bounded issued-token fields before use. A real local JVM WebSocket fixture reproduces missing renewal (one fail/one pass), then both pass; 228 Android JVM cases, APK/test APK builds and lint pass. These synthetic-token transport tests do not claim Firebase or hardware attestation on the phone.
 - 2026-10-31: D3-T6 retains the implemented challenge/auth routes and hardens JWT verification: require nonempty subject/key id, issued/expiry timestamps, no future issue time and at most the specified 900-second life. Six failing/two passing new synthetic cases become eight passing; 54 selected Day 3 auth/attestation/quota/revocation cases and recursive typecheck pass. Existing tests retained. Human root review/Firebase/device/cloud acceptance remain open.
 - 2026-10-31: D3-T1 retains existing OCR/face/keyframe integration and adds the missing optional Firebase CI configuration step. Four failing-first Python tests verify decoding/package validation, mode 0600, absent-secret behavior and protection of existing files; all 35 tooling checks pass. No private configuration is created or committed. Firebase credentials and physical OCR/face/PIN acceptance remain open.
 - 2026-10-31: D3-T4 coding: ten tutorial/metering TODO regressions and two DataStore persistence TODO regressions fail first, then pass. Added first-launch spoken tutorial, correlated completion/repeat/skip, persisted completion, delayed camera/session startup, and stable-quad AF/AE using preview coordinates. Full Android JVM/APK/test APK/lint verification passes; physical ten-minute accessibility/focus acceptance still pending. No real-guidance or prior-day completion claimed.

@@ -83,6 +83,7 @@ class GuidanceEngine(
         hello = { Hello(newId(), nowMs(), BuildConfig.VERSION_NAME, PROTOCOL, io.github.fingerpost.protocol.Locale.EN,
             RequestedMode.GUIDE, Privacy.NORMAL, Caps(simRunId = simRunId)) },
         token = auth::token,
+        refreshAfterMs = auth::refreshAfterMs,
         onAuthExpired = { auth.invalidate() },
     )
     private val guard: UploadGuard = UploadGuard(
