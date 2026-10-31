@@ -35,6 +35,7 @@ Everything from Days 1–2 still applies, plus:
   - Row tolerance is `0.6 × median token height`; column tolerance is `0.9 × median token height`.
   - The release gate is PIN/payment recall ≥ 98% (local gate OR server), measured on 150 or more examples.
 - **Session JWT:** HS256, issuer `fingerpost-gateway`, audience `fp.v1`, TTL 900 s. Claims: `sub` = Firebase anonymous uid, `kid` = attested key id (SHA-256 of the SPKI, hex), `tier` ∈ {hardware, software}.
+  - The verified `exp` bounds the established socket too: idle deadline timer, ingress/queue/output checks, 4401 close and disposal. Late model output cannot extend authorization. Three failing-first regressions cover these paths.
 - **Quota:** 30 tasks per UTC day (hardware), 10 (software). A task is one goal's first locate.
   - Spend cap: `DAILY_CAP_USD` (default 12).
   - Kill switch: Firestore `config/runtime.cloudEnabled`, cached 30 s.

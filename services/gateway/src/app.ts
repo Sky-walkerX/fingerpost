@@ -16,7 +16,7 @@ import { probeAsrConnection, type AsrTimings } from './debug/asr-probe.ts';
 import { registerRegionRoutes } from './debug/region.ts';
 import { ChallengeStore } from './auth/challenges.ts';
 import { registerAuthRoutes, type AuthDeps } from './auth/routes.ts';
-import { verifySessionToken } from './auth/tokens.ts';
+import { verifySessionGrant } from './auth/tokens.ts';
 import { loadGoogleRoots } from './auth/google-roots.ts';
 import { MemoryFlagStore, MemoryQuotaStore, type FlagStore, type QuotaStore } from './quota/ports.ts';
 import { DEFAULT_QUOTA, QuotaService } from './quota/service.ts';
@@ -83,20 +83,47 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
     const early: Array<[Buffer, boolean]> = [];
     let handle: ((data: Buffer, isBinary: boolean) => void) | null = null;
     let dispose: (() => void) | null = null, closed = false;
-    socket.on('message', (data: Buffer, isBinary: boolean) => (handle ? handle(data, isBinary) : early.push([data, isBinary])));
-    socket.on('close', () => { closed = true; dispose?.(); });
+    let expiresAtMs: number | null = null, timer: ReturnType<typeof setTimeout> | undefined;
+    let releaseHandshake = () => {};
+    const stop = () => {
+      closed = true;
+      clearTimeout(timer);
+      early.length = 0;
+      releaseHandshake();
+      dispose?.();
+    };
+    const expire = () => {
+      if (closed) return;
+      stop();
+      socket.close(4401, 'auth expired');
+    };
+    const expired = () => {
+      if (!closed && expiresAtMs !== null && now() >= expiresAtMs) expire();
+      return closed;
+    };
+    socket.on('message', (data: Buffer, isBinary: boolean) => {
+      if (!expired()) { if (handle) handle(data, isBinary); else early.push([data, isBinary]); }
+    });
+    socket.on('close', stop);
     void (async () => {
       let claims;
       if (cfg.AUTH_REQUIRED) {
         const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
-        claims = token ? await verifySessionToken(secret!, token, now()) : null;
-        if (!claims) { socket.close(4401, 'auth required'); return; }
+        const grant = token ? await verifySessionGrant(secret!, token, now()) : null;
+        if (!grant) { stop(); socket.close(4401, 'auth required'); return; }
+        claims = grant.claims;
+        expiresAtMs = grant.expiresAtMs;
+        if (expired()) return;
+        timer = setTimeout(expire, Math.max(0, expiresAtMs - now()));
+        timer.unref();
       }
       if (closed) return;
       let ready = false, helloQueued = false;
       let markReady!: () => void;
       const handshake = new Promise<void>((resolve) => { markReady = resolve; });
+      releaseHandshake = markReady;
       const session = createSessionController({ send: (m) => {
+        if (expired()) return;
         if (m.type === 'ready') { ready = true; markReady(); }
         socket.send(JSON.stringify(m));
         if (m.type === 'ready' && !live && o.mockNotice) socket.send(JSON.stringify({
@@ -109,7 +136,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
       let queue: Promise<void> = Promise.resolve();
       let generation = 0;
       handle = (data, isBinary) => {
-        if (closed) return;
+        if (expired()) return;
         req.log.debug({ sessionId: hub.id, bytes: data.length, binary: isBinary }, 'ws message');
         let isHello = false;
         if (!isBinary && data.length <= LIMITS.textBytes) {
@@ -122,7 +149,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
             const abortedIn = generation;
             // An early abort must wait for hello, but never for the queued model work after it.
             queue = (ready ? Promise.resolve() : handshake).then(() => {
-              if (closed || abortedIn !== generation) return;
+              if (expired() || abortedIn !== generation) return;
               return hub.onText(data.toString('utf8'));
             });
             return;
@@ -130,7 +157,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
         }
         const receivedIn = generation;
         queue = queue.then(() => {
-          if (closed || (receivedIn !== generation && !(isHello && !ready))) return;
+          if (expired() || (receivedIn !== generation && !(isHello && !ready))) return;
           return isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'));
         });
       };

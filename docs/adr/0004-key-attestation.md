@@ -14,6 +14,7 @@ We need to stop scripts from draining the shared API budget. Firebase App Check'
    - `attestationApplicationId`: package `io.github.fingerpost` and our signing-cert SHA-256;
    - security level, TEE or StrongBox.
 4. The gateway issues a 15-minute JWT bound to the Firebase anonymous uid and the key.
+   The signed expiry is also the WebSocket deadline: close with 4401, reject queued/new work and suppress late results. An idle socket expires too. The app renews at 12 minutes; server enforcement does not depend on the app cooperating.
 5. Software-only attestation still gets a token, with a lower quota. This keeps emulators and older devices working.
 
 ## Roots
