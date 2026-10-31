@@ -282,7 +282,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
   - Returns the total.
 - **`utcDay(ms)`:** `new Date(ms).toISOString().slice(0, 10)`.
 
-- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. Expected: 105 pass.
+- [x] **Step 1: Verify retained implementation and repair boundaries.** Existing quota/socket code retained. Four of six new runtime-flag regressions fail first; explicit boolean `true` is now required to spend. Six additional emulator-configuration tests fail at the TODO, then pass. Local demo Firestore verifies real Admin SDK transactions, UTC reset, task limits, spend cap/kill switch and deny-all client rules. See [continuation evidence](../../evals/through-day3-2026-10-31.md).
 - [ ] **Step 2: Firestore rules.** Create `infra/firestore.rules`:
   ```
   rules_version = '2';
@@ -293,7 +293,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
   - **Human:** deploy with `npx firebase-tools@14 deploy --only firestore:rules --project fingerpost-dev` (CLI version per `npm view firebase-tools version`, pinned).
   - **Human:** create the Firestore database (Native mode) in the ADR-0003 region first.
 - [ ] **Step 3: Kill-switch document.** Write `config/runtime` as `{cloudEnabled: true}` once (console). The GCP budget alert → Pub/Sub → a job that sets it to false is Day 6 (runbook).
-- [ ] **Step 4: Commit:** `git commit -m "feat(gateway): quotas, spend kill switch, authenticated sessions"`
+- [x] **Step 4: Commit coding:** `git commit -m "feat(gateway): quotas, spend kill switch, authenticated sessions"`. Rules/config are present and locally exercised; production database/rules/runtime setup in Steps 2–3 stays open. Emulator results do not establish cloud or Firebase/hardware acceptance.
 
 ### Task D3-T8 (device): attestation client, Firebase anonymous auth, authenticated socket
 **Implementation update (2026-10-31):** retained the existing Firebase/Keystore client and added the missing proactive socket refresh at the token's original 12-minute cache deadline; reconnecting does not extend that deadline. Local WebSocket regression fails before repair, then passes. Actual Firebase configuration, hardware tier and live auth acceptance remain unverified.

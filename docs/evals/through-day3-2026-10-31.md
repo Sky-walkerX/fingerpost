@@ -40,6 +40,22 @@ Two JVM tests use an actual local RFC 6455 upgrade fixture and synthetic tokens:
 
 Final Android checkpoint: **166 guidance +53 protocol +9 app =228 JVM cases**, zero failures/errors/skips; debug APK, test APK and lint pass (**0 errors, 7 advisories**). Physical Firebase/hardware attestation/token refresh still needs real setup and remains open.
 
+## D3-T7 quota persistence and kill switch
+
+The retained Firestore flag reader allowed a missing/malformed `cloudEnabled` value to enable spending. Four new regressions fail before repair; all six pass after requiring explicit boolean `true`. Six additional failing-first guards restrict the integration harness to the demo project and exact loopback emulator endpoint before client creation.
+
+Added `infra/firebase.local.json` and `check:firestore`. A fresh **Firestore emulator** with the real Admin SDK passes six integration groups: fail-closed flags, concurrent task transactions, UTC reset, task quota, persisted daily-spend kill switch and unauthenticated client rejection under the production deny-all rules. This makes no model/cloud requests and requires no account. Initial harness runs failed; inspection identified unsupported custom credentials in one attempt. Corrected to supported emulator SDK initialization with metadata probing disabled; the final command exits 0:
+
+```sh
+JAVA_HOME="$HOME/.local/share/fingerpost/jdk-21" npm exec --yes --package=firebase-tools@14.27.0 -- firebase emulators:exec --project demo-fingerpost --config infra/firebase.local.json --only firestore 'pnpm --filter @fingerpost/gateway check:firestore'
+```
+
+Use the repository's Node 24/pnpm 11.10/JDK 21 paths. Emulator logs are ignored. Real database creation, deployed rules, explicit runtime enablement and authenticated-cloud acceptance remain unperformed; T7 stays blocked.
+
+## Connected phone checkpoint
+
+Updated Day 3 APK and instrumentation APK installed successfully without clearing app data. Actual camera-free checks pass on the connected phone: **six tracking, two TTS completion, two WebSocket/ready and eight safety cases**. The first session attempt failed because the laptop gateway had stopped; restarting the explicit mock-only gateway and rerunning passes. These are 18 existing native diagnostic cases, not new human acceptance. They do not exercise real recognition, onboarding gestures/audibility or a ten-minute TalkBack session. On reconnect the phone reports thermal status 1 (light); no performance acceptance is inferred.
+
 ## Remaining external gates
 
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.

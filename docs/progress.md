@@ -56,7 +56,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | blocked | Sky-walkerX / Codex |
 | D3-T5 | Key Attestation verifier | B | D2-T7 | todo | |
 | D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | blocked | Codex |
-| D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | todo | |
+| D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | blocked | Codex |
 | D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX / Codex |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
@@ -419,3 +419,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-30: User requested internet appliance photos. Downloaded/reviewed ten licensed Commons JPEGs (two washer, one microwave, three induction, four AC controllers); complete local attribution, unique hashes, JPEG decode/header and Git-ignore checks pass. No real image bytes or source/device labels committed. Two full live smoke attempts fail before the first overlay; isolated first-image Spark/SAM calls pass, instrumented full retry times out at Spark/sample 1. Further attempts stopped under §9; no completed smoke report or ≥8/10 correctness claim. See the public-photo report. T5 remains blocked; application code and acceptance thresholds unchanged.
 
 - 2026-10-30: User explicitly requested checking the Meta/Spark timeout. Controlled same-image diagnostics with a temporary 60-second bound and zero retries both return HTTP 200: current request 22,211 ms (27 elements, 3,033 reasoning tokens), explicit low reasoning 10,696 ms (22 elements, 1,229 reasoning tokens). Models endpoint also returns 200. A valid response can exceed the production 15-second deadline; API access works. Single-sample timing/element counts do not establish accuracy or percentiles. No production setting, prompt, version or acceptance status changed; the next action is full-corpus reasoning/quality evaluation before adoption.
+
+- 2026-10-31: D3-T7 persistence repair: four of six new flag regressions fail before enforcing explicit `cloudEnabled: true`; six emulator-host guards fail at TODO then pass. All 34 selected quota/auth/flag cases and recursive typecheck pass. Fresh loopback demo Firestore with the real Admin SDK passes six integration groups (concurrent transactions, UTC reset, task/spend limits, persisted kill switch, client rules denied); zero cloud/model calls. Initial harness setup failures corrected after local SDK inspection; final emulator command exits 0. Production database/rules/runtime setup and root/Firebase acceptance remain open. Updated Day 3 APK has 18 passing actual camera-free diagnostic cases; human tutorial/TalkBack acceptance still pending.

@@ -34,7 +34,7 @@ export class FirestoreFlagStore implements FlagStore {
   constructor(db: Firestore) { this.db = db; }
   async getCloudEnabled(): Promise<boolean> {
     const snap = await this.db.collection('config').doc('runtime').get();
-    return (snap.get('cloudEnabled') as boolean | undefined) ?? true;
+    return snap.get('cloudEnabled') === true;
   }
   async setCloudEnabled(enabled: boolean, reason: string): Promise<void> {
     await this.db.collection('config').doc('runtime').set({ cloudEnabled: enabled, reason, updatedAt: FieldValue.serverTimestamp() }, { merge: true });

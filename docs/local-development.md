@@ -122,6 +122,16 @@ podman --root "$HOME/.local/share/fingerpost/containers" --runroot "/run/user/$(
 
 In another terminal, `curl --fail http://localhost:8080/healthz` should report status `ok`, version `dev` and protocol `fp.v1`. This is a local mock-model check and makes no paid model calls.
 
+## Local Firestore persistence checks (Day 3)
+
+With Node 24, pnpm 11.10 and JDK 21 active, run from the repository root:
+
+```sh
+npm exec --yes --package=firebase-tools@14.27.0 -- firebase emulators:exec --project demo-fingerpost --config infra/firebase.local.json --only firestore 'pnpm --filter @fingerpost/gateway check:firestore'
+```
+
+This starts a fresh loopback-only demo emulator and checks actual Admin SDK transactions, quotas, daily reset, spend kill switch and deny-all client rules. No Firebase login, billable project, provider key or deployment is needed. The harness refuses any other project/endpoint before client creation. It does not load `.env`. Emulator logs are ignored. This verifies local persistence behavior; real Firebase authentication, hardware attestation and deployed rules still need their own acceptance.
+
 ## Day 1 live evaluation and deployment
 
 Live evaluation is still blocked on the human setup in T0. Configure the ignored local environment privately; do not paste keys into chat or commit them. Put at least ten panel JPEGs in ignored `evals/datasets/day1/`, and a 1024×576 crop of at most 409,600 bytes in `evals/datasets/private/day1/latency-sample.jpg`. Leave the tracked synthetic latency placeholder unchanged. These header checks read dimensions; they do not fully decode or visually validate a photo.

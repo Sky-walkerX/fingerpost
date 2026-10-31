@@ -16,6 +16,10 @@ coverage/
 
 # local diagnostic scripts
 __pycache__/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
 # android
 .gradle/
