@@ -45,7 +45,7 @@ test('a denied task may retry after the gate opens', async () => {
 test('locale, image, pixel box, usage and conservative confidence reach the model/result', async () => {
   const models = mockModels(), parse = vi.spyOn(models, 'parseScreen'), segment = vi.spyOn(models, 'segmentByBox');
   const usage: Usage[] = [];
-  const { p, sent } = run({ models, onUsage: (u) => usage.push(u) });
+  const { p, sent } = run({ models, onUsage: (u) => { usage.push(u); } });
   p.setLocale('hi'); p.onGoal('start'); await p.onKeyframe(kf('locate'), jpeg);
   expect(parse).toHaveBeenCalledWith({ bytes: jpeg, mime: 'image/jpeg' }, { locale: 'hi', goal: 'start' });
   expect(segment).toHaveBeenCalledWith({ bytes: jpeg, mime: 'image/jpeg', width: 1000, height: 500 },

@@ -42,8 +42,14 @@ export async function checkFirestore() {
     assert.deepEqual(await quota.startTask('synthetic-other-user', 'hardware'), { ok: false, code: 'cloud_paused' });
     const clientRead = await fetch(`http://127.0.0.1:8085/v1/projects/${projectId}/databases/(default)/documents/config/runtime`);
     assert.equal(clientRead.status, 403);
-    console.log(JSON.stringify({ emulatorOnly: true, checks: 6, passed: 6, transactions: true,
-      utcReset: true, quota: true, spendKillSwitch: true, clientRulesDenied: true, cloudCalls: 0 }));
+    await flags.setCloudEnabled(true, 'synthetic failure check');
+    const failingQuota = new QuotaService({ incrementTasks: (uid, date) => store.incrementTasks(uid, date),
+      addSpend: async () => { throw new Error('synthetic storage failure'); } }, flags);
+    await assert.rejects(failingQuota.recordUsage({ kind: 'sam_image', images: 1 }));
+    assert.equal(await flags.getCloudEnabled(), false);
+    assert.deepEqual(await failingQuota.startTask('synthetic-failure-user', 'hardware'), { ok: false, code: 'cloud_paused' });
+    console.log(JSON.stringify({ emulatorOnly: true, checks: 7, passed: 7, transactions: true,
+      utcReset: true, quota: true, spendKillSwitch: true, clientRulesDenied: true, accountingFailurePaused: true, cloudCalls: 0 }));
   } finally { await deleteApp(app); }
 }
 

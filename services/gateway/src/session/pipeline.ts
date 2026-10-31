@@ -18,7 +18,7 @@ export interface PipelineDeps {
   send: (m: ServerMessage) => void;
   now?: () => number;
   /** Called after every billed model call (Day 3: spend ledger). */
-  onUsage?: (u: Usage) => void;
+  onUsage?: (u: Usage) => void | Promise<void>;
   /** Called once per new goal before its first locate (Day 3: daily quota + kill switch). */
   beforeTask?: TaskGate;
   /** The kill switch, checked (cached) before every billed keyframe, not only at task start. */
@@ -156,9 +156,9 @@ export class SessionPipeline {
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
     const parse = this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
-      .then((result) => { this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
+      .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
     const screen = h.kind === 'full' ? this.d.models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
-      .then((result) => { this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
+      .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
     const result = await whileActive(Promise.all([parse, screen]), signal);
     if (result === CANCELLED || signal.aborted) return;
     const [parsed, screenMask] = result;
@@ -199,7 +199,7 @@ export class SessionPipeline {
     const mask = await whileActive(this.d.models.segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
-    }).then((result) => { this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
+    }).then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
     if (mask === CANCELLED || signal.aborted) return;
     const refined = mask.polygon && (coordinates ? coordinates.toScreen(mask.polygon) : mask.polygon);
     const polygon = refined || element.polygon;

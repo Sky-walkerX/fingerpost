@@ -24,7 +24,7 @@ const within50ms = <T>(promise: Promise<T>) => new Promise<T>((resolve, reject) 
 });
 function pipeline(models = mockModels()) {
   const sent: ServerMessage[] = [], usage: Usage[] = [];
-  const p = new SessionPipeline({ models, send: (m) => { ServerMessage.parse(m); sent.push(m); }, onUsage: (value) => usage.push(value) });
+  const p = new SessionPipeline({ models, send: (m) => { ServerMessage.parse(m); sent.push(m); }, onUsage: (value) => { usage.push(value); } });
   return { p, sent, usage };
 }
 

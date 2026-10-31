@@ -38,6 +38,7 @@ Everything from Days 1–2 still applies, plus:
 - **Quota:** 30 tasks per UTC day (hardware), 10 (software). A task is one goal's first locate.
   - Spend cap: `DAILY_CAP_USD` (default 12).
   - Kill switch: Firestore `config/runtime.cloudEnabled`, cached 30 s.
+  - Accounting failure pauses cloud work and attempts persisted disablement; reconcile spend before restarting the gateway. Await accounting before publishing billed results. Stale enable reads cannot override a local pause.
 - **Fail closed in live mode:** `AUTH_REQUIRED=false` with `MODEL_MODE=live` is rejected unless `ALLOW_UNAUTHENTICATED_LIVE=true` (pre-auth dev deploys only). Software attestation is off by default in live (`ALLOW_SOFTWARE_ATTESTATION` defaults to `MODEL_MODE !== 'live'`). The kill switch applies to unauthenticated sessions too.
 - **Attestation:** package `io.github.fingerpost`.
   - Signing digests are SHA-256 of the signing certificate as lowercase hex, from `keytool -list -v`, with colons removed and lowercased.
@@ -280,6 +281,7 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
   - `addSpend(day, costMicros(u))`;
   - if the total is ≥ the cap, `flags.setCloudEnabled(false, 'daily cap reached (<total> µ$)')` and set the cache to false.
   - Returns the total.
+  - On ledger/flag-write failure, latch the current gateway off, attempt a persisted disable and report a content-free `cloud_paused`; no subsequent target/model/ASR work is accepted by that failed session.
 - **`utcDay(ms)`:** `new Date(ms).toISOString().slice(0, 10)`.
 
 - [x] **Step 1: Verify retained implementation and repair boundaries.** Existing quota/socket code retained. Four of six new runtime-flag regressions fail first; explicit boolean `true` is now required to spend. Six additional emulator-configuration tests fail at the TODO, then pass. Local demo Firestore verifies real Admin SDK transactions, UTC reset, task limits, spend cap/kill switch and deny-all client rules. See [continuation evidence](../../evals/through-day3-2026-10-31.md).

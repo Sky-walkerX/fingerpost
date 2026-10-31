@@ -13,7 +13,7 @@ function setup(mask: Polygon | null = screen) {
   models.segmentByText = vi.fn(async () => ({ polygon: mask, confidence: 0.95, latencyMs: 0 }));
   models.segmentByBox = vi.fn(async () => ({ polygon: target, confidence: 0.9, latencyMs: 0 }));
   const sent: ServerMessage[] = [], usage: string[] = [];
-  const pipeline = new SessionPipeline({ models, send: (m) => { ServerMessage.parse(m); sent.push(m); }, onUsage: (u) => usage.push(u.kind) });
+  const pipeline = new SessionPipeline({ models, send: (m) => { ServerMessage.parse(m); sent.push(m); }, onUsage: (u) => { usage.push(u.kind); } });
   pipeline.onGoal('start'); return { models, sent, usage, pipeline };
 }
 const near = (actual: Polygon, expected: Polygon) => {

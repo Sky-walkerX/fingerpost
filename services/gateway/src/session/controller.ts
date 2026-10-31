@@ -19,14 +19,24 @@ export interface ControllerDeps {
 export function createSessionController(d: ControllerDeps): { hub: SessionHub; dispose(): void } {
   let disposed = false, relay: AsrRelay | null = null, unsubscribe: (() => void) | undefined;
   let turn = 0, audioBytes = 0, audioEnded = false, awaitingEnd = false;
-  let keywords: string[] = [];
+  let keywords: string[] = [], accountingFailed = false;
   const base = () => ({ id: ulid(), ts: d.now?.() ?? Date.now() });
   const send = (message: ServerMessage) => {
     if (disposed) return;
     if (message.type === 'layout') keywords = message.elements.filter((element) => element.role !== 'text').map(({ label }) => label);
     d.send(message);
   };
-  const usage = (u: Parameters<QuotaPort['recordUsage']>[0]) => { void d.quota?.recordUsage(u).catch(() => {}); };
+  const usage = (u: Parameters<QuotaPort['recordUsage']>[0]): Promise<void> | void => {
+    if (!d.quota) return;
+    return d.quota.recordUsage(u).then(() => {}, () => {
+      if (!accountingFailed) {
+        accountingFailed = true;
+        closeRelay(); pipeline.abort();
+        send({ ...base(), type: 'error', code: 'cloud_paused', ...SPOKEN_ERRORS.cloud_paused });
+      }
+      throw new Error('Spend accounting unavailable');
+    });
+  };
   // Authenticated sessions spend a daily task; unauthenticated (dev) sessions still obey the kill switch.
   const quota = d.quota, claims = d.claims;
   const beforeTask = quota && (claims
@@ -57,6 +67,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     },
     async onMessage(message, payload) {
       if (disposed) return;
+      if (accountingFailed && message.type !== 'abort' && message.type !== 'audio.end') return;
       switch (message.type) {
         case 'goal': case 'answer': closeRelay(); pipeline.onGoal(message.text); break;
         case 'audio': {
@@ -93,12 +104,20 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
                 final(text) {
                   if (!active()) return;
                   if (!text.trim() || text.length > 500) { error(); return; }
-                  usage({ kind: 'asr', seconds: audioBytes / 32_000 });
+                  const seconds = audioBytes / 32_000;
                   const ended = audioEnded;
                   closeRelay();
                   awaitingEnd = !ended;
-                  send({ ...base(), type: 'transcript', text, final: true });
-                  pipeline.onGoal(text);
+                  const completedTurn = turn;
+                  const publish = () => {
+                    if (disposed || accountingFailed || completedTurn !== turn) return;
+                    send({ ...base(), type: 'transcript', text, final: true });
+                    pipeline.onGoal(text);
+                  };
+                  const recorded = usage({ kind: 'asr', seconds });
+                  // The rejection path already pauses the controller and reports a content-free error.
+                  if (recorded) void recorded.then(publish, () => {});
+                  else publish();
                 },
                 error,
               });

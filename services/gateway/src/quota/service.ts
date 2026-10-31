@@ -17,6 +17,8 @@ export type { StartResult };
 export const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 export class QuotaService implements QuotaPort {
+  private accountingFailed = false;
+  private pauseGeneration = 0;
   private cache: { value: boolean; at: number } | null = null;
   private readonly store: QuotaStore;
   private readonly flags: FlagStore;
@@ -30,9 +32,12 @@ export class QuotaService implements QuotaPort {
   }
 
   async cloudEnabled(): Promise<boolean> {
+    if (this.accountingFailed) return false;
     const now = this.now();
     if (this.cache && now - this.cache.at < this.cfg.flagCacheMs) return this.cache.value;
+    const generation = this.pauseGeneration;
     const value = await this.flags.getCloudEnabled();
+    if (this.accountingFailed || generation !== this.pauseGeneration) return false;
     this.cache = { value, at: now };
     return value;
   }
@@ -47,11 +52,21 @@ export class QuotaService implements QuotaPort {
 
   /** Call after every billed model call. Flips the kill switch when the day's total reaches the cap. */
   async recordUsage(u: Usage): Promise<number> {
-    const total = await this.store.addSpend(utcDay(this.now()), costMicros(u));
-    if (total >= this.cfg.dailyCapMicros) {
-      await this.flags.setCloudEnabled(false, `daily cap reached (${total} µ$)`);
+    try {
+      const total = await this.store.addSpend(utcDay(this.now()), costMicros(u));
+      if (total >= this.cfg.dailyCapMicros) {
+        this.pauseGeneration++;
+        this.cache = { value: false, at: this.now() };
+        await this.flags.setCloudEnabled(false, `daily cap reached (${total} µ$)`);
+      }
+      return total;
+    } catch {
+      // Unknown spend needs reconciliation; a cached enable or a console toggle cannot clear it.
+      this.accountingFailed = true;
+      this.pauseGeneration++;
       this.cache = { value: false, at: this.now() };
+      try { await this.flags.setCloudEnabled(false, 'spend accounting unavailable'); } catch { /* Local pause remains authoritative. */ }
+      throw new Error('Spend accounting unavailable');
     }
-    return total;
   }
 }

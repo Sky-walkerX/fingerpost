@@ -61,6 +61,7 @@ test('audio end closes input once and ASR usage counts only accepted audio', asy
   await c.hub.onBinary(audio); c.sinks[0]!.final('start'); c.sinks[0]!.final('again');
   expect(c.relays[0]!.push).toHaveBeenCalledTimes(1); expect(c.relays[0]!.end).toHaveBeenCalledTimes(1);
   expect(quota.recordUsage).toHaveBeenCalledWith({ kind: 'asr', seconds: 0.02 });
+  await vi.waitFor(() => expect(c.sent.some(m => m.type === 'goal.ack')).toBe(true));
   await c.hub.onBinary(keyframe);
   expect(quota.startTask).toHaveBeenCalledWith('synthetic-user', 'hardware');
   expect(quota.recordUsage).toHaveBeenCalledTimes(3); c.dispose();
@@ -91,10 +92,12 @@ test('a synchronous ASR factory failure produces the same spoken retry', async (
   expect(sent.at(-1)).toMatchObject({ type: 'error', say: "I didn't catch that. Please say it again." }); c.dispose();
 });
 
-test('quota ledger rejection does not fail an otherwise valid session', async () => {
+test('quota ledger rejection pauses the session instead of guiding with unrecorded spend', async () => {
   const c = setup({ cloudEnabled: async () => true, startTask: async () => ({ ok: true, tasksLeft: 1 }), recordUsage: async () => { throw new Error('synthetic ledger failure'); } });
   await c.text(hello()); await c.text({ type: 'goal', id: 'g1', ts: 2, text: 'start', source: 'typed' });
-  await c.hub.onBinary(keyframe); expect(c.sent.at(-1)?.type).toBe('target'); c.dispose();
+  await c.hub.onBinary(keyframe);
+  await vi.waitFor(() => expect(c.sent.some(m => m.type === 'error' && m.code === 'cloud_paused')).toBe(true));
+  expect(c.sent.some(m => m.type === 'target')).toBe(false); c.dispose();
 });
 
 test('registry unsubscribe is idempotent after a new subscription for the same run', () => {
