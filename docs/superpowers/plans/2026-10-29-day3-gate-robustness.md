@@ -1,6 +1,6 @@
 # Day 3 (Thu Oct 29): Tech Gate, Robustness, Auth and Quotas Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax. Read `AGENTS.md` first. Day 2 must be `done` in `docs/progress.md`.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax. Read `AGENTS.md` first. Day 2 must be `done` in `docs/progress.md`. **User exception (2026-10-31):** explicitly continue missing Day 2 work and then development through Day 3 while GCP checks remain deferred. Independent coding may proceed; all unmet Day 1/2/3 acceptance stays open. The unavailable workflow skills are already documented in progress.md; follow the repository's test-first checklist directly.
 
 **Goal:**
 - Pass the noon tech gate (or apply the scope cut).
@@ -192,8 +192,9 @@ Device integration happens in `GuidanceEngine` and `QuadEstimator`.
   3. "Point with your other index finger. Higher tones mean closer. A strong buzz means tap."
   4. "Say what you want to press after the question."
   - Each line can be repeated with a double tap, and skipped with a two-finger swipe (a TalkBack custom action "Skip tutorial").
-- [ ] **Step 1: Implement**, then run a 10-minute session with TalkBack on. Record what was confusing in progress.md.
-- [ ] **Step 2: Commit:** `git commit -m "feat(android): reacquire, exposure/glare coaching, TalkBack-aware speech, onboarding"`
+- [x] **Step 1a: Implement.** Reacquire/glare/self-voicing integration retained. Stable-quad AF/AE metering and DataStore 1.1.7 completion now added; four spoken instructions, repeat/stale-callback handling, TalkBack Skip tutorial action and two-finger swipe, with no camera/session before completion. Twelve new failing-first JVM tests and Android build/lint checks pass. See [continuation evidence](../../evals/through-day3-2026-10-31.md).
+- [ ] **Step 1b: Device acceptance.** Run the required 10-minute session with TalkBack on; verify repeat/skip, next-launch persistence and real focus/exposure. Record what was confusing. No JVM/build result substitutes for this.
+- [x] **Step 2: Commit coding:** `git commit -m "feat(android): reacquire, exposure/glare coaching, TalkBack-aware speech, onboarding"`. Task remains blocked on Step 1b and prerequisite acceptance.
 
 ### Task D3-T5: Key Attestation verifier (gateway)
 **Files:**

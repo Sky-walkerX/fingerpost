@@ -38,6 +38,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.fingerpost.ui.FingerpostTheme
 import io.github.fingerpost.ui.SessionScreen
+import io.github.fingerpost.ui.OnboardingGate
 import io.github.fingerpost.vision.TrackingOptions
 
 class MainActivity : ComponentActivity() {
@@ -50,52 +51,54 @@ class MainActivity : ComponentActivity() {
         val simRunId = if (BuildConfig.DEBUG) intent.getStringExtra("fingerpost.simRunId")?.takeIf { it.length in 1..64 } else null
         setContent {
             FingerpostTheme {
-                var cameraGranted by remember { mutableStateOf(hasCameraPermission()) }
-                var requested by rememberSaveable { mutableStateOf(false) }
-                var denied by rememberSaveable { mutableStateOf(false) }
-                val view = LocalView.current
-                val cameraNeeded = stringResource(R.string.camera_needed)
-                val lifecycleOwner = LocalLifecycleOwner.current
-                val permission = rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestPermission(),
-                ) { granted ->
-                    cameraGranted = granted
-                    denied = !granted
-                }
+                OnboardingGate {
+                    var cameraGranted by remember { mutableStateOf(hasCameraPermission()) }
+                    var requested by rememberSaveable { mutableStateOf(false) }
+                    var denied by rememberSaveable { mutableStateOf(false) }
+                    val view = LocalView.current
+                    val cameraNeeded = stringResource(R.string.camera_needed)
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    val permission = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission(),
+                    ) { granted ->
+                        cameraGranted = granted
+                        denied = !granted
+                    }
 
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) {
-                            cameraGranted = hasCameraPermission()
-                            if (cameraGranted) denied = false
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            if (event == Lifecycle.Event.ON_RESUME) {
+                                cameraGranted = hasCameraPermission()
+                                if (cameraGranted) denied = false
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                    }
+                    LaunchedEffect(Unit) {
+                        if (!cameraGranted && !requested) {
+                            requested = true
+                            permission.launch(Manifest.permission.CAMERA)
                         }
                     }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-                }
-                LaunchedEffect(Unit) {
-                    if (!cameraGranted && !requested) {
-                        requested = true
-                        permission.launch(Manifest.permission.CAMERA)
+                    LaunchedEffect(denied) {
+                        if (denied) view.announceForAccessibility(cameraNeeded)
                     }
-                }
-                LaunchedEffect(denied) {
-                    if (denied) view.announceForAccessibility(cameraNeeded)
-                }
 
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    if (cameraGranted) {
-                        SessionScreen(trackingOptions = trackingOptions, simRunId = simRunId)
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp, androidx.compose.ui.Alignment.CenterVertically),
-                        ) {
-                            Text(cameraNeeded, style = MaterialTheme.typography.bodyLarge)
-                            Button(onClick = {
-                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.fromParts("package", packageName, null)))
-                            }) { Text(stringResource(R.string.open_settings)) }
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        if (cameraGranted) {
+                            SessionScreen(trackingOptions = trackingOptions, simRunId = simRunId)
+                        } else {
+                            Column(
+                                modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+                                verticalArrangement = Arrangement.spacedBy(24.dp, androidx.compose.ui.Alignment.CenterVertically),
+                            ) {
+                                Text(cameraNeeded, style = MaterialTheme.typography.bodyLarge)
+                                Button(onClick = {
+                                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", packageName, null)))
+                                }) { Text(stringResource(R.string.open_settings)) }
+                            }
                         }
                     }
                 }

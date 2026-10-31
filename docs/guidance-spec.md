@@ -26,6 +26,8 @@ Rules:
 - If no candidate is stable within 4 s, send one full frame anyway and let SAM find the screen.
 
 ## 2. Screen tracking (every frame)
+**Focus/exposure (initial value):** while the estimated quad is stable, meter AF and AE at its centre through the preview's image-to-view transform. Auto-cancel and refresh after 5 seconds; a newly stable quad can meter immediately. Unsupported metering leaves camera tracking running.
+
 1. **Features:** Shi–Tomasi corners inside the screen quad, minus the hand's bounding box dilated by 15%. Keep at most 200 points, re-detected whenever fewer than 40 remain.
 2. **Track:** pyramidal Lucas–Kanade, 3 levels, 21×21 window.
 3. **Update H:** frame-to-frame homography by RANSAC with a 3 px reprojection threshold. **Valid** only with at least 12 inliers and a corner displacement under 25% of quad size.

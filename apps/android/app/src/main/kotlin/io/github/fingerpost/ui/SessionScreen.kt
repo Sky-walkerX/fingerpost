@@ -63,7 +63,10 @@ fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = 
             when (event) {
                 Lifecycle.Event.ON_START -> {
                     cameraUnavailable = false
-                    val current = GuidanceEngine(context, trackingOptions, simRunId) { micPermission.launch(Manifest.permission.RECORD_AUDIO) }
+                    val current = GuidanceEngine(context, trackingOptions, simRunId,
+                        onMeteringPoint = { point, width, height -> pipeline?.meterAt(point, width, height) }) {
+                        micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                    }
                     engine = current
                     pipeline = CameraPipeline(context, lifecycleOwner, preview,
                         onFrame = { bitmap, ts -> current.hands.submit(bitmap, ts) },

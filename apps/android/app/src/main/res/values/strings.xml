@@ -9,4 +9,11 @@
     <string name="camera_unavailable">Camera unavailable. Close other camera apps and reopen Fingerpost.</string>
     <string name="tracking_unavailable">Finger tracking unavailable. Close and reopen Fingerpost.</string>
     <string name="tone_unavailable">Tone unavailable. Close and reopen Fingerpost.</string>
+    <string name="skip_tutorial">Skip tutorial</string>
+    <string name="repeat_tutorial">Repeat instruction</string>
+    <string name="tutorial_gestures">Double-tap to repeat. Use Skip tutorial in TalkBack actions, or swipe with two fingers, to skip.</string>
+    <string name="tutorial_speech_failed">Speech unavailable. Read this instruction or use Skip tutorial.</string>
+    <string name="tutorial_storage_unavailable">Tutorial settings unavailable. Close and reopen Fingerpost.</string>
+    <string name="tutorial_save_failed">Tutorial progress could not be saved. Try again.</string>
+    <string name="retry">Try again</string>
 </resources>

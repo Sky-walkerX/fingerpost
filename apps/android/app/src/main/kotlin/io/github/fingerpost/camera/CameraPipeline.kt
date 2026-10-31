@@ -15,6 +15,8 @@ import android.util.Size
 import android.view.Surface
 import android.view.View
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.Camera
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
@@ -26,7 +28,11 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import io.github.fingerpost.BuildConfig
+import io.github.fingerpost.guidance.FrameTransform
+import io.github.fingerpost.guidance.ScreenMetering
+import io.github.fingerpost.guidance.Vec2
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Owns its use cases only. The receiver owns each upright bitmap passed to onFrame. */
@@ -47,6 +53,7 @@ class CameraPipeline(
     private var provider: ProcessCameraProvider? = null
     private var preview: Preview? = null
     private var analysis: ImageAnalysis? = null
+    private var camera: Camera? = null
     private var generation = 0
     private var closed = false
     private var windowStartMs = 0L
@@ -162,7 +169,7 @@ class CameraPipeline(
                         onError()
                         return@addListener
                     }
-                    cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, group.build())
+                    camera = cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, group.build())
                 } catch (_: Exception) {
                     stop()
                     onError()
@@ -177,6 +184,25 @@ class CameraPipeline(
         analysis?.targetRotation = rotation
     }
 
+    /** Uses the preview's crop/rotation mapping, so portrait and landscape focus at the visible screen centre. */
+    fun meterAt(point: Vec2, frameWidth: Int, frameHeight: Int) {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        val currentCamera = camera ?: return
+        val control = currentCamera.cameraControl
+        if (!running.get() || previewView.width <= 0 || previewView.height <= 0) return
+        val visible = FrameTransform.fillCenter(frameWidth, frameHeight, previewView.width, previewView.height)
+            .map((point.x * frameWidth).toFloat(), (point.y * frameHeight).toFloat())
+        val metering = previewView.meteringPointFactory.createPoint(visible.x, visible.y)
+        val action = FocusMeteringAction.Builder(metering, FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE)
+            .setAutoCancelDuration(ScreenMetering.REFRESH_MS, TimeUnit.MILLISECONDS).build()
+        runCatching {
+            if (currentCamera.cameraInfo.isFocusMeteringSupported(action)) {
+                val result = control.startFocusAndMetering(action)
+                result.addListener({ runCatching { result.get() } }, mainExecutor)
+            }
+        }
+    }
+
     fun stop() {
         check(Looper.myLooper() == Looper.getMainLooper())
         running.set(false)
@@ -184,6 +210,8 @@ class CameraPipeline(
         displayManager.unregisterDisplayListener(displayListener)
         previewView.removeOnLayoutChangeListener(layoutListener)
         analysis?.clearAnalyzer()
+        camera?.cameraControl?.let { runCatching { it.cancelFocusAndMetering() } }
+        camera = null
         val useCases = listOfNotNull(preview, analysis).toTypedArray()
         if (useCases.isNotEmpty()) provider?.unbind(*useCases)
         preview = null

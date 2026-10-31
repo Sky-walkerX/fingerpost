@@ -31,6 +31,7 @@ class GuidanceEngine(
     private val context: Context,
     trackingOptions: TrackingOptions = TrackingOptions(),
     private val simRunId: String? = null,
+    private val onMeteringPoint: (Vec2, Int, Int) -> Unit = { _, _, _ -> },
     private val requestMicPermission: () -> Unit,
 ) {
     data class Status(val state: GState = GState.IDLE, val connected: Boolean = false, val cloudOff: Boolean = false,
@@ -46,6 +47,7 @@ class GuidanceEngine(
     private val speech = SpeechQueue()
     private val coach = FramingCoach()
     private val change = ScreenChangeDetector()
+    private val metering = ScreenMetering()
     private val tone = ToneSynth()
     private val haptics = Haptics(context)
     private val auth = Auth(context)
@@ -227,6 +229,7 @@ class GuidanceEngine(
 
     private fun vision(frame: VisionFrame) {
         latest = frame
+        metering.update(frame.quad, frame.stable, time())?.let { onMeteringPoint(it, frame.width, frame.height) }
         mutableStatus.value = mutableStatus.value.copy(quad = frame.quad, frameWidth = frame.width, frameHeight = frame.height,
             tracking = frame.tracking == TrackState.TRACKING)
         if (guard.pinMode) return
