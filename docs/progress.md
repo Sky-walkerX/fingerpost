@@ -59,7 +59,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | blocked | Codex |
 | D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX / Codex |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
-| D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | todo | |
+| D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | blocked | Codex |
 
 ## Days 4–7: `docs/superpowers/plans/2026-10-30-days4-7-parallel.md`
 Three lanes run in parallel (A device · B brain · C quality/story). A task waits only on its "Needs". 🔑 = needs a credential; merge the mock-first step without it.
@@ -421,3 +421,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-30: User explicitly requested checking the Meta/Spark timeout. Controlled same-image diagnostics with a temporary 60-second bound and zero retries both return HTTP 200: current request 22,211 ms (27 elements, 3,033 reasoning tokens), explicit low reasoning 10,696 ms (22 elements, 1,229 reasoning tokens). Models endpoint also returns 200. A valid response can exceed the production 15-second deadline; API access works. Single-sample timing/element counts do not establish accuracy or percentiles. No production setting, prompt, version or acceptance status changed; the next action is full-corpus reasoning/quality evaluation before adoption.
 
 - 2026-10-31: D3-T7 persistence repair: four of six new flag regressions fail before enforcing explicit `cloudEnabled: true`; six emulator-host guards fail at TODO then pass. All 34 selected quota/auth/flag cases and recursive typecheck pass. Fresh loopback demo Firestore with the real Admin SDK passes six integration groups (concurrent transactions, UTC reset, task/spend limits, persisted kill switch, client rules denied); zero cloud/model calls. Initial harness setup failures corrected after local SDK inspection; final emulator command exits 0. Production database/rules/runtime setup and root/Firebase acceptance remain open. Updated Day 3 APK has 18 passing actual camera-free diagnostic cases; human tutorial/TalkBack acceptance still pending.
+
+- 2026-10-31: D3-T10 renderer preserves the tracked 170-image corpus and adds staging/output validation/cleanup after 13 expected TODO failures. New ignored run renders and decodes 170 JPEGs at 1280×800 (120 PIN/50 payment); schemas/goals pass and original dataset diff is empty. All 461 TS cases pass. Landing marks features as planned and disables the no-storage waitlist instead of falsely promising an email (copy deviation; Day 6 endpoint/privacy prerequisite retained). Real permissioned photos, live recall and bookings remain open. Reconnected phone independently reruns all 18 camera-free native checks successfully; human onboarding acceptance remains pending.

@@ -56,6 +56,19 @@ Use the repository's Node 24/pnpm 11.10/JDK 21 paths. Emulator logs are ignored.
 
 Updated Day 3 APK and instrumentation APK installed successfully without clearing app data. Actual camera-free checks pass on the connected phone: **six tracking, two TTS completion, two WebSocket/ready and eight safety cases**. The first session attempt failed because the laptop gateway had stopped; restarting the explicit mock-only gateway and rerunning passes. These are 18 existing native diagnostic cases, not new human acceptance. They do not exercise real recognition, onboarding gestures/audibility or a ten-minute TalkBack session. On reconnect the phone reports thermal status 1 (light); no performance acceptance is inferred.
 
+## D3-T10 dataset and landing preview
+
+The tracked corpus already contains 170 synthetic examples. Retained its scenes/export hook/rendering algorithm and added safe output selection/staging/validation/cleanup instead of overwriting it. All **13 new helper tests fail first**, then pass. A fresh run with the pinned Playwright/Chromium succeeds:
+
+```sh
+pnpm --filter @fingerpost/web build
+pnpm --filter @fingerpost/evals render-sim --out private/pinpay-day3-check
+```
+
+All **170 JPEGs decode at 1280×800**: 120 PIN-pad and 50 payment examples; label schema, paths and payment goals pass. `git diff --exit-code -- evals/datasets/pinpay` is clean. The new corpus stays ignored. The first run failed because Chromium was absent; installing the runtime for existing Playwright 1.64.1 resolved it. No package version changed. This is browser-based dataset generation, not mobile acceptance or a PIN recall result.
+
+The landing preview now labels planned capabilities and the beta target honestly. Its waitlist inputs/button are disabled and clearly state no information is collected; no request/storage is added. Local Chromium verifies landmarks, keyboard navigation, disabled inputs and zero requests; minimum text contrast across the palette is **11.58:1**. This is web-preview QA, not mobile acceptance. **Plan-copy deviation:** the original requested a no-storage form that falsely promised an email after submission. Disabled registration preserves the intended Day 6 privacy/endpoint prerequisite without implying a saved signup. The 20 real permissioned photos, live recall measurement and tester bookings remain human/provider blocked.
+
 ## Remaining external gates
 
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.

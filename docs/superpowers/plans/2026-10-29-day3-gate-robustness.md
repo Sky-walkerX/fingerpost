@@ -343,22 +343,22 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 - [ ] **Commit:** `git commit -m "chore(infra): auth-on deploy of the gateway"`
 
 ### Task D3-T10 (lane C): PIN/payment dataset (150+), landing page v0, tester bookings
-- [ ] **Sim renderer.** Create `evals/scripts/render-sim.ts` using Playwright.
+- [x] **Sim renderer.** Retain the implemented Playwright renderer/export hook. Thirteen failing-first output tests now protect existing datasets, validate labels/image paths before publication and remove staging on errors. A fresh ignored corpus renders and decodes all 170 JPEGs (120 PIN +50 payment); the tracked corpus is unchanged. Use `--out private/<new-name>` for another run. This does not complete the real-photo requirement below.
   - Add the devDependency `playwright` (pin the newest release that's at least 7 days old), and run `pnpm exec playwright install chromium`.
   - For seeds 1–40 × layouts {phone, calculator, scrambled}, plus fast-food pay screens for seeds 1–30:
     - open `apps/web` `dist/sim/?scene=…`;
     - screenshot at 1280×800 to `evals/datasets/pinpay/<name>.png`, converted to JPEG;
     - write `labels.json` items with `screenType: "pin_pad"` or `"payment_entry"` and element boxes from `labelsFor`.
   - Use `page.evaluate` to get them: expose `window.__fp = { labels: labelsFor(currentScreen(state)) }` in `main.ts` when `?export=1` is set. That's a two-line change to the asset main; record it.
-  - This gives 150 sim images. Add 20 or more **real** photos (shop card terminals with the owner's permission and no customers; the team's own phones' PIN screens), labeled with the labeling page.
+  - [ ] Add 20 or more **real** photos (shop card terminals with the owner's permission and no customers; the team's own phones' PIN screens), labeled with the labeling page. The existing/fresh 170 examples are synthetic, not real photos.
 - [ ] **Measure.** Run `pnpm --filter @fingerpost/evals eval --set pinpay --mode live --out ../docs/evals/report-pinpay-day3.md`, and report the server-side recall.
   - Local-gate recall needs the on-device OCR. Run the Android instrumentation-free harness on Day 4: feed the dataset images through `Ocr` + `PinGate` in a debug screen, and log the counts.
-- [ ] **Landing page v0.** In `apps/web/index.html`:
+- [x] **Landing page v0.** Existing preview retained; clearly labeled as in development. The waitlist is disabled until Day 6, with truthful no-collection copy; no false successful-signup/email promise. Build passes. See the continuation report for the plan-copy deviation.
   - what Fingerpost does (3 sentences), who it's for, "Beta coming Nov 2", and a waitlist form;
-  - the form handler POSTs to `/v1/waitlist` from Day 6, but for now stores nothing and shows "Thanks, we'll email you when the beta is ready". No storage before the privacy page exists.
+  - Registration is disabled until `/v1/waitlist` and the privacy page exist on Day 6. The preview clearly stores nothing and makes no email promise (copy correction recorded in the continuation report).
   - It must be accessible: landmarks, labels, AA contrast, keyboard-only use.
 - [ ] **Testers.** Confirm the Days 4–6 tester sessions in `docs/testers.md`.
-- [ ] **Commit:** `git commit -m "evals+web: PIN/payment dataset, landing page v0"`
+- [x] **Commit coding:** `git commit -m "feat(evals): preserve PIN datasets and clarify beta preview"`. Real photos, live recall and human bookings remain open.
 
 ---
 

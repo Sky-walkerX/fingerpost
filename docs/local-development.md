@@ -122,6 +122,10 @@ podman --root "$HOME/.local/share/fingerpost/containers" --runroot "/run/user/$(
 
 In another terminal, `curl --fail http://localhost:8080/healthz` should report status `ok`, version `dev` and protocol `fp.v1`. This is a local mock-model check and makes no paid model calls.
 
+## Synthetic PIN/payment dataset (Day 3)
+
+Build `@fingerpost/web`, then run `pnpm --filter @fingerpost/evals render-sim --out private/<new-name>` after installing Chromium with the already-pinned Playwright. The default output is `evals/datasets/pinpay`; an existing output is refused before rendering. A new corpus is staged, validated with the evaluator schema and image-path checks, then published; failure removes staging. `private/` outputs stay ignored. These are synthetic evaluation images, not real photographs, mobile OCR acceptance or a live recall score.
+
 ## Local Firestore persistence checks (Day 3)
 
 With Node 24, pnpm 11.10 and JDK 21 active, run from the repository root:
