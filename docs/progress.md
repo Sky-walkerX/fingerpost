@@ -49,16 +49,16 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 ## Day 3: `docs/superpowers/plans/2026-10-29-day3-gate-robustness.md`
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
-| D3-T0 | Noon tech gate | C | D2-T10c | todo | |
+| D3-T0 | Noon tech gate | C | D2-T10c | blocked | Human |
 | D3-T1 | OCR, face covering, OCR tokens (device) | A | D2-T10b | blocked | Sky-walkerX / Codex |
 | D3-T2 | PIN gate + two-source agreement | A | D3-T1 | blocked | Sky-walkerX |
 | D3-T3 | Screen-change evidence + framing coach | A | D2-T10c | blocked | Sky-walkerX |
 | D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | blocked | Sky-walkerX / Codex |
-| D3-T5 | Key Attestation verifier | B | D2-T7 | todo | |
+| D3-T5 | Key Attestation verifier | B | D2-T7 | blocked | Codex / Human |
 | D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | blocked | Codex |
 | D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | blocked | Codex |
 | D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX / Codex |
-| D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
+| D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | blocked | Codex / Human |
 | D3-T10 | PIN/payment dataset, landing v0, bookings | C | D2-T8 | blocked | Codex |
 
 ## Days 4–7: `docs/superpowers/plans/2026-10-30-days4-7-parallel.md`
@@ -111,6 +111,10 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
+
+- D3-T0/T9 (2026-10-31) · User defers GCP until an account is available. Auth-on deployment script and seven local orchestration tests pass; regional rig, IAM/secrets and deployed authenticated task remain unperformed. [Gate sheet](evals/gate-day3.md) records NOT RUN, not a failed or passed gate. No scope cut can be inferred from missing trials.
+- D3-T5 (2026-10-31) · Existing verifier's 18 synthetic-chain cases pass; five bundled public root hashes exactly match the official Android page. Required independent human fingerprint comparison in ADR-0004 remains pending. Automated comparison does not fulfill that requirement.
+- D3-T7/T10 (2026-10-31) · Local Firestore emulator and fresh 170-image synthetic renderer pass. Production database/rules/runtime setup, 20 permissioned real photos, live PIN/payment recall and human tester bookings remain unavailable. No cloud deployment or recall result is claimed.
 
 - D3-T6 (2026-10-31) · Challenge/auth-route implementation is present and locally verified. Hardened session JWT required identity/lifetime claims after six of eight new regressions fail; all 54 selected auth/attestation/quota/revocation cases pass and recursive typecheck is clean. Full task acceptance still waits on D3-T5's human root-fingerprint review; no actual Firebase/hardware result is inferred. See [Day 3 evidence](evals/through-day3-2026-10-31.md).
 
@@ -263,6 +267,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- D3-T10 (2026-10-31) · The specified no-storage form cannot honestly promise a later email. Keep registration disabled with explicit no-collection copy until the Day 6 endpoint/privacy page; planned features are labeled as planned. No product architecture or data collection is added.
 - Through Day 3 (2026-10-31) · User explicitly requests remaining Day 2 work then completion through Day 3. Implement independent missing Day 3 code despite unfinished Day 2 live/cloud/device acceptance; none is waived or marked done. D3-T4 explicitly requires DataStore but provides no version: pin **1.1.7**, already present in the resolved Android dependency graph, without upgrading existing pins. Added the specified five-second metering refresh/cancellation to guidance-spec as an initial value.
 - Day 2 local completion (2026-10-31) · The user explicitly returned priority to Day 2 implementation and deferred GCP-only checks. Repair/verify the independent simulator, labeler and Android code without treating deferred deployment or the earlier Day 1 tablet acceptance as fulfilled. Added a no-dependency native local integration check to CI; shared wire schemas/models, pinned dependencies, model prompt and SDK request limits are unchanged.
 - Local continuation (2026-10-30) · User explicitly deferred GCP testing until an account is available and requested future development locally. Independent Days 4–7 mock-first coding may proceed; the Day 3 gate/deploy assumption is not asserted complete. Retain all cloud/device/live acceptance as open and revalidate them later. B4-0 adds Kotlin validation of shared flow messages alongside the planned TS tests; wire schemas/models are unchanged.
@@ -423,3 +428,5 @@ _(task id · what changed · why · who approved)_
 - 2026-10-31: D3-T7 persistence repair: four of six new flag regressions fail before enforcing explicit `cloudEnabled: true`; six emulator-host guards fail at TODO then pass. All 34 selected quota/auth/flag cases and recursive typecheck pass. Fresh loopback demo Firestore with the real Admin SDK passes six integration groups (concurrent transactions, UTC reset, task/spend limits, persisted kill switch, client rules denied); zero cloud/model calls. Initial harness setup failures corrected after local SDK inspection; final emulator command exits 0. Production database/rules/runtime setup and root/Firebase acceptance remain open. Updated Day 3 APK has 18 passing actual camera-free diagnostic cases; human tutorial/TalkBack acceptance still pending.
 
 - 2026-10-31: D3-T10 renderer preserves the tracked 170-image corpus and adds staging/output validation/cleanup after 13 expected TODO failures. New ignored run renders and decodes 170 JPEGs at 1280×800 (120 PIN/50 payment); schemas/goals pass and original dataset diff is empty. All 461 TS cases pass. Landing marks features as planned and disables the no-storage waitlist instead of falsely promising an email (copy deviation; Day 6 endpoint/privacy prerequisite retained). Real permissioned photos, live recall and bookings remain open. Reconnected phone independently reruns all 18 camera-free native checks successfully; human onboarding acceptance remains pending.
+
+- 2026-10-31: Through-Day-3 coding checkpoint: all 461 TS cases, recursive typecheck/build, two native localhost Day 2 scenarios and 35 Python tooling cases pass. Existing final Android source has 228 passing JVM cases plus APK/test APK/lint; reconnected phone passes 18 actual camera-free cases. CI 41218618087 at 6056420 succeeds in both jobs. Five public root hashes match the official page; independent human review still pending. D3-T0 gate sheet records NOT RUN; T5/T9 board statuses now reflect existing code with external acceptance blocked. README/handoff updated to current evidence; no phase completion, real recognition, cloud deployment or trial result inferred.

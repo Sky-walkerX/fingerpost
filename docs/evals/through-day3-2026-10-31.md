@@ -74,3 +74,21 @@ The landing preview now labels planned capabilities and the beta target honestly
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.
 - Day 3: human tech-gate trials, human Google-root fingerprint comparison, actual Firebase/hardware-attestation/Firestore checks, deployment and the 20 real PIN/payment photographs/tester bookings still need their documented prerequisites.
 - No account, billing, secret or deployment is created by this continuation. No user media, transcripts, OCR contents or device identities are retained.
+
+## Final available verification
+
+| Check | Result |
+|---|---|
+| `pnpm -r test` | 461 pass: protocol 57, web 28, gateway 327, evals 49 |
+| `pnpm -r typecheck` / `pnpm -r build` | Pass |
+| `pnpm check:day2` | Two actual loopback protocol scenarios pass; no external calls |
+| Python tooling discovery | 35 pass, including seven deployment-stub checks |
+| Android JVM/build/lint checkpoint | 228 pass (166 guidance/53 protocol/9 app); APK/test APK/lint pass, 0 errors/7 advisories |
+| Reconnected physical phone | Tracking 6, TTS completion 2, session 2, safety 8 all pass; no camera/mic |
+| Local Firestore emulator | Six real SDK integration groups pass, no cloud calls |
+| Synthetic rendering | 170 fresh JPEGs/labels validated and decoded; tracked corpus unchanged |
+| CI at `6056420` | [Both jobs successful](https://github.com/Sky-walkerX/fingerpost/actions/runs/41218618087) |
+
+The final Android source is the installed build; subsequent changes concern gateway/evaluation/documentation. No redundant Android rerun or human acceptance claim is added. Existing attestation verifier's 18 synthetic chain cases pass; five public certificate hashes exactly match the [official Android page](https://developer.android.com/privacy-and-security/security-key-attestation#root_certificate). The required independent human review remains open. The [Day 3 gate sheet](gate-day3.md) explicitly records no trials and no decision.
+
+Next available acceptance is the spoken tutorial (repeat/skip/persist) and ten-minute TalkBack/focus check, then real touchscreen guidance/press/PIN trials after live recognition is working. The user agreed to keep the phone connected; the manual readiness question remains pending. Merely connecting it does not establish these results.

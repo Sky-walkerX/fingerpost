@@ -30,6 +30,8 @@ Their fingerprints are recorded here on Day 3 (task D3-T5), and a human checks t
 
 Fetched 2026-10-29. **Human check pending:** compare these with the page before the first auth-on deploy.
 
+Rechecked 2026-10-31: the SHA-256 set of all five local certificates exactly matches the five decoded certificates on the official page (two current, three previously issued). The automated check does not replace the human comparison. The bundle is unchanged.
+
 ## Consequences
 - It's free and needs no Play listing. It isn't bulletproof (rooted devices with leaked keys), so per-uid and per-IP limits and the spend kill switch stay in place.
 - The attestation code needs ASN.1 parsing (`pkijs`/`asn1js`) and tests with recorded chains.

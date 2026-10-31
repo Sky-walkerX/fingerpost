@@ -6,6 +6,8 @@ Implementation and local checks are recorded here. Phone acceptance belongs to t
 
 **Update 2026-10-31:** Day 2 repairs add full-frame gateway projection/server quad, cropped subsequent locates, bounded tracking resolution and rotation-independent camera pitch. Local totals are now 154 guidance/53 protocol/five app tests; debug build/lint pass, with six existing warnings. Device acceptance is still open (zero ADB devices). The current live full-frame probe fails at Spark before target; see [current evidence](day2-local-completion-2026-10-31.md).
 
+**Day 3 continuation (2026-10-31):** persisted onboarding and focus/exposure metering are now implemented; token refresh repaired. Current local count is 228 JVM cases, and the connected phone passes 18 camera-free diagnostics. Tutorial/TalkBack, real camera/guide/press and Firebase acceptance remain open. See [current evidence](through-day3-2026-10-31.md). Earlier counts below describe historical checkpoints.
+
 ## Implemented
 
 - The session screen now owns a lifecycle-scoped guidance engine. Camera analysis feeds the screen tracker; fresh hand results feed pad compensation, homography, filtering, zones, speech, tone and haptics.
@@ -51,4 +53,4 @@ Record generic device labels, pass/fail, numeric measurements and unresolved iss
 
 ## Remaining scope
 
-Day 4 task/confirm turns, earphone-only digit help, locale tables and settings are separate tasks. Day 3 focus/exposure metering and persisted onboarding are still pending. Tracking performance gates, live quality/region acceptance and the proxy trials remain open. This guide-only APK is not a release-gate pass.
+Day 4 task/confirm turns, earphone-only digit help, locale tables and settings are separate tasks. Day 3 focus/exposure metering and persisted onboarding are implemented; their human/device acceptance remains pending. Tracking performance gates, live quality/region acceptance and the proxy trials remain open. This guide-only APK is not a release-gate pass.

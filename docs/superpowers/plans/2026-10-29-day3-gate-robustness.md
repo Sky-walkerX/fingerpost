@@ -228,12 +228,12 @@ Device integration happens in `GuidanceEngine` and `QuadEstimator`.
 On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
 - Use `node:crypto` `X509Certificate` for the chain checks, and `pkijs.Certificate.fromBER(leafDer).extensions` to find the extension (`extnValue.valueBlock.valueHexView`).
 
-- [ ] **Step 1: Confirm red** (attestation tests fail), **implement**, then **confirm green** with `pnpm --filter @fingerpost/gateway test -- attestation`. Expected: 15 pass.
+- [x] **Step 1: Verify retained implementation.** Existing verifier and 18 synthetic cryptographic-chain tests pass in the full gateway suite. Original red history predates this continuation and is not invented. Issuer/CA checks and rejection of forged extension chains remain intact.
 - [ ] **Step 2: Add the real Google roots (human + agent).**
   - Copy the root certificate PEM blocks from `https://developer.android.com/privacy-and-security/security-key-attestation#root_certificate` into `services/gateway/certs/google-roots.pem`.
   - Record each root's SHA-256 fingerprint (`openssl x509 -in <one> -noout -fingerprint -sha256`) in ADR-0004 under "Roots".
   - **A human reviewer compares the fingerprints with the page** before merging.
-- [ ] **Step 3: Commit:** `git commit -m "feat(gateway): Android Key Attestation verifier"`
+- [x] **Step 3: Record retained coding/verification:** no verifier rewrite needed. All five existing root certificate hashes match the current official page; documentation corrected. Step 2's independent human fingerprint review remains open and the task stays blocked.
 
 ### Task D3-T6: challenges, session tokens, auth routes
 **Files:**
@@ -332,10 +332,10 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
 - [ ] **Secrets:**
   - `openssl rand -base64 48 | tr -d '\n' | gcloud secrets create session-secret --data-file=- --project fingerpost-dev`
   - The `SIGNING_DIGESTS` value isn't secret; pass it as an env var.
-- [ ] **Deploy script.** Update `infra/deploy-gateway.sh`:
+- [x] **Deploy script implementation.** Existing `infra/deploy-gateway.sh` already sets the session secret and auth-on environment below. All seven stub-based deployment tests pass; no actual cloud command is executed. IAM provisioning and cloud smoke acceptance remain open.
   - add `SESSION_SECRET=session-secret:latest` to `--set-secrets`;
   - change the env vars to `AUTH_REQUIRED=true,SIGNING_DIGESTS=<debug digest>,FIREBASE_PROJECT_ID=fingerpost-dev,DAILY_CAP_USD=12`;
-  - give the Cloud Run service account **Cloud Datastore User** and **Firebase Authentication Viewer**.
+  - [ ] Human: give the Cloud Run service account **Cloud Datastore User** and **Firebase Authentication Viewer**.
 - [ ] **Deploy and smoke-test.**
   - Deploy, then `curl <url>/healthz`.
   - A socket **without** a token closes with 4401.
