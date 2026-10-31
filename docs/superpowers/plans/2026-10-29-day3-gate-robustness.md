@@ -336,6 +336,7 @@ POST /v1/auth/attest { challengeId, chain, firebaseIdToken = idToken } → { tok
   - `openssl rand -base64 48 | tr -d '\n' | gcloud secrets create session-secret --data-file=- --project fingerpost-dev`
   - The `SIGNING_DIGESTS` value isn't secret; pass it as an env var.
 - [x] **Deploy script implementation.** Existing `infra/deploy-gateway.sh` already sets the session secret and auth-on environment below. All seven stub-based deployment tests pass; no actual cloud command is executed. IAM provisioning and cloud smoke acceptance remain open.
+  - Coding-completion repair: `--max-instances 1` matches v1's in-memory challenge and per-client limiter state. An eighth orchestration regression fails with the old value 3, then passes. Multi-instance operation needs shared atomic challenge/limiter storage before this limit can be raised; production routing/restart behavior still needs acceptance.
   - add `SESSION_SECRET=session-secret:latest` to `--set-secrets`;
   - change the env vars to `AUTH_REQUIRED=true,SIGNING_DIGESTS=<debug digest>,FIREBASE_PROJECT_ID=fingerpost-dev,DAILY_CAP_USD=12`;
   - [ ] Human: give the Cloud Run service account **Cloud Datastore User** and **Firebase Authentication Viewer**.

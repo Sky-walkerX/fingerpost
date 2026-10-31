@@ -32,7 +32,8 @@ fi
 
 gcloud builds submit . --project "$project_id" --region "$region" \
   --config infra/cloudbuild.yaml --ignore-file .gcloudignore --substitutions "_IMAGE=$image"
+# v1 challenges and per-client limits live in this instance's memory.
 gcloud run deploy fingerpost-gateway --project "$project_id" --region "$region" --image "$image" \
-  --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 3 --allow-unauthenticated \
+  --timeout 3600 --concurrency 40 --min-instances 0 --max-instances 1 --allow-unauthenticated \
   --set-secrets "$secrets" \
   --set-env-vars "^;^MODEL_MODE=live;GIT_SHA=$git_sha;AUTH_REQUIRED=true;SIGNING_DIGESTS=$signing_digests;FIREBASE_PROJECT_ID=$project_id;DAILY_CAP_USD=12"

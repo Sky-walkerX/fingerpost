@@ -138,6 +138,8 @@ This starts a fresh loopback-only demo emulator and checks actual Admin SDK tran
 
 ## Day 1 live evaluation and deployment
 
+The v1 deployment script targets one gateway instance because challenges and per-client rate limits are held in that process. Do not raise `--max-instances 1` until those stores support shared atomic state. Instance replacement can invalidate an outstanding short-lived challenge; real routing/restart acceptance remains pending. This local configuration fix does not claim multi-instance authentication support or a completed deployment.
+
 Live evaluation is still blocked on the human setup in T0. Configure the ignored local environment privately; do not paste keys into chat or commit them. Put at least ten panel JPEGs in ignored `evals/datasets/day1/`, and a 1024×576 crop of at most 409,600 bytes in `evals/datasets/private/day1/latency-sample.jpg`. Leave the tracked synthetic latency placeholder unchanged. These header checks read dimensions; they do not fully decode or visually validate a photo.
 
 `pnpm --filter @fingerpost/gateway smoke` makes paid model requests. It validates all input dimension headers before calling models, writes anonymous numeric results to `docs/evals/day1-smoke.md`, and keeps photo overlays in a unique local `evals/datasets/private/day1-smoke/<run>/` directory. Inspect those private overlays locally and record only the correctness count in the report. Do not infer the 8/10 quality result from polygon presence. Reported cost uses the plan's initial rates and is not a billing measurement.

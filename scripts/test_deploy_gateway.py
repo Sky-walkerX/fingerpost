@@ -121,6 +121,12 @@ else:
         self.assertEqual(result.returncode, 19)
         self.assertEqual(len(self.commands()), 2)
 
+    def test_in_memory_challenges_and_rate_limits_use_one_gateway_instance(self):
+        result = self.run_script("synthetic-project", "asia-south1", DIGEST)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        _, deploy = self.commands()
+        self.assertEqual(deploy[deploy.index("--max-instances") + 1], "1")
+
 
 if __name__ == "__main__":
     unittest.main()
