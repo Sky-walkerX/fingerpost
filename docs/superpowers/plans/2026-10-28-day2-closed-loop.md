@@ -415,6 +415,7 @@ Everything in Day 1's list still applies, plus:
   `git commit -m "feat(android): local screen quad estimate and KLT homography tracker"`
 
 ### Task D2-T10b (device): session client and mic streaming
+**Acceptance update (2026-10-31):** USB recovery and installed-client hello/ready pass on the physical phone. `pnpm dev:phone` now keeps local mock setup explicit, repairs forwarding and announces simulated targets. The user reaches Guiding and hears speech, but reports incorrect directions against an AC remote; a fixed mock layout cannot establish real target accuracy. Current live Spark revalidation times out (5,011 ms). Keep Step 2/full acceptance open; see [device evidence](../../evals/day2-device-2026-10-31.md).
 **Files:** create `app/src/main/kotlin/io/github/fingerpost/session/{SessionClient,MicStreamer,Keyframer}.kt`.
 
 **Requirements:**

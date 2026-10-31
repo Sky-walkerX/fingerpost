@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
+import { ulid } from 'ulid';
 import { LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
 import type { Config } from './config.ts';
 import { registerLatencyRoute } from './debug/latency.ts';
@@ -21,6 +22,8 @@ import { MemoryFlagStore, MemoryQuotaStore, type FlagStore, type QuotaStore } fr
 import { DEFAULT_QUOTA, QuotaService } from './quota/service.ts';
 
 export interface AppOverrides {
+  /** Local phone practice announces simulated targets; ignored entirely in live mode. */
+  mockNotice?: string;
   models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
   /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
   quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
@@ -96,6 +99,9 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
       const session = createSessionController({ send: (m) => {
         if (m.type === 'ready') { ready = true; markReady(); }
         socket.send(JSON.stringify(m));
+        if (m.type === 'ready' && !live && o.mockNotice) socket.send(JSON.stringify({
+          type: 'say', id: ulid(), ts: now(), priority: 'safety', text: o.mockNotice,
+        }));
       }, models, asr, sims, now, quota, ...(claims ? { claims } : {}) });
       dispose = session.dispose;
       const { hub } = session;

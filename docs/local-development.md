@@ -32,6 +32,18 @@ The [physical-device safety regression](evals/day2-device-2026-10-31.md) uses An
 
 For a debug app stuck on Connecting, ensure the local mock gateway is running and restore `adb reverse tcp:8080 tcp:8080` after reconnecting USB. Run `adb -d shell am instrument -w -e check session io.github.fingerpost.test/io.github.fingerpost.DeviceSafetyRunner` to verify the installed client's actual WebSocket/ready exchange without camera/microphone. This diagnostic accepts only `ws://127.0.0.1:8080`; it does not authenticate to Firebase or test live recognition. Reopen the app after instrumentation finishes, since instrumentation ends its target session.
 
+For a repeatable USB practice session, use the pinned Node/pnpm toolchain below and leave this command running in a laptop terminal:
+
+```sh
+pnpm dev:phone
+```
+
+It starts the existing gateway on **127.0.0.1:8080**, forces mock models without loading `.env` or inheriting provider/auth settings, and restores the port mapping when one USB phone reconnects. It never opens the camera, installs an APK or chooses between multiple USB phones. It reads `ANDROID_HOME` / `ANDROID_SDK_ROOT`, falling back to `~/Android/Sdk`. An absent/unauthorized phone waits with a generic message; raw ADB output and device identifiers are not printed. Stop with Ctrl-C. An occupied port is an error; it does not replace another server.
+
+Build/install the USB-address debug APK as described above first. **This command provides transport/practice testing only.** The phone receives a spoken practice warning through the existing `say` message. The default mock model always returns its fixed appliance layout and Start target; it does not recognize the real view or the user's words. Do not use its directions on actual controls. Closing the terminal stops the gateway; USB reconnects can discard forwarding, so the app alone cannot restore a missing laptop process.
+
+Use the documented cooktop/tablet touchscreen for Day 2's full guidance acceptance. An AC remote with physical buttons can be a non-sensitive camera/tracker practice surface, but physical-button controls are outside `design.md` §3.1 and are not a substitute for touchscreen target/press acceptance. Live recognition requires the gateway's actual model adapters and a successful current-policy provider check; it does not require GCP solely to test the model locally.
+
 ## TypeScript on this laptop
 
 Node 24 is available in the bundled runtime. Pinned pnpm 11.10.0 is installed persistently in `~/.local/share/fingerpost/node-tools`:

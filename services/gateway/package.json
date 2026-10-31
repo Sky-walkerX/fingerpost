@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "dev": "node --conditions=source --watch src/server.ts",
+    "dev:phone": "node --conditions=source scripts/phone-dev.ts",
     "start": "node dist/server.js",
     "smoke": "node --conditions=source scripts/smoke-meta.ts",
     "latency": "node --conditions=source scripts/latency-matrix.ts",

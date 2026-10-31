@@ -8,6 +8,7 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "dev:phone": "pnpm --filter @fingerpost/gateway dev:phone",
     "check:day2": "node --conditions=source scripts/check-day2-local.mjs"
   }
 }
