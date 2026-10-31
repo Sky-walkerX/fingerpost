@@ -20,6 +20,7 @@ class DeviceSafetyRunner : Instrumentation() {
     override fun onStart() {
         if (checkKind == "speech") { DeviceSpeechCheck.run(this); return }
         if (checkKind == "tracking") { DeviceTrackingCheck.run(this); return }
+        if (checkKind == "session") { DeviceSessionCheck.run(this); return }
         var passed = 0
         val failures = mutableListOf<String>()
         fun check(name: String, test: () -> Unit) {

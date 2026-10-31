@@ -30,6 +30,8 @@ If Android refuses the universal debug APK for insufficient storage, add `-Pfing
 
 The [physical-device safety regression](evals/day2-device-2026-10-31.md) uses Android's actual regex engine, which differs from the JDK. Build `:app:assembleDebugAndroidTest`, install its APK alongside the app, then run `adb -d shell am instrument -w io.github.fingerpost.test/io.github.fingerpost.DeviceSafetyRunner`. It needs no camera/network or additional dependency. CI compiles this APK; a physical device executes the checks.
 
+For a debug app stuck on Connecting, ensure the local mock gateway is running and restore `adb reverse tcp:8080 tcp:8080` after reconnecting USB. Run `adb -d shell am instrument -w -e check session io.github.fingerpost.test/io.github.fingerpost.DeviceSafetyRunner` to verify the installed client's actual WebSocket/ready exchange without camera/microphone. This diagnostic accepts only `ws://127.0.0.1:8080`; it does not authenticate to Firebase or test live recognition. Reopen the app after instrumentation finishes, since instrumentation ends its target session.
+
 ## TypeScript on this laptop
 
 Node 24 is available in the bundled runtime. Pinned pnpm 11.10.0 is installed persistently in `~/.local/share/fingerpost/node-tools`:
