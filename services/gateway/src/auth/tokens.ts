@@ -1,9 +1,13 @@
 import { jwtVerify, SignJWT } from 'jose';
+import { z } from 'zod';
 
 import type { SessionClaims } from '../session/types.ts';
 export type { SessionClaims, Tier } from '../session/types.ts';
 export const TOKEN_TTL_S = 15 * 60;
 const ISS = 'fingerpost-gateway', AUD = 'fp.v1';
+const Claims = z.object({ sub: z.string().min(1), kid: z.string().min(1), tier: z.enum(['hardware', 'software']),
+  iat: z.number().int().nonnegative(), exp: z.number().int().nonnegative() })
+  .refine((claims) => claims.exp > claims.iat && claims.exp - claims.iat <= TOKEN_TTL_S);
 
 /** HS256 session JWT, 15 minutes, bound to the Firebase anonymous uid and the attested key. */
 export async function issueSessionToken(secret: Uint8Array, c: SessionClaims, nowMs = Date.now()): Promise<string> {
@@ -15,9 +19,11 @@ export async function issueSessionToken(secret: Uint8Array, c: SessionClaims, no
 /** null for anything invalid or expired. */
 export async function verifySessionToken(secret: Uint8Array, token: string, nowMs = Date.now()): Promise<SessionClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, secret, { issuer: ISS, audience: AUD, algorithms: ['HS256'], currentDate: new Date(nowMs) });
-    const { sub, kid, tier } = payload;
-    if (typeof sub !== 'string' || typeof kid !== 'string' || (tier !== 'hardware' && tier !== 'software')) return null;
+    const { payload } = await jwtVerify(token, secret, { issuer: ISS, audience: AUD, algorithms: ['HS256'],
+      requiredClaims: ['sub', 'kid', 'tier', 'iat', 'exp'], maxTokenAge: TOKEN_TTL_S, currentDate: new Date(nowMs) });
+    const claims = Claims.safeParse(payload);
+    if (!claims.success) return null;
+    const { sub, kid, tier } = claims.data;
     return { uid: sub, keyId: kid, tier };
   } catch {
     return null;

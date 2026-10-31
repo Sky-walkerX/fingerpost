@@ -55,7 +55,7 @@ The existing D2-T1 protocol task is tracked above as a Day 1 CI prerequisite. On
 | D3-T3 | Screen-change evidence + framing coach | A | D2-T10c | blocked | Sky-walkerX |
 | D3-T4 | Reacquire, glare, TalkBack, onboarding | A | D3-T3 | blocked | Sky-walkerX / Codex |
 | D3-T5 | Key Attestation verifier | B | D2-T7 | todo | |
-| D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | todo | |
+| D3-T6 | Challenges, JWT, auth routes | B | D3-T5 | blocked | Codex |
 | D3-T7 | Quotas, kill switch, auth on the socket | B | D3-T6 | todo | |
 | D3-T8 | Attestation client + Firebase auth (device) | A | D3-T6 | blocked | Sky-walkerX |
 | D3-T9 | Deploy with auth on | B | D3-T7, D3-T8 | todo | |
@@ -111,6 +111,8 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
+
+- D3-T6 (2026-10-31) · Challenge/auth-route implementation is present and locally verified. Hardened session JWT required identity/lifetime claims after six of eight new regressions fail; all 54 selected auth/attestation/quota/revocation cases pass and recursive typecheck is clean. Full task acceptance still waits on D3-T5's human root-fingerprint review; no actual Firebase/hardware result is inferred. See [Day 3 evidence](evals/through-day3-2026-10-31.md).
 
 - D2-T10a (2026-10-31, user retry): wrong green outline appears before speech. `reanchor` prematurely sets TRACKING before 12-inlier validation; six physical OpenCV regressions reproduce four failures/two passes. Implemented ACQUIRING/validated-H gating and candidate/tracking labels; local checks pass. **After USB reconnect, the final APK is installed and all six physical tracking checks pass**, together with eight safety/two speech checks. Earlier no-device/install-pending notes are historical. Real-panel lock/pan/occlusion and semantic alignment remain open; mock fixed coordinates cannot identify the AC remote. See [device report](evals/day2-device-2026-10-31.md).
 
@@ -322,6 +324,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-10-31: D3-T6 retains the implemented challenge/auth routes and hardens JWT verification: require nonempty subject/key id, issued/expiry timestamps, no future issue time and at most the specified 900-second life. Six failing/two passing new synthetic cases become eight passing; 54 selected Day 3 auth/attestation/quota/revocation cases and recursive typecheck pass. Existing tests retained. Human root review/Firebase/device/cloud acceptance remain open.
 - 2026-10-31: D3-T1 retains existing OCR/face/keyframe integration and adds the missing optional Firebase CI configuration step. Four failing-first Python tests verify decoding/package validation, mode 0600, absent-secret behavior and protection of existing files; all 35 tooling checks pass. No private configuration is created or committed. Firebase credentials and physical OCR/face/PIN acceptance remain open.
 - 2026-10-31: D3-T4 coding: ten tutorial/metering TODO regressions and two DataStore persistence TODO regressions fail first, then pass. Added first-launch spoken tutorial, correlated completion/repeat/skip, persisted completion, delayed camera/session startup, and stable-quad AF/AE using preview coordinates. Full Android JVM/APK/test APK/lint verification passes; physical ten-minute accessibility/focus acceptance still pending. No real-guidance or prior-day completion claimed.
 - 2026-10-31: Continued phone testing exposes a stopped local gateway/missing USB route; implemented `pnpm dev:phone`, automatic forwarding recovery and explicit spoken practice notice. All 13 regressions pass (initial 11 and the notice reproduce failures first; live-mode exclusion already passes); 428 TS cases, recursive typecheck/build and both local scenarios pass. Removed/restored the real USB route and reran two camera-free physical session checks successfully. User confirms Guiding/speech but reports wrong guidance; fixed mock coordinates cannot establish remote recognition. One bounded synthetic live Spark request times out at 5,011 ms; no live phone recognition/whole-task pass. See device report.

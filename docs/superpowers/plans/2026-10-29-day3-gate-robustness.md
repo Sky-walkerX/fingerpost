@@ -256,8 +256,8 @@ On success it returns `{ ok: true, level, keyId: sha256hex(leaf SPKI DER) }`.
     - attestation rejected → 403, logging `{reason}` only;
     - success → `{ token, expiresIn: 900, tier }`, where `tier` is `software` when the level is software and `hardware` otherwise.
 
-- [ ] **Step 1: Confirm red, implement, confirm green.** Run `pnpm --filter @fingerpost/gateway test -- quota auth-routes`. `quota.test.ts` also exercises `QuotaService`, which is T7; its quota cases stay red until T7.
-- [ ] **Step 2: Commit:** `git commit -m "feat(gateway): attestation challenges, session JWT, auth routes"`
+- [x] **Step 1: Verify retained implementation and repair missing boundaries.** Incoming challenge/token/auth route code already exists; do not invent its historical TODO failures. Eight new JWT boundary checks reproduce six failures/two passes, then all pass after enforcing required claims and the 900-second limit. All 54 selected auth/attestation/quota/revocation cases and recursive typecheck pass; no original test weakened.
+- [x] **Step 2: Commit coding:** `git commit -m "feat(gateway): attestation challenges, session JWT, auth routes"`. Prerequisite human root review remains open; local synthetic auth does not establish actual Firebase/hardware acceptance.
 
 ### Task D3-T7: quotas, kill switch, auth on the socket (Day 3 app)
 **Files:**

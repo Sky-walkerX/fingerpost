@@ -21,6 +21,17 @@ Result: **166 guidance +53 protocol +7 app =226 JVM cases**, zero failures/error
 
 The existing OCR/face/keyframer implementation is retained. Added the missing optional GitHub Actions secret preparation. It decodes base64, validates the Android package, writes only a new ignored configuration file with mode 0600, and prints no configuration content. Missing secret preserves the existing Firebase-free build. Four tests fail at the TODO first; after implementation all **35 Python tooling tests** pass. No real Google configuration or credential is supplied, written or committed; Firebase/live device acceptance remains open.
 
+## D3-T6 token/auth verification
+
+Read and retained the existing challenge/auth route implementation. New signed synthetic-token tests expose **six failures/two passes**: missing iat/exp, empty identity, future iat and excessive lifetime. Verification now requires these claims and the documented 900-second window, with the existing HS256/issuer/audience/signature checks unchanged. All eight new cases and **54 selected auth/attestation/quota/revocation cases** pass; recursive TypeScript typecheck is clean. The actual issued-token happy path and expiry boundary still pass. No original test changed, and no new dependency or protocol change.
+
+```sh
+pnpm --filter @fingerpost/gateway test token-boundaries attestation auth-routes auth-e2e quota revocation
+pnpm -r typecheck
+```
+
+These use real cryptographic signatures and synthetic certificate chains/local sockets. They do not replace the required human Google-root fingerprint comparison or actual Firebase/hardware checks. The original source predates this continuation; its initial red history is unavailable and is not invented.
+
 ## Remaining external gates
 
 - Day 2: live Spark/full-frame recognition currently fails with a five-second request timeout; correct touchscreen guidance, tablet/proxy trials and reviewed real-photo labels remain open.
