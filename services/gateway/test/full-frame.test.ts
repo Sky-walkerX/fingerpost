@@ -45,7 +45,7 @@ test('a missing SAM target mask falls back to the projected Spark box', async ()
 test('full frame without any usable screen quad asks for framing instead of publishing a guessed target', async () => {
   const { pipeline, models, sent } = setup(null);
   await pipeline.onKeyframe(header, jpeg);
-  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'ask']);
+  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'say', 'ask']);
   expect(models.segmentByBox).not.toHaveBeenCalled();
 });
 
@@ -65,7 +65,7 @@ test('full parse and screen detection run concurrently; abort suppresses both la
   const work = pipeline.onKeyframe(header, jpeg);
   await vi.waitFor(() => { expect(models.parseScreen).toHaveBeenCalledOnce(); expect(models.segmentByText).toHaveBeenCalledOnce(); });
   pipeline.abort(); await work; finishParse(); finishScreen(); await new Promise(setImmediate);
-  expect(sent.map((m) => m.type)).toEqual(['goal.ack']);
+  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'say']);
   expect(usage.sort()).toEqual(['sam_image', 'spark']);
 });
 

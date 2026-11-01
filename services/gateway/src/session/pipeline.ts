@@ -85,6 +85,7 @@ export class SessionPipeline {
   private task = new AbortController();
   private mode: RequestedMode = 'auto';
   private agent: AgentSession | null = null;
+  private lookingSpoken = false;
 
   private readonly d: PipelineDeps;
   constructor(d: PipelineDeps) { this.d = d; }
@@ -112,6 +113,7 @@ export class SessionPipeline {
     this.task.abort();
     this.task = new AbortController();
     this.goal = text;
+    this.lookingSpoken = false;
     this.taskCharged = false;
     this.target = null;
     this.hasSimTouch = false;
@@ -161,6 +163,7 @@ export class SessionPipeline {
     this.agent = null;
     this.layout = null;
     this.target = null;
+    this.lookingSpoken = false;
     this.taskCharged = false;
     this.everCharged = false;
     this.callsSinceCharge = 0;
@@ -209,6 +212,10 @@ export class SessionPipeline {
     }
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
+    if (h.purpose === 'locate' && !this.lookingSpoken) {
+      this.lookingSpoken = true;
+      this.d.send({ ...this.base(), type: 'say', priority: 'state', text: 'Looking at the screen.' });
+    }
     const parse = this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
       .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
     const screen = h.kind === 'full' ? this.d.models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')

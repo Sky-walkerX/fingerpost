@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import { parseServerMessage } from '@fingerpost/protocol';
 import { buildApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
-import { buildPhoneGateway, phoneDevConfig, restoreUsbForwarding, watchUsbForwarding } from '../scripts/phone-dev.ts';
+import { buildPhoneGateway, parseFlags, phoneDevConfig, restoreUsbForwarding, watchUsbForwarding } from '../scripts/phone-dev.ts';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
 
@@ -66,6 +66,11 @@ test('--live uses only the key and model settings from .env, with auth off', () 
 
 test('--live without a key fails instead of silently falling back to mock', () => {
   expect(() => phoneDevConfig({ live: true, env: {} })).toThrow(/META_API_KEY/);
+});
+
+test('flag parsing: --live sets live mode, defaults to mock', () => {
+  expect(parseFlags([])).toEqual({ live: false });
+  expect(parseFlags(['--live'])).toEqual({ live: true });
 });
 
 test('watcher restores the route after a disconnect and stops polling on shutdown', async () => {

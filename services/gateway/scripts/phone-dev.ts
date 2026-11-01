@@ -86,9 +86,13 @@ export async function startPhoneDev(run: AdbCommand = adbCommand(), report: (mes
   return async () => { await stopWatching(); await app.close(); };
 }
 
+export function parseFlags(args: readonly string[] = process.argv.slice(2)): { live: boolean } {
+  return { live: args.includes('--live') };
+}
+
 if (import.meta.main) {
   try {
-    const live = process.argv.includes('--live');
+    const { live } = parseFlags();
     const stop = await startPhoneDev(adbCommand(), console.log, 8080, live);
     let stopping = false;
     const shutdown = () => {

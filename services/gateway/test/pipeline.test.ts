@@ -19,8 +19,8 @@ test('locate: layout first, then a SAM-refined target with a spoken position', a
   const { p, sent } = run();
   p.onGoal('press start'); sent.length = 0;
   await p.onKeyframe(kf('locate'), jpeg);
-  expect(sent.map((m) => m.type)).toEqual(['layout', 'target']);
-  const t = sent[1] as Extract<ServerMessage, { type: 'target' }>;
+  expect(sent.map((m) => m.type)).toEqual(['say', 'layout', 'target']);
+  const t = sent[2] as Extract<ServerMessage, { type: 'target' }>;
   expect(t.elementId).toBe('e5');
   expect(t.say).toBe('Found Start, bottom right.');
   expect(t.polygon[0]!.u).toBeCloseTo(0.6 + 0.3 * 0.02, 6); // mock SAM shrinks the box by 2%
@@ -30,7 +30,7 @@ test('locate with nothing matching → ask listing what is there', async () => {
   const { p, sent } = run();
   p.onGoal('defrost'); sent.length = 0;
   await p.onKeyframe(kf('locate'), jpeg);
-  expect(sent[1]).toMatchObject({ type: 'ask', question: "I can't find that. I see Timer, Power, Stop and Start. What do you want to press?", options: ['Timer', 'Power', 'Stop', 'Start'] });
+  expect(sent[2]).toMatchObject({ type: 'ask', question: "I can't find that. I see Timer, Power, Stop and Start. What do you want to press?", options: ['Timer', 'Power', 'Stop', 'Start'] });
 });
 
 test('ambiguous goal → ask which one', async () => {
@@ -38,7 +38,7 @@ test('ambiguous goal → ask which one', async () => {
   const { p, sent } = run(mockModels(twoStarts));
   p.onGoal('start'); sent.length = 0;
   await p.onKeyframe(kf('locate'), jpeg);
-  expect(sent[1]).toMatchObject({ type: 'ask', question: 'I see Start and Start. Which one?' });
+  expect(sent[2]).toMatchObject({ type: 'ask', question: 'I see Start and Start. Which one?' });
 });
 
 test('verify with an unchanged layout → nochange', async () => {
@@ -113,3 +113,40 @@ test('helpers: fingerprint is order-independent; jaccard; position words; label 
   expect(simMatches('pay-card', { ...els[0]!, label: 'Pay by card' })).toBe(true);
   expect(simMatches('cancel', { ...els[0]!, label: 'Pay by card' })).toBe(false);
 });
+
+test('says looking once per goal on locate', async () => {
+  const { p, sent } = run();
+  p.onGoal('press start');
+  sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  const lookings = sent.filter((m) => m.type === 'say' && m.text === 'Looking at the screen.');
+  expect(lookings).toHaveLength(1);
+  expect(lookings[0]).toMatchObject({ type: 'say', priority: 'state', text: 'Looking at the screen.' });
+
+  // A second locate keyframe for the same goal should not say it again
+  await p.onKeyframe(kf('locate', 'k2'), jpeg);
+  expect(sent.filter((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toHaveLength(1);
+
+  // A new goal resets the flag, so the next locate keyframe says it again
+  p.onGoal('timer');
+  sent.length = 0;
+  await p.onKeyframe(kf('locate', 'k3'), jpeg);
+  expect(sent.filter((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toHaveLength(1);
+
+  // Abort also resets the flag
+  p.abort();
+  p.onGoal('stop');
+  sent.length = 0;
+  await p.onKeyframe(kf('locate', 'k4'), jpeg);
+  expect(sent.filter((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toHaveLength(1);
+});
+
+test('no looking message on verify', async () => {
+  const { p, sent } = run();
+  p.onGoal('press start');
+  await p.onKeyframe(kf('locate'), jpeg);
+  sent.length = 0;
+  await p.onKeyframe(kf('verify', 'k2'), jpeg);
+  expect(sent.some((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toBe(false);
+});
+

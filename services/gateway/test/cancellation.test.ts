@@ -45,7 +45,7 @@ test('abort releases a pending parse and drops its late result while retaining c
   p.abort(); await within50ms(work);
   pending.resolve(); await new Promise(setImmediate);
   expect(segment).not.toHaveBeenCalled();
-  expect(sent.map((m) => m.type)).toEqual(['goal.ack']);
+  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'say']);
   expect(usage).toEqual([{ kind: 'spark', inputTokens: 0, outputTokens: 0 }]);
   await p.onKeyframe(frame('verify'), jpeg);
   expect(models.parseScreen).toHaveBeenCalledTimes(1);
@@ -58,7 +58,7 @@ test('abort drops a pending SAM target and preserves usage once that call finish
   const work = p.onKeyframe(frame(), jpeg);
   await vi.waitFor(() => expect(models.segmentByBox).toHaveBeenCalledTimes(1));
   p.abort(); await within50ms(work); pending.resolve(); await new Promise(setImmediate);
-  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'layout']);
+  expect(sent.map((m) => m.type)).toEqual(['goal.ack', 'say', 'layout']);
   expect(usage).toEqual([{ kind: 'spark', inputTokens: 0, outputTokens: 0 }, { kind: 'sam_image', images: 1 }]);
 });
 
