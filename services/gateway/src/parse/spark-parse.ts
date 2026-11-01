@@ -66,7 +66,7 @@ export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mi
       ] },
     ],
     response_format: { type: 'json_schema', json_schema: { name: 'screen_layout', strict: true, schema: SPARK_SCREEN_JSON_SCHEMA } },
-  });
+  }, { headers: { 'X-Prompt-Id': PARSE_PROMPT_ID } });  // static system prompt first + stable id: cache-friendly (B5-3)
   const content = response.choices[0]?.message.content;
   if (!content) throw new Error('Spark returned no content');
   const layout = toLayout(SparkScreen.parse(JSON.parse(content)));

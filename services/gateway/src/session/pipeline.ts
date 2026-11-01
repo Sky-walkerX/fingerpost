@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { ulid } from 'ulid';
 import { Ask, Layout, Target, type Keyframe, type LayoutElement, type Locale, type ServerMessage } from '@fingerpost/protocol';
 import type { ModelPort } from '../models/port.ts';
-import { PrivateUnavailable, type RoutedModels } from '../models/router.ts';
+import { ModelsUnavailable, OFFLINE_SAY, PrivateUnavailable, type RoutedModels } from '../models/router.ts';
 import type { Usage } from '../quota/cost.ts';
 import { SPOKEN_ERRORS } from '../errors/spoken.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
@@ -281,7 +281,15 @@ export class SessionPipeline {
       .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
     const screen = h.kind === 'full' ? models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
       .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
-    const result = await whileActive(Promise.all([parse, screen]), signal);
+    let result: Awaited<ReturnType<typeof whileActive<[Awaited<typeof parse>, Awaited<typeof screen>]>>>;
+    try {
+      result = await whileActive(Promise.all([parse, screen]), signal);
+    } catch (error) {
+      if (!(error instanceof ModelsUnavailable)) throw error;
+      // The whole chain failed (Spark 1.3, 1.2, retry, Glimmer): switch the session to offline basic mode.
+      this.d.send({ ...this.base(), type: 'mode', mode: 'offline', reason: OFFLINE_SAY });
+      return;
+    }
     if (result === CANCELLED || signal.aborted) return;
     const [parsed, screenMask] = result;
     const mapped = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
@@ -394,7 +402,9 @@ export class SessionPipeline {
     const mask = await whileActive((this.frameModels ?? this.d.models).segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
-    }).then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
+    }).then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; })
+      // Refinement is optional: with SAM unreachable, Spark's own box is still a usable target.
+      .catch((error: unknown) => { if (error instanceof ModelsUnavailable) return { polygon: null, confidence: null, latencyMs: 0 }; throw error; }), signal);
     if (mask === CANCELLED || signal.aborted) return;
     const refined = mask.polygon && (coordinates ? coordinates.toScreen(mask.polygon) : mask.polygon);
     const polygon = refined || element.polygon;

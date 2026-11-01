@@ -30,6 +30,7 @@ export interface AppOverrides {
   /** Local phone practice announces simulated targets; ignored entirely in live mode. */
   mockNotice?: string;
   models?: ModelPort; planner?: Planner; /** B4-3: Glimmer on Modal (private mode). */ glimmer?: ModelPort;
+  /** B5-3: tests replace the 200–600 ms retry wait. */ routerSleep?: (ms: number) => Promise<void>;
   /** B5-2: tests inject a seeded service; live builds a Firestore store in server.ts. */ memory?: MemoryService; memoryStore?: MemoryStore; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
   /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
   quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
@@ -45,7 +46,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   const live = cfg.MODEL_MODE === 'live';
   const client = live ? createMetaClient(cfg.META_API_KEY!, cfg.MODEL_TIMEOUT_MS) : null;
   const models = o.models ?? (client ? liveModels(client) : mockModels());
-  const router = createRouter({ meta: models, glimmer: o.glimmer });
+  const router = createRouter({ meta: models, glimmer: o.glimmer, ...(o.routerSleep ? { sleep: o.routerSleep } : {}) });
   const memory = o.memory ?? new MemoryService(o.memoryStore ?? new InMemoryStore(),
     { salt: cfg.MEMORY_SALT ?? randomBytes(16).toString('hex'), minInstalls: cfg.MEMORY_MIN_INSTALLS });
   const planner = o.planner ?? (client && (cfg.AGENT_PLANNER ?? 'spark') === 'spark' ? sparkPlanner(client) : rulesPlanner());

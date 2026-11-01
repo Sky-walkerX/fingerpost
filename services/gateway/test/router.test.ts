@@ -29,21 +29,24 @@ test('private session never calls meta', async () => {
   expect(() => createRouter({ meta: spy('meta', calls) }).forSession('private', 'none')).toThrow(PrivateUnavailable);
 });
 
-test('financial layout switches later frames to glimmer', () => {
+test('financial layout switches later frames to glimmer', async () => {
   const calls: string[] = [];
   const meta = spy('meta', calls), glimmer = spy('glimmer', calls);
   const router = createRouter({ meta, glimmer });
-  expect(router.forSession('normal', 'none')).toBe(meta);
+  await router.forSession('normal', 'none').parseScreen(image, { locale: 'en' });
+  expect(calls).toEqual(['meta.parse']);
   expect(router.forSession('normal', 'financial')).toBe(glimmer);
   expect(router.forSession('normal', 'identity')).toBe(glimmer);
   expect(router.privateAvailable).toBe(true);
 });
 
-test('without glimmer a sensitive screen stays on meta (the PIN gate is local); only a private session refuses', () => {
-  const meta = spy('meta', []);
+test('without glimmer a sensitive screen stays on meta (the PIN gate is local); only a private session refuses', async () => {
+  const calls: string[] = [];
+  const meta = spy('meta', calls);
   const router = createRouter({ meta });
   expect(router.privateAvailable).toBe(false);
-  expect(router.forSession('normal', 'financial')).toBe(meta);
+  await router.forSession('normal', 'financial').parseScreen(image, { locale: 'en' });
+  expect(calls).toEqual(['meta.parse']);
   expect(() => router.forSession('private', 'financial')).toThrow(PrivateUnavailable);
 });
 

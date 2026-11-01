@@ -163,7 +163,7 @@ export function sparkPlanner(client: OpenAI): Planner {
         tools: PLANNER_TOOLS,
         tool_choice: 'required',
         parallel_tool_calls: false,
-      }, signal ? { signal } : {});
+      }, { headers: { 'X-Prompt-Id': AGENT_PROMPT_ID }, ...(signal ? { signal } : {}) });
       const call = response.choices[0]?.message.tool_calls?.[0];
       if (!call || call.type !== 'function') throw new Error('Planner returned no tool call');
       const name = call.function.name as keyof typeof Args;

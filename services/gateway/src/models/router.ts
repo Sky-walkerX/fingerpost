@@ -1,6 +1,8 @@
+import OpenAI from 'openai';
 import type { Sensitivity } from '@fingerpost/protocol';
 import type { z } from 'zod';
-import type { ModelPort } from './port.ts';
+import { Breaker } from './breaker.ts';
+import { sparkFallbackWorthy, type ModelPort } from './port.ts';
 
 type SensitivityValue = z.infer<typeof Sensitivity>;
 
@@ -9,19 +11,75 @@ export class PrivateUnavailable extends Error {
   constructor() { super('Private models are not available'); this.name = 'PrivateUnavailable'; }
 }
 
+/** Every step of the fallback chain failed (design §4.4): the session switches to offline basic mode. */
+export class ModelsUnavailable extends Error {
+  constructor() { super('Models are not available'); this.name = 'ModelsUnavailable'; }
+}
+
+/** Spoken when the chain ends (Days 4–7 plan, B5-3). */
+export const OFFLINE_SAY = 'Cloud features are paused; basic mode still works.';
+
 export interface RoutedModels {
   /** Which models read this session's next frame. Throws PrivateUnavailable for a private session without Glimmer. */
   forSession(privacy: 'normal' | 'private', sensitivity: SensitivityValue): ModelPort;
   readonly privateAvailable: boolean;
 }
 
+export interface RouterOptions {
+  meta: ModelPort;
+  glimmer?: ModelPort | undefined;
+  breaker?: Breaker;
+  /** Glimmer scales to zero on Modal; a cold start is too slow to be a fallback. Default: warm when configured. */
+  glimmerWarm?: () => boolean;
+  sleep?: (ms: number) => Promise<void>;
+  random?: () => number;
+}
+
+/** A blip worth one quick retry: a connection drop or a 5xx. Not a timeout (it already waited the full budget). */
+const retryWorthy = (error: unknown) =>
+  !(error instanceof OpenAI.APIConnectionTimeoutError) && (error instanceof OpenAI.APIConnectionError || sparkFallbackWorthy(error));
+
 /**
- * Days 4–7 plan, B4-1 (design §4.4). A private session never touches the Meta API. A screen the gateway
- * marked financial or identity sends later frames to Glimmer when it is configured; without Glimmer those
- * frames stay on Meta Standard mode, because the PIN/payment gate already blocks secrets on the device and
- * refusing would end the user's task mid-payment. Spark 1.3 → 1.2 fallback lives in liveModels.
+ * Days 4–7 plan, B4-1 + B5-3 (design §4.4). Routing: a private session never touches the Meta API; a screen
+ * the gateway marked financial or identity sends later frames to Glimmer when it is configured (without
+ * Glimmer they stay on Meta Standard mode: the PIN gate already blocks secrets on the device).
+ * Resilience on the Meta path: Spark 1.3 → 1.2 (inside liveModels) → one jittered retry (200–600 ms) →
+ * warm Glimmer → ModelsUnavailable, which the session turns into offline mode. A breaker (5 failures in
+ * 30 s, 20 s open) stops hammering a provider that is down.
  */
-export function createRouter(o: { meta: ModelPort; glimmer?: ModelPort | undefined }): RoutedModels {
+export function createRouter(o: RouterOptions): RoutedModels {
+  const breaker = o.breaker ?? new Breaker();
+  const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const random = o.random ?? Math.random;
+  const warm = o.glimmerWarm ?? (() => true);
+
+  async function resilient<T>(call: (port: ModelPort) => Promise<T>): Promise<T> {
+    if (breaker.allow()) {
+      try {
+        const result = await call(o.meta);
+        breaker.success();
+        return result;
+      } catch (error) {
+        let failed = true;
+        let result: T | undefined;
+        if (retryWorthy(error)) {
+          await sleep(Math.round(200 + random() * 400));
+          try { result = await call(o.meta); failed = false; } catch { /* counted below */ }
+        }
+        if (!failed) { breaker.success(); return result as T; }
+        breaker.failure();
+      }
+    }
+    if (o.glimmer && warm()) return call(o.glimmer);
+    throw new ModelsUnavailable();
+  }
+
+  const metaPath: ModelPort = {
+    parseScreen: (img, opts) => resilient((p) => p.parseScreen(img, opts)),
+    segmentByBox: (img, box) => resilient((p) => p.segmentByBox(img, box)),
+    segmentByText: (img, phrase) => resilient((p) => p.segmentByText(img, phrase)),
+  };
+
   return {
     privateAvailable: !!o.glimmer,
     forSession(privacy, sensitivity) {
@@ -30,7 +88,7 @@ export function createRouter(o: { meta: ModelPort; glimmer?: ModelPort | undefin
         return o.glimmer;
       }
       if (sensitivity !== 'none' && o.glimmer) return o.glimmer;
-      return o.meta;
+      return metaPath;
     },
   };
 }
