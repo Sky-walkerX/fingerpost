@@ -4,3 +4,5 @@ export { liveModels, type ModelPort } from './models/port.ts';
 export { mockModels, MOCK_LAYOUT } from './models/mock/mock-models.ts';
 export { resolveByText, tokenSetRatio } from './resolve/match.ts';
 export { PARSE_PROMPT_ID } from './parse/spark-parse.ts';
+export { createGlimmerClient, glimmerModels } from './parse/glimmer-parse.ts';
+export { loadConfig } from './config.ts';

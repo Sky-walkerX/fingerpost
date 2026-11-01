@@ -2,11 +2,12 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import { ulid } from 'ulid';
 import { LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
-import type { Config } from './config.ts';
+import { privateAvailable, type Config } from './config.ts';
 import { registerLatencyRoute } from './debug/latency.ts';
 import { createMetaClient } from './models/meta-client.ts';
 import { rulesPlanner, sparkPlanner, type Planner } from './agent/planner.ts';
 import { createRouter } from './models/router.ts';
+import { createGlimmerClient, glimmerModels } from './parse/glimmer-parse.ts';
 import { randomBytes } from 'node:crypto';
 import { MemoryService } from './memory/service.ts';
 import { InMemoryStore, type MemoryStore } from './memory/store.ts';
@@ -46,7 +47,9 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   const live = cfg.MODEL_MODE === 'live';
   const client = live ? createMetaClient(cfg.META_API_KEY!, cfg.MODEL_TIMEOUT_MS) : null;
   const models = o.models ?? (client ? liveModels(client) : mockModels());
-  const router = createRouter({ meta: models, glimmer: o.glimmer, ...(o.routerSleep ? { sleep: o.routerSleep } : {}) });
+  // Glimmer is a paid GPU: only live mode calls it. Mock/dev private sessions use an injected port or are refused.
+  const glimmer = o.glimmer ?? (live && privateAvailable(cfg) ? glimmerModels(createGlimmerClient(cfg), cfg.GLIMMER_MODEL!) : undefined);
+  const router = createRouter({ meta: models, glimmer, ...(o.routerSleep ? { sleep: o.routerSleep } : {}) });
   const memory = o.memory ?? new MemoryService(o.memoryStore ?? new InMemoryStore(),
     { salt: cfg.MEMORY_SALT ?? randomBytes(16).toString('hex'), minInstalls: cfg.MEMORY_MIN_INSTALLS });
   const planner = o.planner ?? (client && (cfg.AGENT_PLANNER ?? 'spark') === 'spark' ? sparkPlanner(client) : rulesPlanner());

@@ -30,15 +30,29 @@ const Env = z
     ALLOW_UNAUTHENTICATED_LIVE: bool.default(false),
     DAILY_CAP_USD: z.coerce.number().positive().default(12),
     FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+    // Day 4, B4-3: Glimmer on Modal (private mode). All three or none.
+    /** OpenAI-compatible base URL of the Modal vLLM server, ending in /v1. https, or http only to this machine. */
+    GLIMMER_URL: z.url().refine((u) => { const { protocol, hostname } = new URL(u);
+      return protocol === 'https:' || (protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(hostname)); },
+    'GLIMMER_URL must be https (http only for localhost)').optional(),
+    /** Modal proxy-auth token as "<Modal-Key>:<Modal-Secret>". */
+    GLIMMER_TOKEN: z.string().regex(/^[^:\s]+:[^:\s]+$/, 'GLIMMER_TOKEN must be <Modal-Key>:<Modal-Secret>').optional(),
+    /** The vLLM --served-model-name, e.g. "glimmer". */
+    GLIMMER_MODEL: z.string().min(1).optional(),
   })
   .transform((e) => ({ ...e, AUTH_REQUIRED: e.AUTH_REQUIRED ?? e.MODEL_MODE === 'live', ALLOW_SOFTWARE_ATTESTATION: e.ALLOW_SOFTWARE_ATTESTATION ?? e.MODEL_MODE !== 'live' }))
   .superRefine((e, ctx) => {
     if (e.MODEL_MODE === 'live' && !e.META_API_KEY) ctx.addIssue({ code: 'custom', path: ['META_API_KEY'], message: 'META_API_KEY is required when MODEL_MODE=live' });
     if (e.MODEL_MODE === 'live' && !e.AUTH_REQUIRED && !e.ALLOW_UNAUTHENTICATED_LIVE) ctx.addIssue({ code: 'custom', path: ['AUTH_REQUIRED'], message: 'AUTH_REQUIRED=false in live mode needs ALLOW_UNAUTHENTICATED_LIVE=true (dev deploys only)' });
     if (e.AUTH_REQUIRED && !e.SESSION_SECRET) ctx.addIssue({ code: 'custom', path: ['SESSION_SECRET'], message: 'SESSION_SECRET (32+ chars) is required when AUTH_REQUIRED' });
+    const glimmer = [e.GLIMMER_URL, e.GLIMMER_TOKEN, e.GLIMMER_MODEL].filter((v) => v !== undefined).length;
+    if (glimmer !== 0 && glimmer !== 3) ctx.addIssue({ code: 'custom', path: ['GLIMMER_URL'], message: 'set all of GLIMMER_URL, GLIMMER_TOKEN and GLIMMER_MODEL, or none' });
     if (e.AUTH_REQUIRED && !e.SIGNING_DIGESTS) ctx.addIssue({ code: 'custom', path: ['SIGNING_DIGESTS'], message: 'SIGNING_DIGESTS is required when AUTH_REQUIRED' });
   });
 export type Config = z.infer<typeof Env>;
+
+/** B4-3: private mode exists only when the Glimmer endpoint is fully configured. */
+export const privateAvailable = (cfg: Config) => !!(cfg.GLIMMER_URL && cfg.GLIMMER_TOKEN && cfg.GLIMMER_MODEL);
 
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const r = Env.safeParse(env);

@@ -7,7 +7,7 @@ export interface HubHandlers {
   onMessage?(m: ClientMessage, payload: Uint8Array | null): Promise<void> | void;
 }
 
-export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; }
+export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
 
 const SPOKEN_BAD = 'Something went wrong talking to the server.';
 
@@ -80,7 +80,7 @@ export class SessionHub {
         this.d.handlers?.onHello?.(msg);
         this.helloed = true;
         this.d.send({ type: 'ready', id: ulid(), ts: this.now(), sessionId: this.id,
-          quota: { tasksLeft: 30 }, flags: { cloudEnabled: true, privateAvailable: false } });
+          quota: { tasksLeft: 30 }, flags: { cloudEnabled: true, privateAvailable: this.d.privateAvailable ?? false } });
       } else {
         await this.d.handlers?.onMessage?.(msg, payload);
       }

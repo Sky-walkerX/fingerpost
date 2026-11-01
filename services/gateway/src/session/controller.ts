@@ -64,7 +64,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     awaitingEnd = false;
     old?.close();
   };
-  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}), handlers: {
+  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}), privateAvailable: d.router?.privateAvailable ?? false, handlers: {
     onHello(message) {
       if (disposed) return;
       pipeline.setLocale(message.locale);

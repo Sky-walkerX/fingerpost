@@ -77,7 +77,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-5 | Settings screen | A | – | todo | |
 | B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
-| B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | todo | |
+| B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | doing | Codex |
 | B4-4 | HI/ES server speech | B | – | todo | |
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
 | C4-2 | Virtual-device flow runner | C | B4-0 | todo | |
@@ -452,3 +452,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-01: Pipeline announces "Looking at the screen." before locate Spark calls once per goal; phone-dev flag parsing verified; 372 gateway tests pass.
 - 2026-11-02: A4-1/A4-2 code + task-6 app wiring: ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, SafetyPolicy, FlowReplayTest (medium-cola, guide-start). 190 guidance cases pass under kotlinc; awaiting Gradle + phone check. Gateway: duplicate answer no longer becomes a new goal; unclear confirm reply declines.
 - 2026-11-02: A4-4 EN/HI/ES string tables for Prompts, Phrases and A4 keys; TtsSpeaker says "<Language> voice not installed; using English." once on LANG_MISSING_DATA. 213 guidance + 12 app tests pass; phone voice check pending.
+- 2026-11-02: B4-3 mock-first: Glimmer adapter (Spark schema/toLayout, no SAM), all-or-none GLIMMER_* config, live-only client, ready.flags.privateAvailable, eval --mode private, Modal vLLM app (not deployed). 410 gateway + 51 eval tests pass. Live deploy + 20-image eval wait on Modal credits.
