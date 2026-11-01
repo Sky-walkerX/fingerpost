@@ -38,11 +38,11 @@ describe('fast-food scene', () => {
     const pay = buildFastFood(3).screens.find((s) => s.id === 'pay')!;
     expect(pay.elements.filter((e) => e.role === 'pay')).toHaveLength(1);
   });
-  test('the happy path home → menu → drink-size → pay → done logs one event per tap', () => {
+  test('the happy path home → menu → drink-size → pay → pin → done logs one event per tap', () => {
     const s = newRun('run-1', buildFastFood(1));
-    for (const id of ['start-order', 'drinks', 'medium', 'pay-card']) tap(s, id);
+    for (const id of ['start-order', 'drinks', 'medium', 'pay-card', 'key-ok']) tap(s, id);
     expect(s.screenId).toBe('done');
-    expect(s.events.map((e) => [e.screenId, e.elementId])).toEqual([['home', 'start-order'], ['menu', 'drinks'], ['drink-size', 'medium'], ['pay', 'pay-card']]);
+    expect(s.events.map((e) => [e.screenId, e.elementId])).toEqual([['home', 'start-order'], ['menu', 'drinks'], ['drink-size', 'medium'], ['pay', 'pay-card'], ['pin', 'key-ok']]);
   });
 });
 
