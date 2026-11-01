@@ -90,7 +90,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A5-4 | (stretch) Mock glasses source | A | – | todo | |
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
 | B5-2 | Kiosk memory | B | – | done | Codex |
-| B5-3 | Breaker + fallback chain | B | B4-1 | todo | |
+| B5-3 | Breaker + fallback chain | B | B4-1 | done | Codex |
 | B5-4 | 50-session load test | B | C4-2 | todo | |
 | C5-1 | Tester session #2 | C | – | todo | |
 | C5-2 | Privacy, data-safety, install pages | C | – | todo | |
