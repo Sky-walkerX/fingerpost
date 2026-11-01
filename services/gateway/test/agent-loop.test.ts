@@ -1,429 +1,168 @@
-import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import type { Layout, LayoutElement, ServerMessage } from '@fingerpost/protocol';
-import { AgentSession, type ToolCall, type ToolImpl } from '../src/agent/loop.ts';
-import { Policy } from '../src/agent/policy.ts';
-import type { ModelPort } from '../src/models/port.ts';
+import { describe, expect, it } from 'vitest';
+import type { Layout, LayoutElement } from '@fingerpost/protocol';
+import { AgentSession, parseYesNo, type AgentTurn } from '../src/agent/loop.ts';
+import { rulesPlanner, screenAmount, type AgentState, type Planner, type ToolCall } from '../src/agent/planner.ts';
 import { inferIntent } from '../src/agent/intent.ts';
 import { layoutFingerprint } from '../src/session/pipeline.ts';
 
-// ── helpers ──────────────────────────────────────────────────────────────
+// Screens from the shared seed-1 fast-food flow (packages/protocol/fixtures/flows/medium-cola.json).
+const flow = JSON.parse(readFileSync(new URL('../../../packages/protocol/fixtures/flows/medium-cola.json', import.meta.url), 'utf8')) as {
+  steps: { from: string; msg: Record<string, unknown>; screen?: string }[];
+};
+const screens = new Map<string, Layout>();
+for (const s of flow.steps) if (s.from === 'server' && s.msg.type === 'layout' && s.screen && !screens.has(s.screen)) screens.set(s.screen, s.msg as unknown as Layout);
+const screen = (name: string) => screens.get(name)!;
 
-interface FlowStep {
-  from: 'client' | 'server';
-  msg: Record<string, unknown>;
-  screen?: string;
+const el = (id: string, label: string, role: LayoutElement['role']): LayoutElement => ({
+  id, label, role, confidence: 0.95, textNorm: label.toLowerCase(),
+  polygon: [{ u: 0.1, v: 0.1 }, { u: 0.3, v: 0.1 }, { u: 0.3, v: 0.2 }, { u: 0.1, v: 0.2 }],
+});
+const layout = (elements: LayoutElement[], screenType: Layout['screenType'] = 'menu'): Layout => ({
+  id: 'l', ts: 0, type: 'layout', fingerprint: layoutFingerprint(elements), screenType, rotation: 0, language: 'en',
+  sensitivity: 'none', elements, source: 'model',
+});
+
+/** A planner that returns scripted tool calls in order and records what it was shown. */
+function scripted(...calls: ToolCall[]): Planner & { seen: AgentState[] } {
+  const seen: AgentState[] = [];
+  return { id: 'scripted', seen, async next(state) { seen.push(state); const call = calls.shift(); if (!call) throw new Error('script ran out'); return { call }; } };
 }
-
-interface Flow {
-  name: string;
-  scene: string;
-  seed: number;
-  steps: FlowStep[];
-}
-
-function loadFlow(name: string): Flow {
-  const path = join(import.meta.dirname, '../../packages/protocol/fixtures/flows', `${name}.json`);
-  return JSON.parse(readFileSync(path, 'utf8')) as Flow;
-}
-
-/** Extract layouts from a flow indexed by screen name. */
-function flowLayouts(flow: Flow): Map<string, Layout> {
-  const layouts = new Map<string, Layout>();
-  for (const step of flow.steps) {
-    if (step.from === 'server' && step.msg.type === 'layout' && step.screen) {
-      layouts.set(step.screen, step.msg as unknown as Layout);
-    }
-  }
-  return layouts;
-}
-
-/** Stub ModelPort that never gets called (the agent uses ToolImpl instead). */
-function stubModels(): ModelPort {
-  return {
-    parseScreen: () => { throw new Error('unexpected parseScreen'); },
-    segmentByBox: () => { throw new Error('unexpected segmentByBox'); },
-    segmentByText: () => { throw new Error('unexpected segmentByText'); },
-  };
-}
-
-function makeLayout(elements: LayoutElement[], fingerprint?: string): Layout {
-  const fp = fingerprint ?? layoutFingerprint(elements);
-  return {
-    id: 'layout-' + Math.random().toString(36).slice(2),
-    ts: 0,
-    type: 'layout',
-    fingerprint: fp,
-    screenType: 'menu',
-    rotation: 0,
-    language: 'en',
-    sensitivity: 'none',
-    elements,
-    source: 'model',
-  } as Layout;
-}
-
-function makeElement(overrides: Partial<LayoutElement> & { id: string; role: string }): LayoutElement {
-  return {
-    label: overrides.label ?? overrides.id,
-    polygon: [{ u: 0, v: 0 }, { u: 1, v: 0 }, { u: 1, v: 1 }, { u: 0, v: 1 }],
-    textNorm: overrides.textNorm ?? overrides.label?.toLowerCase() ?? overrides.id,
-    confidence: overrides.confidence ?? 0.95,
-    ...overrides,
-  } as LayoutElement;
-}
-
-// ── tests ────────────────────────────────────────────────────────────────
+const call = (name: string, args: Record<string, unknown> = {}): ToolCall => ({ name, arguments: args });
+const action = (t: AgentTurn) => t.action;
 
 describe('agent loop', () => {
   it('completes medium-cola flow', async () => {
-    const flow = loadFlow('medium-cola');
-    const layouts = flowLayouts(flow);
-    const sent: ServerMessage[] = [];
-
-    // Script the model's tool calls for each screen:
-    // home → guide_to start-order
-    // menu → guide_to drinks
-    // drink-size → guide_to medium
-    // pay → confirm_with_user then guide_to pay-card
-    // after pay verify → finish done
-    const toolCallSequence: ToolCall[][] = [
-      // After home layout
-      [{ id: 'tc1', name: 'guide_to', arguments: { element_id: 'start-order', why: 'Start the order' } }],
-      // After menu layout (verify ok)
-      [{ id: 'tc2', name: 'guide_to', arguments: { element_id: 'drinks', why: 'Select drinks' } }],
-      // After drink-size layout (verify ok)
-      [{ id: 'tc3', name: 'guide_to', arguments: { element_id: 'medium', why: 'Select medium' } }],
-      // After pay layout (verify ok) - first confirm, then guide
-      [{ id: 'tc4', name: 'confirm_with_user', arguments: {
-        summary: 'Medium cola, Total ₹149',
-        amount_value: 149,
-        amount_currency: 'INR',
-        element_ids: ['pay-card'],
-      } }],
-      // After confirm accepted
-      [{ id: 'tc5', name: 'guide_to', arguments: { element_id: 'pay-card', why: 'Pay by card' } }],
-      // After pay verified
-      [{ id: 'tc6', name: 'finish', arguments: { result: 'done', reason: 'PIN entry is ready.' } }],
-    ];
-    let callIndex = 0;
-
-    const tools: ToolImpl = {
-      async chat() {
-        const calls = toolCallSequence[callIndex] ?? [];
-        callIndex++;
-        return { toolCalls: calls };
-      },
-    };
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Order a medium cola and pay');
-
-    // Feed the home layout
-    const homeLayout = layouts.get('home')!;
-    await agent.onLayout(homeLayout);
-    // Agent should have sent target for start-order
-    const target1 = sent.find((m) => m.type === 'target' && (m as any).elementId === 'start-order');
-    expect(target1).toBeDefined();
-
-    // Simulate verify ok → menu layout
-    await agent.onVerify('ok');
-    const menuLayout = layouts.get('menu')!;
-    await agent.onLayout(menuLayout);
-    // Agent should have sent target for drinks
-    const target2 = sent.find((m) => m.type === 'target' && (m as any).elementId === 'drinks');
-    expect(target2).toBeDefined();
-
-    // Verify ok → drink-size layout
-    await agent.onVerify('ok');
-    const sizeLayout = layouts.get('drink-size')!;
-    await agent.onLayout(sizeLayout);
-    const target3 = sent.find((m) => m.type === 'target' && (m as any).elementId === 'medium');
-    expect(target3).toBeDefined();
-
-    // Verify ok → pay layout
-    await agent.onVerify('ok');
-    const payLayout = layouts.get('pay')!;
-    await agent.onLayout(payLayout);
-    // Agent should have sent confirm
-    const confirmMsg = sent.find((m) => m.type === 'confirm');
-    expect(confirmMsg).toBeDefined();
-    expect((confirmMsg as any).summary).toContain('149');
-
-    // Accept confirm
-    await agent.onConfirmReply((confirmMsg as any).id, true);
-
-    // Now the model calls guide_to pay-card (triggered by next loop)
-    await agent.onLayout(payLayout);
-    const target4 = sent.find((m) => m.type === 'target' && (m as any).elementId === 'pay-card');
-    expect(target4).toBeDefined();
-
-    // Verify ok → finish
-    await agent.onVerify('ok');
-    // Feed a final layout to trigger finish tool call
-    await agent.onLayout(payLayout);
-    const finish = sent.find((m) => m.type === 'finish');
-    expect(finish).toBeDefined();
-    expect((finish as any).result).toBe('done');
+    const agent = new AgentSession('Order a medium cola and pay', { planner: rulesPlanner() });
+    expect(action(await agent.decide(screen('home')))).toMatchObject({ kind: 'target', element: { id: 'start-order' } });
+    agent.pressed(screen('home').elements.find((e) => e.id === 'start-order')!, screen('menu'));
+    expect(action(await agent.decide(screen('menu')))).toMatchObject({ kind: 'target', element: { id: 'drinks' } });
+    expect(action(await agent.decide(screen('drink-size')))).toMatchObject({ kind: 'target', element: { id: 'medium' } });
+    const confirm = action(await agent.decide(screen('pay')));
+    expect(confirm).toMatchObject({ kind: 'confirm', amount: { value: 149, currency: 'INR' } });
+    if (confirm.kind !== 'confirm') throw new Error('expected confirm');
+    expect(confirm.summary).toContain('149');
+    expect(agent.onConfirmReply(confirm.id, true)).toBe('accepted');
+    const pay = action(await agent.decide(screen('pay')));
+    expect(pay).toMatchObject({ kind: 'target', element: { id: 'pay-card', role: 'pay' } });
+    if (pay.kind !== 'target') throw new Error('expected target');
+    agent.pressed(pay.element, screen('pay'));
+    // The pay panel is still showing: wait for the device's PIN mode instead of re-planning.
+    expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
+    expect(agent.pinEntered()).toBe(true);
+    expect(agent.done).toBe(true);
   });
 
   it('guide_to pay without confirm is refused and the model is told why', async () => {
-    const sent: ServerMessage[] = [];
-
-    const tools: ToolImpl = {
-      async chat() {
-        return {
-          toolCalls: [
-            { id: 'tc1', name: 'guide_to', arguments: { element_id: 'pay-card', why: 'Pay now' } },
-          ],
-        };
-      },
-    };
-
-    const payEl = makeElement({ id: 'pay-card', role: 'pay', label: 'Pay by card' });
-    const layout = makeLayout([payEl]);
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Pay now');
-    await agent.onLayout(layout);
-
-    // Should NOT have sent a target for pay-card
-    const target = sent.find((m) => m.type === 'target');
-    expect(target).toBeUndefined();
-
-    // Should have sent a safety say about needing to confirm first
-    const say = sent.find((m) => m.type === 'say' && (m as any).priority === 'safety');
-    expect(say).toBeDefined();
-    expect((say as any).text).toContain('confirm');
+    const planner = scripted(call('guide_to', { element_id: 'pay-card', why: 'pay' }), call('confirm_with_user', {
+      summary: 'Medium cola', amount_value: 1, amount_currency: 'USD', element_ids: ['pay-card'] }));
+    const agent = new AgentSession('Order a medium cola and pay', { planner });
+    const turn = await agent.decide(screen('pay'));
+    expect(planner.seen[1]!.feedback).toMatch(/refused.*confirm_with_user/);
+    // Never a target on the pay button; the confirm carries the amount the screen shows, not the model's.
+    expect(turn.action).toMatchObject({ kind: 'confirm', amount: { value: 149, currency: 'INR' } });
+    if (turn.action.kind === 'confirm') expect(turn.action.summary).toContain('₹149');
   });
 
   it('yes to an earlier confirm does not unlock a new pay target', async () => {
-    const sent: ServerMessage[] = [];
-    let callCount = 0;
-
-    const tools: ToolImpl = {
-      async chat() {
-        callCount++;
-        if (callCount === 1) {
-          // Confirm for old pay button
-          return {
-            toolCalls: [
-              { id: 'tc1', name: 'confirm_with_user', arguments: {
-                summary: 'Old payment, Total ₹100',
-                amount_value: 100,
-                amount_currency: 'INR',
-                element_ids: ['pay-old'],
-              } },
-            ],
-          };
-        }
-        if (callCount === 2) {
-          // Try to guide to a NEW pay button not covered by the confirm
-          return {
-            toolCalls: [
-              { id: 'tc2', name: 'guide_to', arguments: { element_id: 'pay-new', why: 'Pay new amount' } },
-            ],
-          };
-        }
-        return { toolCalls: [] };
-      },
-    };
-
-    const payOld = makeElement({ id: 'pay-old', role: 'pay', label: 'Pay old' });
-    const payNew = makeElement({ id: 'pay-new', role: 'pay', label: 'Pay new' });
-    const layout1 = makeLayout([payOld]);
-    const layout2 = makeLayout([payNew], 'sh64:different');
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Buy something');
-    await agent.onLayout(layout1);
-
-    // Confirm sent for old pay
-    const confirmMsg = sent.find((m) => m.type === 'confirm');
-    expect(confirmMsg).toBeDefined();
-
-    // Accept confirm
-    await agent.onConfirmReply((confirmMsg as any).id, true);
-
-    // New screen with new pay button
-    await agent.onLayout(layout2);
-
-    // Should NOT have a target for pay-new (the old confirm doesn't cover it)
-    const target = sent.find((m) => m.type === 'target' && (m as any).elementId === 'pay-new');
-    expect(target).toBeUndefined();
-
-    // Should have a safety say
-    const safety = sent.filter((m) => m.type === 'say' && (m as any).priority === 'safety');
-    expect(safety.length).toBeGreaterThan(0);
+    const first = layout([el('t1', 'Total ₹99', 'text'), el('p1', 'Pay now', 'pay')], 'payment_entry');
+    const second = layout([el('t2', 'Total ₹999', 'text'), el('p2', 'Pay by card', 'pay')], 'payment_entry');
+    const planner = scripted(
+      call('confirm_with_user', { summary: 'Order', amount_value: 99, amount_currency: 'INR', element_ids: ['p1'] }),
+      call('guide_to', { element_id: 'p2', why: 'pay' }), call('guide_to', { element_id: 'p2', why: 'pay' }));
+    const agent = new AgentSession('buy a ticket and pay', { planner, fallback: scripted(call('finish', { result: 'failed', reason: 'stop' })) });
+    const c = action(await agent.decide(first));
+    if (c.kind !== 'confirm') throw new Error('expected confirm');
+    expect(agent.onConfirmReply(c.id, true)).toBe('accepted');
+    // A reply to a stale or unknown confirm id is ignored.
+    expect(agent.onConfirmReply(c.id, true)).toBe('ignored');
+    const next = action(await agent.decide(second));
+    expect(next.kind).not.toBe('target');
   });
 
   it('step budget 20 ends with finish{failed} and a spoken reason', async () => {
-    const sent: ServerMessage[] = [];
-    let callCount = 0;
-
-    const tools: ToolImpl = {
-      async chat() {
-        callCount++;
-        // Always say something (a step)
-        return {
-          toolCalls: [
-            { id: `tc${callCount}`, name: 'say', arguments: { text: `Step ${callCount}` } },
-          ],
-        };
-      },
-    };
-
-    const el = makeElement({ id: 'btn', role: 'button', label: 'Button' });
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Do a lot of things');
-
-    // Feed 21 layouts, each with a unique fingerprint
-    for (let i = 0; i < 21; i++) {
-      const layout = makeLayout([el], `sh64:fp${i.toString().padStart(4, '0')}`);
-      if (!agent.checkPolicy()) break;
-      await agent.onLayout(layout);
-    }
-
-    const finish = sent.find((m) => m.type === 'finish');
-    expect(finish).toBeDefined();
-    expect((finish as any).result).toBe('failed');
-    expect((finish as any).say).toBeTruthy();
+    const planner: Planner = { id: 'p', async next(s) { return { call: call('guide_to', { element_id: s.screen.elements[0]!.id, why: 'x' }) }; } };
+    const agent = new AgentSession('order things', { planner });
+    for (let i = 0; i < 20; i++) expect(action(await agent.decide(layout([el(`b${i}`, `Button ${i}`, 'button')]))).kind).toBe('target');
+    const last = action(await agent.decide(layout([el('b20', 'Button 20', 'button')])));
+    expect(last).toMatchObject({ kind: 'finish', result: 'failed' });
+    if (last.kind === 'finish') expect(last.say.length).toBeGreaterThan(10);
   });
 
   it('same fingerprint 3 times asks to go back', async () => {
-    const sent: ServerMessage[] = [];
-    let callCount = 0;
-
-    const tools: ToolImpl = {
-      async chat() {
-        callCount++;
-        return {
-          toolCalls: [
-            { id: `tc${callCount}`, name: 'say', arguments: { text: 'Trying again' } },
-          ],
-        };
-      },
-    };
-
-    const el = makeElement({ id: 'btn', role: 'button', label: 'Button' });
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Do something');
-
-    const layout = makeLayout([el], 'sh64:samescreen1234');
-
-    // Feed same layout 3 times
-    agent.checkPolicy(); // does nothing first time (no fingerprint yet)
-    await agent.onLayout(layout);
-
-    agent.checkPolicy(); // 2nd
-    await agent.onLayout(layout);
-
-    const policyResult = agent.checkPolicy(); // 3rd
-    // The policy check in the test itself should detect loop
-
-    // After 3 times, the ask should appear
-    const ask = sent.find((m) => m.type === 'ask' && (m as any).question === 'Should I go back?');
-    expect(ask).toBeDefined();
+    const menu = layout([el('drinks', 'Drinks', 'button'), el('back', 'Back', 'back')]);
+    const agent = new AgentSession('order a cola', { planner: rulesPlanner() });
+    expect(action(await agent.decide(menu)).kind).toBe('target');
+    expect(action(await agent.decide(menu)).kind).toBe('target');
+    const ask = action(await agent.decide(menu));
+    expect(ask).toMatchObject({ kind: 'ask', question: expect.stringMatching(/go back/), options: ['Yes', 'No'] });
+    if (ask.kind !== 'ask') throw new Error('expected ask');
+    expect(agent.onTranscript('yes')).toBe('answered');
+    expect(action(await agent.decide(menu))).toMatchObject({ kind: 'target', element: { id: 'back' } });
   });
 
   it('recovers when the screen goes back', async () => {
-    const flow = loadFlow('go-back');
-    const layouts = flowLayouts(flow);
-    const sent: ServerMessage[] = [];
-    let callCount = 0;
-
-    const tools: ToolImpl = {
-      async chat() {
-        callCount++;
-        if (callCount === 1) {
-          return { toolCalls: [{ id: 'tc1', name: 'guide_to', arguments: { element_id: 'start-order', why: 'Start' } }] };
-        }
-        if (callCount === 2) {
-          return { toolCalls: [{ id: 'tc2', name: 'guide_to', arguments: { element_id: 'drinks', why: 'Drinks' } }] };
-        }
-        // After back, re-plan: guide to drinks again
-        if (callCount === 3) {
-          return { toolCalls: [{ id: 'tc3', name: 'guide_to', arguments: { element_id: 'drinks', why: 'Re-select drinks after back' } }] };
-        }
-        return { toolCalls: [{ id: 'tc4', name: 'finish', arguments: { result: 'done', reason: 'Done.' } }] };
-      },
-    };
-
-    const agent = new AgentSession({
-      models: stubModels(),
-      send: (m) => sent.push(m),
-      now: () => 0,
-      tools,
-    });
-
-    agent.onGoal('Order a medium cola');
-
-    // Home layout → target start-order
-    await agent.onLayout(layouts.get('home')!);
-    expect(sent.some((m) => m.type === 'target' && (m as any).elementId === 'start-order')).toBe(true);
-
-    // Verify ok → menu layout
-    await agent.onVerify('ok');
-    await agent.onLayout(layouts.get('menu')!);
-    expect(sent.some((m) => m.type === 'target' && (m as any).elementId === 'drinks')).toBe(true);
-
-    // Verify ok → drink-size
-    await agent.onVerify('ok');
-
-    // But user goes back! We get the menu layout again.
-    await agent.onLayout(layouts.get('menu')!);
-
-    // Agent should re-plan and target drinks again
-    const drinksTargets = sent.filter((m) => m.type === 'target' && (m as any).elementId === 'drinks');
-    expect(drinksTargets.length).toBeGreaterThanOrEqual(2);
+    const agent = new AgentSession('Order a medium cola', { planner: rulesPlanner() });
+    await agent.decide(screen('home'));
+    await agent.decide(screen('menu'));
+    expect(action(await agent.decide(screen('drink-size')))).toMatchObject({ element: { id: 'medium' } });
+    // The kiosk went back to the menu instead: re-plan from the new screen, not the stale "medium" step.
+    expect(action(await agent.decide(screen('menu')))).toMatchObject({ kind: 'target', element: { id: 'drinks' } });
   });
 
   it('guide intent keeps the Day 2 single-target path', () => {
-    // inferIntent should return 'guide' for simple single-target goals
     expect(inferIntent('Press start order', 'auto')).toBe('guide');
-    expect(inferIntent('Press start', 'guide')).toBe('guide');
-    expect(inferIntent('Tap the power button', 'auto')).toBe('guide');
-
-    // And 'task' for multi-step goals
+    expect(inferIntent('press Start', 'auto')).toBe('guide');
     expect(inferIntent('Order a medium cola and pay', 'auto')).toBe('task');
-    expect(inferIntent('Buy a ticket', 'auto')).toBe('task');
-
-    // And 'explore' for explore goals
-    expect(inferIntent('What is on this screen?', 'auto')).toBe('explore');
-    expect(inferIntent('Read the screen', 'auto')).toBe('explore');
+    expect(inferIntent('anything', 'guide')).toBe('guide');
   });
 });
 
+describe('agent loop safety details', () => {
+  it('asks which one when the goal names no option, and uses the answer', async () => {
+    const agent = new AgentSession('order a cola and pay', { planner: rulesPlanner() });
+    const ask = action(await agent.decide(screen('drink-size')));
+    expect(ask).toMatchObject({ kind: 'ask', options: ['Small ₹99', 'Medium ₹149', 'Large ₹179'] });
+    if (ask.kind !== 'ask') throw new Error('expected ask');
+    expect(agent.onAnswer('wrong-id', 'medium')).toBe(false);
+    expect(agent.onAnswer(ask.id, 'medium')).toBe(true);
+    expect(action(await agent.decide(screen('drink-size')))).toMatchObject({ kind: 'target', element: { id: 'medium' } });
+  });
+
+  it('a spoken no, or an unclear reply, never accepts payment', async () => {
+    const agent = new AgentSession('Order a medium cola and pay', { planner: rulesPlanner() });
+    const c = action(await agent.decide(screen('pay')));
+    expect(c.kind).toBe('confirm');
+    expect(agent.onTranscript('maybe later')).toBe('unclear');
+    expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
+    expect(agent.onTranscript('no')).toBe('declined');
+    expect(agent.done).toBe(true);
+    expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
+  });
+
+  it('a failing model falls back to the rules planner for that step', async () => {
+    const errors: string[] = [];
+    const broken: Planner = { id: 'spark', async next() { throw new Error('timeout'); } };
+    const agent = new AgentSession('Order a medium cola and pay', { planner: broken, onPlannerError: (id) => errors.push(id) });
+    expect(action(await agent.decide(screen('home')))).toMatchObject({ kind: 'target', element: { id: 'start-order' } });
+    expect(errors).toEqual(['spark']);
+  });
+
+  it('PIN mode only closes a task after a confirmed payment press', async () => {
+    const agent = new AgentSession('Order a medium cola and pay', { planner: rulesPlanner() });
+    await agent.decide(screen('home'));
+    expect(agent.pinEntered()).toBe(false);
+  });
+
+  it('reads yes and no in English, Hindi and Spanish', () => {
+    for (const yes of ['yes', 'Yes.', 'haan', 'हाँ', 'sí', 'okay']) expect(parseYesNo(yes)).toBe(true);
+    for (const no of ['no', 'nahin', 'नहीं', 'cancel']) expect(parseYesNo(no)).toBe(false);
+    for (const unclear of ['', 'what', 'how much', 'yesterday']) expect(parseYesNo(unclear)).toBeNull();
+  });
+
+  it('reads the total from the screen, and refuses to guess between two unlabeled amounts', () => {
+    expect(screenAmount(screen('pay').elements)).toEqual({ label: 'Total ₹149', value: 149, currency: 'INR' });
+    expect(screenAmount([el('a', '₹10', 'text'), el('b', '₹20', 'text')])).toBeNull();
+    expect(screenAmount([el('a', 'Amount: Rs. 1,250', 'text')])).toMatchObject({ value: 1250, currency: 'INR' });
+  });
+});

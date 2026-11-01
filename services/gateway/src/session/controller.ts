@@ -2,6 +2,7 @@ import { ulid } from 'ulid';
 import type { ServerMessage } from '@fingerpost/protocol';
 import type { AsrOptions, AsrRelay, AsrSink } from '../asr/relay.ts';
 import type { ModelPort } from '../models/port.ts';
+import type { Planner } from '../agent/planner.ts';
 import type { SimRegistry } from '../sim/registry.ts';
 import type { QuotaPort, SessionClaims, StartResult } from './types.ts';
 import { SessionHub } from './hub.ts';
@@ -13,6 +14,8 @@ export interface ControllerDeps {
   send: (m: ServerMessage) => void; models: ModelPort; asr: AsrFactory; sims: SimRegistry; now?: () => number;
   /** Day 3: present when the socket was authenticated. Without it, quotas are not applied (mock/dev). */
   claims?: SessionClaims; quota?: QuotaPort;
+  /** Day 4 task planner; the pipeline falls back to the rules planner when absent or failing. */
+  planner?: Planner; onPlannerError?: (plannerId: string) => void;
 }
 
 /** Wires one WebSocket: hub (validation) → pipeline (brain) + ASR relay + sim touches. Returns a disposer. */
@@ -43,7 +46,8 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     ? () => quota.startTask(claims.uid, claims.tier)
     : async (): Promise<StartResult> => ((await quota.cloudEnabled()) ? { ok: true, tasksLeft: 0 } : { ok: false, code: 'cloud_paused' }));
   const pipeline = new SessionPipeline({ models: d.models, send, ...(d.now ? { now: d.now } : {}), onUsage: usage,
-    ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}) });
+    ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}),
+    ...(d.planner ? { planner: d.planner } : {}), ...(d.onPlannerError ? { onPlannerError: d.onPlannerError } : {}) });
   const closeRelay = () => {
     turn++;
     const old = relay;
@@ -57,6 +61,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     onHello(message) {
       if (disposed) return;
       pipeline.setLocale(message.locale);
+      pipeline.setMode(message.mode);
       unsubscribe?.();
       unsubscribe = message.caps.simRunId ? d.sims.subscribe(message.caps.simRunId, (event) => {
         if (disposed) return;
@@ -69,7 +74,16 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
       if (disposed) return;
       if (accountingFailed && message.type !== 'abort' && message.type !== 'audio.end') return;
       switch (message.type) {
-        case 'goal': case 'answer': closeRelay(); pipeline.onGoal(message.text); break;
+        case 'goal': closeRelay(); pipeline.onGoal(message.text); break;
+        case 'answer':
+          closeRelay();
+          if (!pipeline.onAnswer(message.re, message.text)) pipeline.onGoal(message.text);
+          break;
+        case 'confirm.reply': pipeline.onConfirmReply(message.re, message.accepted); break;
+        case 'event':
+          // PIN entry is local: stop listening at once, and close the task's cloud part.
+          if (message.kind === 'pinModeEntered') { closeRelay(); pipeline.onPinModeEntered(); }
+          break;
         case 'audio': {
           if (!payload || audioEnded || awaitingEnd) break;
           audioBytes += payload.length;
@@ -112,7 +126,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
                   const publish = () => {
                     if (disposed || accountingFailed || completedTurn !== turn) return;
                     send({ ...base(), type: 'transcript', text, final: true });
-                    pipeline.onGoal(text);
+                    if (!pipeline.onTranscript(text)) pipeline.onGoal(text);
                   };
                   const recorded = usage({ kind: 'asr', seconds });
                   // The rejection path already pauses the controller and reports a content-free error.

@@ -57,6 +57,17 @@ test('phone gateway stays mock and unauthenticated regardless of live shell cred
   expect(config.META_API_KEY).toBeUndefined(); expect(config.SIM_TOKEN).toBeUndefined();
 });
 
+test('--live uses only the key and model settings from .env, with auth off', () => {
+  vi.stubEnv('LOG_LEVEL', 'trace'); vi.stubEnv('META_API_KEY', 'shell-key-ignored');
+  const config = phoneDevConfig({ live: true, env: { META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: '25000', DEBUG_TOKEN: 'synthetic-debug-token-123', PORT: '9999' } });
+  expect(config).toMatchObject({ MODEL_MODE: 'live', META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: 25_000, AUTH_REQUIRED: false, ALLOW_UNAUTHENTICATED_LIVE: true, PORT: 8080 });
+  expect(config.DEBUG_TOKEN).toBeUndefined();
+});
+
+test('--live without a key fails instead of silently falling back to mock', () => {
+  expect(() => phoneDevConfig({ live: true, env: {} })).toThrow(/META_API_KEY/);
+});
+
 test('watcher restores the route after a disconnect and stops polling on shutdown', async () => {
   vi.useFakeTimers();
   const run = vi.fn().mockResolvedValue('');

@@ -21,6 +21,18 @@ test('defaults: port 8080, mock mode', () => {
   expect(loadConfig({})).toMatchObject({ PORT: 8080, MODEL_MODE: 'mock', GIT_SHA: 'dev' });
 });
 
+test('model timeout defaults to 30 s and is bounded', () => {
+  expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(30_000);
+  expect(loadConfig({ MODEL_TIMEOUT_MS: '45000' }).MODEL_TIMEOUT_MS).toBe(45_000);
+  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '500' })).toThrow(/MODEL_TIMEOUT_MS/);
+  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '90000' })).toThrow(/MODEL_TIMEOUT_MS/);
+});
+
+test('agent planner is spark or rules', () => {
+  expect(loadConfig({ AGENT_PLANNER: 'rules' }).AGENT_PLANNER).toBe('rules');
+  expect(() => loadConfig({ AGENT_PLANNER: 'gpt' })).toThrow(/AGENT_PLANNER/);
+});
+
 test('websocket hello → ready over a real socket', async () => {
   app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }));
   await app.ready();

@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
+import { parseEnv, promisify } from 'node:util';
 import { buildApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
 
@@ -20,13 +21,25 @@ export async function restoreUsbForwarding(run: AdbCommand): Promise<UsbState> {
   } catch { return 'forwarding_failed'; }
 }
 
-export function phoneDevConfig() {
-  // Never inherit provider credentials or live mode from the developer's shell.
-  return loadConfig({ MODEL_MODE: 'mock', AUTH_REQUIRED: 'false', LOG_LEVEL: 'silent', GIT_SHA: 'phone-dev' });
+/** Settings `--live` may take from the repo's private .env; nothing else is read from it or from the shell. */
+const LIVE_KEYS = ['META_API_KEY', 'MODEL_TIMEOUT_MS', 'AGENT_PLANNER', 'SIM_TOKEN'] as const;
+
+export function readRootEnv(path = new URL('../../../.env', import.meta.url)): Record<string, string> {
+  return existsSync(path) ? parseEnv(readFileSync(path, 'utf8')) as Record<string, string> : {};
 }
 
-export function buildPhoneGateway() {
-  return buildApp(phoneDevConfig(), {
+/**
+ * Mock by default: never inherits provider credentials or live mode from the developer's shell.
+ * `live` = real Meta models for a local USB demo, with auth off. Still bound to 127.0.0.1 only.
+ */
+export function phoneDevConfig(o: { live?: boolean; env?: Record<string, string | undefined> } = {}) {
+  if (!o.live) return loadConfig({ MODEL_MODE: 'mock', AUTH_REQUIRED: 'false', LOG_LEVEL: 'silent', GIT_SHA: 'phone-dev' });
+  const picked = Object.fromEntries(LIVE_KEYS.flatMap((k) => (o.env?.[k] ? [[k, o.env[k]]] : [])));
+  return loadConfig({ ...picked, MODEL_MODE: 'live', AUTH_REQUIRED: 'false', ALLOW_UNAUTHENTICATED_LIVE: 'true', LOG_LEVEL: 'warn', GIT_SHA: 'phone-dev' });
+}
+
+export function buildPhoneGateway(o: { live?: boolean; env?: Record<string, string | undefined> } = {}) {
+  return buildApp(phoneDevConfig(o), {
     mockNotice: 'Practice mode. Targets are simulated. Do not use these directions on real controls.',
   });
 }
@@ -53,12 +66,17 @@ export function adbCommand(): AdbCommand {
   return async (args) => (await exec(adb, args, { timeout: 3_000, maxBuffer: 64 * 1024 })).stdout;
 }
 
-export async function startPhoneDev(run: AdbCommand = adbCommand(), report: (message: string) => void = console.log, port = 8080) {
-  const app = await buildPhoneGateway();
+export async function startPhoneDev(run: AdbCommand = adbCommand(), report: (message: string) => void = console.log, port = 8080, live = false) {
+  const app = await buildPhoneGateway(live ? { live, env: readRootEnv() } : {});
   try { await app.listen({ host: '127.0.0.1', port }); }
   catch (error) { await app.close(); throw error; }
-  report('Local mock gateway ready. Keep this terminal open while testing the USB phone.');
-  report('Use a debug APK built with -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080. No live recognition or cloud calls.');
+  if (live) {
+    report('Local LIVE gateway ready: real Meta models, auth OFF, laptop-only (127.0.0.1). Every screen read uses API credit.');
+    report('Use a debug APK built with -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080.');
+  } else {
+    report('Local mock gateway ready. Keep this terminal open while testing the USB phone.');
+    report('Use a debug APK built with -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080. No live recognition or cloud calls.');
+  }
   const messages: Record<UsbState, string> = {
     ready: 'USB gateway route ready. Open Fingerpost on the phone.',
     waiting: 'Waiting for one USB phone. Connect it and allow USB debugging.',
@@ -70,7 +88,8 @@ export async function startPhoneDev(run: AdbCommand = adbCommand(), report: (mes
 
 if (import.meta.main) {
   try {
-    const stop = await startPhoneDev();
+    const live = process.argv.includes('--live');
+    const stop = await startPhoneDev(adbCommand(), console.log, 8080, live);
     let stopping = false;
     const shutdown = () => {
       if (stopping) return;
@@ -80,7 +99,7 @@ if (import.meta.main) {
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
   } catch {
-    console.error('Could not start the local phone gateway. Check port 8080, Node 24 and installed dependencies.');
+    console.error('Could not start the local phone gateway. Check port 8080, Node 24, installed dependencies, and for --live a META_API_KEY in the repo .env.');
     process.exitCode = 1;
   }
 }

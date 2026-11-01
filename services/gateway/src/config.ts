@@ -8,6 +8,10 @@ const Env = z
     META_API_KEY: z.string().min(1).optional(),
     DEBUG_TOKEN: z.string().min(16).optional(),
     GIT_SHA: z.string().min(1).default('dev'),
+    /** Per model call. Real Spark screen reads take 10–22 s (docs/progress.md, D1-T5), so 5 s always timed out. */
+    MODEL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(30_000),
+    /** Task planner: Spark tool calling (falls back to rules on error) or the deterministic rules planner. */
+    AGENT_PLANNER: z.enum(['spark', 'rules']).optional(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     // Day 2
     SIM_TOKEN: z.string().min(8).optional(),

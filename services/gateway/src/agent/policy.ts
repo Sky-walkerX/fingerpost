@@ -1,68 +1,78 @@
 import type { LayoutElement } from '@fingerpost/protocol';
+import { normalizeLabel } from '../parse/spark-parse.ts';
 
-const SENSITIVE_ROLES = new Set(['pay', 'confirm', 'submit']);
+export const SENSITIVE_ROLES: ReadonlySet<string> = new Set(['pay', 'confirm', 'submit']);
+export const isSensitive = (el: Pick<LayoutElement, 'role'>) => SENSITIVE_ROLES.has(el.role);
 
 /**
- * Policy layer outside the model (design §4.3).
- * Enforces:
- *   1. guide_to on role pay|confirm|submit blocked until confirm_with_user accepted for that element/confirm id
- *   2. Step budget: 20 steps or 5 min
- *   3. Loop detection: same fingerprint 3 times → 'loop'
+ * Live Spark numbers elements e1, e2, … in reading order, so the same button can get a new id on the
+ * next parse. A confirm therefore covers an element by role + normalized label, never by id alone.
+ */
+export const elementKey = (el: Pick<LayoutElement, 'role' | 'label' | 'textNorm'>) =>
+  `${el.role}:${el.textNorm ?? normalizeLabel(el.label)}`;
+
+export type StepVerdict = 'ok' | 'budget' | 'loop';
+
+/**
+ * Policy layer outside the model (design §4.3). The model never decides these:
+ *   1. guide_to on role pay|confirm|submit is refused unless a confirm covering that element was accepted,
+ *      and acceptance is bound to that confirm's id (a yes to an earlier question unlocks nothing new);
+ *   2. step budget: 20 steps or 5 minutes;
+ *   3. loop detection: the same screen fingerprint 3 times.
  */
 export class Policy {
-  /** Maps confirm id → set of element ids it covers. */
-  private confirms = new Map<string, Set<string>>();
-  /** Set of confirm ids that were accepted. */
-  private accepted = new Set<string>();
-
-  private stepCount = 0;
+  private readonly confirms = new Map<string, Set<string>>();
+  private readonly accepted = new Set<string>();
+  private steps = 0;
   private startMs: number | null = null;
-  private fingerprintCounts = new Map<string, number>();
+  private readonly seen = new Map<string, number>();
 
   private readonly maxSteps: number;
   private readonly maxMs: number;
   private readonly now: () => number;
 
-  constructor(opts?: { maxSteps?: number; maxMs?: number; now?: () => number }) {
-    this.maxSteps = opts?.maxSteps ?? 20;
-    this.maxMs = opts?.maxMs ?? 5 * 60 * 1000;
-    this.now = opts?.now ?? (() => Date.now());
+  constructor(opts: { maxSteps?: number; maxMs?: number; now?: (() => number) | undefined } = {}) {
+    this.maxSteps = opts.maxSteps ?? 20;
+    this.maxMs = opts.maxMs ?? 5 * 60_000;
+    this.now = opts.now ?? Date.now;
   }
 
-  /** Check whether guiding to an element is allowed. */
   allowGuide(el: LayoutElement): { ok: true } | { ok: false; say: string } {
-    if (!SENSITIVE_ROLES.has(el.role)) return { ok: true };
-    // Need a confirm that covers this element and was accepted
-    for (const [confirmId, elementIds] of this.confirms) {
-      if (elementIds.has(el.id) && this.accepted.has(confirmId)) {
-        return { ok: true };
-      }
+    if (!isSensitive(el)) return { ok: true };
+    const key = elementKey(el);
+    for (const [confirmId, keys] of this.confirms) {
+      if (keys.has(key) && this.accepted.has(confirmId)) return { ok: true };
     }
     return { ok: false, say: 'I need you to confirm the amount first.' };
   }
 
-  /** Record a confirm_with_user call and the element ids it covers. */
-  recordConfirm(confirmId: string, elementIds: string[]): void {
-    this.confirms.set(confirmId, new Set(elementIds));
+  /** Remember which elements a confirm covers. Only sensitive elements are recorded. */
+  recordConfirm(confirmId: string, elements: readonly LayoutElement[]): void {
+    this.confirms.set(confirmId, new Set(elements.filter(isSensitive).map(elementKey)));
   }
 
-  /** Record that a confirm was accepted. */
-  accept(confirmId: string): void {
+  /** Accept a recorded confirm. Unknown ids are ignored, so a stray reply can't create coverage. */
+  accept(confirmId: string): boolean {
+    if (!this.confirms.has(confirmId)) return false;
     this.accepted.add(confirmId);
+    return true;
   }
 
-  /** Advance one step and check budget/loop. */
-  step(fingerprint: string): 'ok' | 'budget' | 'loop' {
-    if (this.startMs === null) this.startMs = this.now();
-    this.stepCount++;
-    if (this.stepCount > this.maxSteps) return 'budget';
-    if (this.now() - this.startMs > this.maxMs) return 'budget';
+  hasAccepted(el: LayoutElement): boolean {
+    return this.allowGuide(el).ok && isSensitive(el);
+  }
 
-    const count = (this.fingerprintCounts.get(fingerprint) ?? 0) + 1;
-    this.fingerprintCounts.set(fingerprint, count);
-    if (count >= 3) return 'loop';
+  step(fingerprint: string): StepVerdict {
+    this.startMs ??= this.now();
+    this.steps++;
+    if (this.steps > this.maxSteps || this.now() - this.startMs > this.maxMs) return 'budget';
+    const count = (this.seen.get(fingerprint) ?? 0) + 1;
+    this.seen.set(fingerprint, count);
+    return count >= 3 ? 'loop' : 'ok';
+  }
 
-    return 'ok';
+  /** After the user agrees to go back, the loop counter for that screen starts again. */
+  forgetScreen(fingerprint: string): void {
+    this.seen.delete(fingerprint);
   }
 }
-

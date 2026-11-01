@@ -76,7 +76,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-4 | HI/ES guidance strings | A | – | todo | |
 | A4-5 | Settings screen | A | – | todo | |
 | B4-1 | Model router (private, Spark fallback) | B | – | todo | |
-| B4-2 | Agent loop + policy | B | B4-0 | todo | |
+| B4-2 | Agent loop + policy | B | B4-0 | done | Poshith |
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | todo | |
 | B4-4 | HI/ES server speech | B | – | todo | |
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | todo | |
@@ -269,6 +269,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- B4-2 (2026-11-01) · Per-call model timeout raised from the plan's 5 s to a configurable `MODEL_TIMEOUT_MS` (default 30 s): measured Spark latency is 10–22 s, so 5 s failed every live parse. Confirms bind to role + normalized label, not element id, because live Spark renumbers ids (e1…) on each parse. A deterministic rules planner backs up the Spark planner (mock mode, tests, and any planner error). B4-1 router not used yet, per the plan's dependency map.
 - D3-T9 coding completion · Keep the documented v1 in-memory challenge/rate-limit design and align the deploy target to `--max-instances 1` (previous script: 3). One new orchestration test fails before the correction, then all eight deploy tests pass. Multi-instance scaling requires shared atomic stores before raising the limit; real routing/restart acceptance stays open. No cloud deployment or new dependency.
 - Day 3 coding completion · User explicitly requests closing the audit's coding gaps. Strengthen the old controller test that permitted unrecorded spend: ledger failures now pause cloud work and report `cloud_paused`. Usage callbacks become awaitable; only callback syntax changes in three existing fixtures, with their assertions unchanged. No dependency or wire-schema change. Human/device/cloud completion gates remain open; keep this continuation local under the user's no-push preference.
 - D3-T10 (2026-10-31) · The specified no-storage form cannot honestly promise a later email. Keep registration disabled with explicit no-collection copy until the Day 6 endpoint/privacy page; planned features are labeled as planned. No product architecture or data collection is added.
@@ -442,3 +443,4 @@ _(task id · what changed · why · who approved)_
 - Day 3 coding completion: v1 deploy now targets one instance to match its in-memory challenge and rate-limit stores. New orchestration regression confirms the old three-instance target first, then all eight deployment checks pass. Script syntax is clean. This is a local-only configuration repair, not shared-store implementation or live routing/deployment acceptance.
 
 - Day 3 coding checkpoint: all 470 TS cases, recursive typecheck/build, two local Day 2 scenarios, 36 Python tooling cases, shell syntax and seven Firestore emulator groups pass. Android source unchanged (prior 228 JVM/18 camera-free physical cases); no fresh camera/Firebase/human acceptance claimed. All unmet task/phase gates retained. Repair commits stay local and remote CI was not run for them; see docs/evals/day3-coding-completion.md.
+- 2026-11-01: B4-2 done: agent session (one decision per screen), Spark tool-calling planner with rules fallback, confirm/policy/budget/loop, pipeline + controller wiring (answer, confirm.reply, spoken yes/no, pinModeEntered). medium-cola, go-back and guide-start flows replay green over a real socket; 501 TS tests pass. Live Spark tool calling not yet tried.

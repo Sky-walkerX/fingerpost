@@ -31,7 +31,7 @@ describe('Policy', () => {
     it('allows guide to pay after confirm is accepted', () => {
       const p = new Policy();
       const el = makeElement({ id: 'pay-card', role: 'pay', label: 'Pay by card' });
-      p.recordConfirm('c1', ['pay-card']);
+      p.recordConfirm('c1', [el]);
       p.accept('c1');
       expect(p.allowGuide(el)).toEqual({ ok: true });
     });
@@ -58,7 +58,7 @@ describe('Policy', () => {
       const payNew = makeElement({ id: 'pay-new', role: 'pay', label: 'Pay new' });
 
       // Confirm covers the old pay button
-      p.recordConfirm('c1', ['pay-old']);
+      p.recordConfirm('c1', [payOld]);
       p.accept('c1');
       expect(p.allowGuide(payOld)).toEqual({ ok: true });
 
@@ -67,12 +67,27 @@ describe('Policy', () => {
       expect(result.ok).toBe(false);
 
       // A new confirm for the new pay button
-      p.recordConfirm('c2', ['pay-new']);
+      p.recordConfirm('c2', [payNew]);
       // Not accepted yet
       expect(p.allowGuide(payNew).ok).toBe(false);
       // Now accept
       p.accept('c2');
       expect(p.allowGuide(payNew)).toEqual({ ok: true });
+    });
+  });
+
+  describe('element identity', () => {
+    it('a confirm still covers the same button after the next parse renumbers its id', () => {
+      const p = new Policy();
+      p.recordConfirm('c1', [makeElement({ id: 'e4', role: 'pay', label: 'Pay by card' })]);
+      p.accept('c1');
+      expect(p.allowGuide(makeElement({ id: 'e3', role: 'pay', label: 'Pay by card' }))).toEqual({ ok: true });
+    });
+
+    it('accepting an unknown confirm id unlocks nothing', () => {
+      const p = new Policy();
+      expect(p.accept('never-sent')).toBe(false);
+      expect(p.allowGuide(makeElement({ id: 'pay', role: 'pay', label: 'Pay' })).ok).toBe(false);
     });
   });
 

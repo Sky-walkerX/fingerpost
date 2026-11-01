@@ -5,6 +5,7 @@ import { LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
 import type { Config } from './config.ts';
 import { registerLatencyRoute } from './debug/latency.ts';
 import { createMetaClient } from './models/meta-client.ts';
+import { rulesPlanner, sparkPlanner, type Planner } from './agent/planner.ts';
 import { liveModels, type ModelPort } from './models/port.ts';
 import { mockModels } from './models/mock/mock-models.ts';
 import { createSessionController, type AsrFactory } from './session/controller.ts';
@@ -24,7 +25,7 @@ import { DEFAULT_QUOTA, QuotaService } from './quota/service.ts';
 export interface AppOverrides {
   /** Local phone practice announces simulated targets; ignored entirely in live mode. */
   mockNotice?: string;
-  models?: ModelPort; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
+  models?: ModelPort; planner?: Planner; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
   /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
   quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
   /** Live: Google's attestation status list (auth/revocation.ts). */
@@ -37,7 +38,9 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   await app.register(websocket, { options: { maxPayload: 512 * 1024 } });
 
   const live = cfg.MODEL_MODE === 'live';
-  const models = o.models ?? (live ? liveModels(createMetaClient(cfg.META_API_KEY!)) : mockModels());
+  const client = live ? createMetaClient(cfg.META_API_KEY!, cfg.MODEL_TIMEOUT_MS) : null;
+  const models = o.models ?? (client ? liveModels(client) : mockModels());
+  const planner = o.planner ?? (client && (cfg.AGENT_PLANNER ?? 'spark') === 'spark' ? sparkPlanner(client) : rulesPlanner());
   const asr: AsrFactory = o.asr ?? (live ? (opts, sink) => openAsrRelay({ ...opts, apiKey: cfg.META_API_KEY! }, sink) : mockAsr());
   const sims = o.sims ?? new SimRegistry();
   const now = o.now ?? Date.now;
@@ -129,7 +132,8 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
         if (m.type === 'ready' && !live && o.mockNotice) socket.send(JSON.stringify({
           type: 'say', id: ulid(), ts: now(), priority: 'safety', text: o.mockNotice,
         }));
-      }, models, asr, sims, now, quota, ...(claims ? { claims } : {}) });
+      }, models, asr, sims, now, quota, ...(claims ? { claims } : {}),
+        planner, onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
       dispose = session.dispose;
       const { hub } = session;
       // Ordinary messages stay ordered; a validated abort cancels the in-flight task and its backlog.
