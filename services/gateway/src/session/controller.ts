@@ -3,6 +3,7 @@ import type { ServerMessage } from '@fingerpost/protocol';
 import type { AsrOptions, AsrRelay, AsrSink } from '../asr/relay.ts';
 import type { ModelPort } from '../models/port.ts';
 import type { Planner } from '../agent/planner.ts';
+import type { RoutedModels } from '../models/router.ts';
 import type { SimRegistry } from '../sim/registry.ts';
 import type { QuotaPort, SessionClaims, StartResult } from './types.ts';
 import { SessionHub } from './hub.ts';
@@ -16,6 +17,8 @@ export interface ControllerDeps {
   claims?: SessionClaims; quota?: QuotaPort;
   /** Day 4 task planner; the pipeline falls back to the rules planner when absent or failing. */
   planner?: Planner; onPlannerError?: (plannerId: string) => void;
+  /** B4-1 model router (Meta / Glimmer). Without it every frame uses `models`. */
+  router?: RoutedModels;
 }
 
 /** Wires one WebSocket: hub (validation) → pipeline (brain) + ASR relay + sim touches. Returns a disposer. */
@@ -47,7 +50,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     : async (): Promise<StartResult> => ((await quota.cloudEnabled()) ? { ok: true, tasksLeft: 0 } : { ok: false, code: 'cloud_paused' }));
   const pipeline = new SessionPipeline({ models: d.models, send, ...(d.now ? { now: d.now } : {}), onUsage: usage,
     ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}),
-    ...(d.planner ? { planner: d.planner } : {}), ...(d.onPlannerError ? { onPlannerError: d.onPlannerError } : {}) });
+    ...(d.planner ? { planner: d.planner } : {}), ...(d.router ? { route: d.router } : {}), ...(d.onPlannerError ? { onPlannerError: d.onPlannerError } : {}) });
   const closeRelay = () => {
     turn++;
     const old = relay;
@@ -62,6 +65,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
       if (disposed) return;
       pipeline.setLocale(message.locale);
       pipeline.setMode(message.mode);
+      pipeline.setPrivacy(message.privacy);
       unsubscribe?.();
       unsubscribe = message.caps.simRunId ? d.sims.subscribe(message.caps.simRunId, (event) => {
         if (disposed) return;

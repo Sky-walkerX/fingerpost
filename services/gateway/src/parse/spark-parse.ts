@@ -53,10 +53,11 @@ export function toLayout(s: SparkScreen): ParsedLayout {
     language: s.language.slice(0, 16) || 'und', rotation: s.rotation, elements };
 }
 
-export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string }): Promise<ParseResult> {
+export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string },
+  model: string = MODELS.spark): Promise<ParseResult> {
   const started = performance.now();
   const response = await client.chat.completions.create({
-    model: MODELS.spark,
+    model,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: [

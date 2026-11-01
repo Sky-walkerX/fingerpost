@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { ulid } from 'ulid';
 import { Ask, Layout, Target, type Keyframe, type LayoutElement, type Locale, type ServerMessage } from '@fingerpost/protocol';
 import type { ModelPort } from '../models/port.ts';
+import { PrivateUnavailable, type RoutedModels } from '../models/router.ts';
 import type { Usage } from '../quota/cost.ts';
 import { SPOKEN_ERRORS } from '../errors/spoken.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
@@ -26,6 +27,8 @@ export interface PipelineDeps {
   beforeTask?: TaskGate;
   /** The kill switch, checked (cached) before every billed keyframe, not only at task start. */
   cloudEnabled?: () => Promise<boolean>;
+  /** B4-1: picks Meta or Glimmer per frame from the session's privacy and the last screen's sensitivity. */
+  route?: RoutedModels;
   /** Day 4: plans multi-step tasks. Default: the deterministic rules planner (mock/dev). */
   planner?: Planner;
   /** The planner failed and the rules planner took over for that step. No content is passed. */
@@ -84,6 +87,11 @@ export class SessionPipeline {
   private hasSimTouch = false;
   private task = new AbortController();
   private mode: RequestedMode = 'auto';
+  private privacy: 'normal' | 'private' = 'normal';
+  /** The last screen was financial or identity: its later frames go private when Glimmer exists. */
+  private sensitive = false;
+  /** The port that read the current frame; SAM refinement of its target uses the same provider. */
+  private frameModels: ModelPort | null = null;
   private agent: AgentSession | null = null;
   private lookingSpoken = false;
 
@@ -104,6 +112,24 @@ export class SessionPipeline {
     this.mode = m;
   }
 
+  setPrivacy(p: 'normal' | 'private') {
+    this.privacy = p;
+  }
+
+  /** The models for the next frame, or null after telling the user private mode is unavailable. */
+  private models(): ModelPort | null {
+    if (!this.d.route) return this.d.models;
+    try {
+      return this.d.route.forSession(this.privacy, this.sensitive ? 'financial' : 'none');
+    } catch (error) {
+      if (!(error instanceof PrivateUnavailable)) throw error;
+      this.d.send({ ...this.base(), type: 'mode', mode: 'private', reason: 'Private models are not available.' });
+      this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', retryable: false,
+        say: "Private mode isn't available right now. Turn it off in settings to continue." });
+      return null;
+    }
+  }
+
   /** True while a task question (ask/confirm) waits for the user, so a spoken reply is not a new goal. */
   get awaitingReply(): boolean {
     return !!this.agent?.awaiting;
@@ -114,6 +140,7 @@ export class SessionPipeline {
     this.task = new AbortController();
     this.goal = text;
     this.lookingSpoken = false;
+    this.sensitive = false;
     this.taskCharged = false;
     this.target = null;
     this.hasSimTouch = false;
@@ -160,6 +187,7 @@ export class SessionPipeline {
     this.task = new AbortController();
     this.goal = null;
     this.agent = null;
+    this.sensitive = false;
     this.layout = null;
     this.target = null;
     this.lookingSpoken = false;
@@ -184,6 +212,10 @@ export class SessionPipeline {
     const signal = this.task.signal;
     // Nothing to look for yet: don't spend a model call.
     if (h.purpose === 'locate' && !this.goal) return;
+    // Route before charging: a private session without Glimmer is refused and costs nothing.
+    const models = this.models();
+    if (!models) return;
+    this.frameModels = models;
     if (h.purpose === 'locate' && !this.taskCharged) {
       const allowed = await whileActive(Promise.resolve(this.d.beforeTask?.()), signal);
       if (allowed === CANCELLED || signal.aborted) return;
@@ -215,9 +247,9 @@ export class SessionPipeline {
       this.lookingSpoken = true;
       this.d.send({ ...this.base(), type: 'say', priority: 'state', text: 'Looking at the screen.' });
     }
-    const parse = this.d.models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
+    const parse = models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
       .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
-    const screen = h.kind === 'full' ? this.d.models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
+    const screen = h.kind === 'full' ? models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
       .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
     const result = await whileActive(Promise.all([parse, screen]), signal);
     if (result === CANCELLED || signal.aborted) return;
@@ -235,6 +267,7 @@ export class SessionPipeline {
       ...(coordinates ? { screenQuad: coordinates.screenQuad } : {}),
       fingerprint: layoutFingerprint(elements), source: 'model' });
     this.layout = layout;
+    this.sensitive = layout.sensitivity !== 'none';
     this.d.send(layout);
     if (signal.aborted) return;
     const turn = (layout: Layout) => this.agentTurn(layout, h, image, coordinates, parsed.layout.elements, signal);
@@ -293,7 +326,7 @@ export class SessionPipeline {
     coordinates: ReturnType<typeof fullFrameCoordinates>, parsedElements: readonly LayoutElement[], signal: AbortSignal): Promise<void> {
     const original = parsedElements.find(({ id }) => id === element.id) ?? element;
     const us = original.polygon.map(({ u }) => u), vs = original.polygon.map(({ v }) => v);
-    const mask = await whileActive(this.d.models.segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
+    const mask = await whileActive((this.frameModels ?? this.d.models).segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
     }).then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; }), signal);
