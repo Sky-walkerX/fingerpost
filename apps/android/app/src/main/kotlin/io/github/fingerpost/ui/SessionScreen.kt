@@ -100,6 +100,10 @@ fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = 
             GState.GUIDING -> "Guiding"
             GState.ON_TARGET -> "On target"
             GState.VERIFYING -> "Checking the press"
+            GState.ASK -> "Waiting for your answer"
+            GState.CONFIRM -> "Confirm the amount"
+            GState.AWAIT_NEXT -> "Next step"
+            GState.PIN_MODE -> "PIN entry"
             GState.DONE -> "Done"
         }
     }

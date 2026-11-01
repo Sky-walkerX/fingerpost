@@ -142,7 +142,6 @@ export class SessionPipeline {
   onTranscript(text: string): boolean {
     const r = this.agent?.onTranscript(text) ?? null;
     if (r === 'declined') this.paymentDeclined();
-    if (r === 'unclear') this.d.send({ ...this.base(), type: 'say', priority: 'safety', text: 'Please say yes to pay, or no to cancel.' });
     return r !== null;
   }
 

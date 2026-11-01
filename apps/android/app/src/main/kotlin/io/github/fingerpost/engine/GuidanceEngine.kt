@@ -72,6 +72,8 @@ class GuidanceEngine(
     private var pitch = 0.0
     private var onSince = 0L
     private var occluded = false
+    /** The gateway closed the task while the keypad was up; end quietly once PIN entry is over. */
+    private var finishedDuringPin = false
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val gravity = object : SensorEventListener {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
@@ -81,7 +83,7 @@ class GuidanceEngine(
     }
     private val client = SessionClient(
         hello = { Hello(newId(), nowMs(), BuildConfig.VERSION_NAME, PROTOCOL, io.github.fingerpost.protocol.Locale.EN,
-            RequestedMode.GUIDE, Privacy.NORMAL, Caps(simRunId = simRunId)) },
+            RequestedMode.AUTO, Privacy.NORMAL, Caps(simRunId = simRunId)) },
         token = auth::token,
         refreshAfterMs = auth::refreshAfterMs,
         onAuthExpired = { auth.invalidate() },
@@ -143,7 +145,7 @@ class GuidanceEngine(
     }
 
     fun micPermissionResult(granted: Boolean) {
-        wantsMic = granted && ready && !guard.pinMode && machine.state == GState.LISTENING
+        wantsMic = granted && ready && !guard.pinMode && machine.state in LISTENING_STATES
         if (!granted) {
             wantsMic = false
             say("Microphone access is needed. Open settings to allow it.", SpeechPriority.STATE)
@@ -190,6 +192,11 @@ class GuidanceEngine(
             is Effect.Haptic -> haptics.play(effect.kind)
             Effect.SendTargetReached -> event(EventKind.TARGET_REACHED)
             is Effect.SendTapDetected -> event(EventKind.TAP_DETECTED, EventDetail(TapEvidence.valueOf(effect.evidence.name)))
+            is Effect.SendAnswer -> client.send(Answer(newId(), nowMs(), effect.askId, effect.text))
+            is Effect.SendConfirmReply -> client.send(ConfirmReply(newId(), nowMs(), effect.confirmId, effect.accepted, effect.utterance))
+            // On the phone the UploadGuard owns PIN mode (it already stops uploads and the mic); the machine's
+            // PIN_MODE effects are wired to it in A4-3.
+            Effect.EnterPinMode, Effect.ExitPinMode, Effect.StopUploads, Effect.ResumeUploads -> Unit
         }
     }
 
@@ -310,17 +317,27 @@ class GuidanceEngine(
             if (wantsStart && ready && !guard.pinMode) { wantsStart = false; dispatch(GEvent.Start(time())) }
             return
         }
-        if (message is Layout && message.screenType in setOf(ScreenType.PIN_PAD, ScreenType.PAYMENT_ENTRY)) {
+        if (message is Layout && serverLayoutIsPinScreen(message.screenType.name.lowercase(), message.elements.map { it.role.name.lowercase() })) {
             guard.enterPinMode(); return
         }
         if (message is Mode && message.mode == SessionMode.PIN) { guard.enterPinMode(); return }
-        if (guard.pinMode) return
+        if (guard.pinMode) {
+            if (message is Finish && message.result == FinishResult.DONE) finishedDuringPin = true
+            return
+        }
         when (message) {
-            is Transcript -> if (message.final && message.text.isNotBlank() && machine.state == GState.LISTENING)
-                dispatch(GEvent.GoalHeard(time(), message.text))
-            is GoalAck -> if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
+            is Transcript -> if (message.final && message.text.isNotBlank()) when (machine.state) {
+                GState.LISTENING -> dispatch(GEvent.GoalHeard(time(), message.text))
+                GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
+                else -> Unit
+            }
+            is GoalAck -> {
+                if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
+                dispatch(GEvent.IntentArrived(time(), message.intent.name.lowercase()))
+            }
             is Layout -> {
-                if (machine.state != GState.LOCATING) return
+                // A verify keyframe's layout arrives while VERIFYING; in task mode the next target refers to it.
+                if (machine.state !in LAYOUT_STATES) return
                 layout = message
                 val uploaded = capture
                 if (uploaded != null && uploaded.encoded.header.kind == KeyframeKind.FULL) message.screenQuad?.let { quad ->
@@ -330,11 +347,11 @@ class GuidanceEngine(
                 }
             }
             is ServerTarget -> target(message)
-            is Ask -> if (machine.state == GState.LOCATING) dispatch(GEvent.TargetNotFound(time(), message.question))
+            is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options))
             is Verify -> if (message.re == verifyId) { verifyId = null; dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
             is SimTouch -> if (simRunId != null && message.runId == simRunId) dispatch(GEvent.PressDetected(time(), Evidence.SIM))
             is Say -> say(message.text, SpeechPriority.valueOf(message.priority.name))
-            is Confirm -> { reset(); say("Payment confirmation is not available yet.", SpeechPriority.SAFETY) }
+            is Confirm -> if (machine.state in TURN_STATES) dispatch(GEvent.ConfirmArrived(time(), message.id, message.summary, message.amount?.let { spokenAmount(it) }))
             is Mode -> if (message.mode == SessionMode.OFFLINE) { ready = false; reset(); mutableStatus.value = mutableStatus.value.copy(cloudOff = true); say("Cloud features are paused. Try again later.", SpeechPriority.SAFETY) }
             is ErrorMessage -> {
                 reset(); say(message.say, SpeechPriority.STATE)
@@ -344,17 +361,23 @@ class GuidanceEngine(
                 }
                 if (message.code == ErrorCode.AUTH_EXPIRED) scope.launch { auth.invalidate(); client.reconnect() }
             }
-            is Finish -> if (message.result != FinishResult.DONE) { reset(); say(message.say, SpeechPriority.STATE) }
+            is Finish -> when {
+                machine.state == GState.IDLE -> Unit  // already ended here (e.g. the user said no to paying)
+                message.result == FinishResult.DONE -> { tone.stop(); dispatch(GEvent.FinishArrived(time(), "done", message.say)) }
+                else -> { reset(); say(message.say, SpeechPriority.STATE) }
+            }
             else -> Unit
         }
     }
 
     private fun target(message: ServerTarget) {
-        if (machine.state != GState.LOCATING) return
+        if (machine.state !in TURN_STATES) return
         if (awaitingAnchor) { pendingTarget = message; return }
         val element = layout?.elements?.find { it.id == message.elementId } ?: return
-        if (element.role.isIrreversible) {
-            dispatch(GEvent.TargetNotFound(time(), "I need you to confirm the amount first.")); return
+        val role = element.role.name.lowercase()
+        // Device-side half of the pay rule (guidance-spec §11); the gateway enforces the same.
+        if (!machine.policy.mayGuide(role, element.id)) {
+            dispatch(GEvent.TargetArrived(time(), message.say, role)); return
         }
         val q = latest?.quad ?: capture?.quad ?: return
         val frame = latest ?: return
@@ -374,7 +397,7 @@ class GuidanceEngine(
         val agrees = if (element.role == ElementRole.ICON) message.confidence >= 0.75
             else twoSourceAgree(element.label, Bbox.of(polygon), tokens)
         val arrival = if (agrees) message.say else "I think this is ${element.label}, but I'm not sure."
-        dispatch(GEvent.TargetArrived(time(), arrival))
+        dispatch(GEvent.TargetArrived(time(), arrival, role))
     }
 
     private fun pinEntered() {
@@ -390,6 +413,12 @@ class GuidanceEngine(
     private fun pinExited() {
         event(EventKind.PIN_MODE_EXITED)
         mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready)
+        if (finishedDuringPin) {
+            finishedDuringPin = false
+            dispatch(GEvent.Abort(time()))
+            say("Done.", SpeechPriority.STATE)
+            return
+        }
         say("Back online.", SpeechPriority.STATE)
         if (ready) {
             if (machine.state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) {
@@ -421,5 +450,21 @@ class GuidanceEngine(
         FramingCue.MOVE_DOWN -> "Move the phone down."
         FramingCue.GOOD -> ""
     }
-    private companion object { val openCvReady by lazy { OpenCVLoader.initLocal() } }
+    private companion object {
+        val openCvReady by lazy { OpenCVLoader.initLocal() }
+        /** States in which the gateway's next turn (target, ask, confirm) is expected. */
+        val TURN_STATES = setOf(GState.LOCATING, GState.AWAIT_NEXT)
+        val LAYOUT_STATES = setOf(GState.LOCATING, GState.VERIFYING, GState.AWAIT_NEXT)
+        /** States that listen to the user: a goal, an answer or a yes/no. */
+        val LISTENING_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM)
+
+        /** "₹149" for the confirm prompt; the summary usually contains it already and then it isn't repeated. */
+        fun spokenAmount(a: Amount): String {
+            val number = if (a.value % 1.0 == 0.0) a.value.toLong().toString() else "%.2f".format(java.util.Locale.ROOT, a.value)
+            return when (a.currency) {
+                "INR" -> "₹$number"; "USD" -> "\$$number"; "EUR" -> "€$number"; "GBP" -> "£$number"
+                else -> "$number ${a.currency}"
+            }
+        }
+    }
 }

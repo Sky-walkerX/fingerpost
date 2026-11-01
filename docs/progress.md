@@ -70,8 +70,8 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 |---|---|---|---|---|---|
 | B4-0 | Flow contracts + review hardening | B | – | done | Codex |
 | A4-0 | Single-hand tracking + thermal stride | A | – | todo | |
-| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | todo | |
-| A4-2 | Device pay-confirm policy | A | – | todo | |
+| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Poshith |
+| A4-2 | Device pay-confirm policy | A | – | doing | Poshith |
 | A4-3 | Local PIN mode on device | A | A4-1 | todo | |
 | A4-4 | HI/ES guidance strings | A | – | todo | |
 | A4-5 | Settings screen | A | – | todo | |
@@ -269,6 +269,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- A4-1/A4-2 (2026-11-02) · The device's server PIN layer no longer treats every `payment_entry` layout as a PIN screen: the shared medium-cola flow labels the amount summary ("Total ₹149", "Pay by card") `payment_entry` and requires the CONFIRM turn on it. guidance-spec §8/§10.1 updated (initial value); the local pre-upload gate is unchanged. `AskArrived`/`SendAnswer` carry the ask id because `answer` needs `re`. The app keeps UploadGuard as the PIN owner until A4-3 wires the machine's PIN effects. Kotlin tests were run with kotlinc 2.4.21 and a JUnit stand-in (Maven unreachable from the coding sandbox); Gradle run pending on a dev machine.
 - B4-2 (2026-11-01) · Per-call model timeout raised from the plan's 5 s to a configurable `MODEL_TIMEOUT_MS` (default 30 s): measured Spark latency is 10–22 s, so 5 s failed every live parse. Confirms bind to role + normalized label, not element id, because live Spark renumbers ids (e1…) on each parse. A deterministic rules planner backs up the Spark planner (mock mode, tests, and any planner error). B4-1 router not used yet, per the plan's dependency map.
 - D3-T9 coding completion · Keep the documented v1 in-memory challenge/rate-limit design and align the deploy target to `--max-instances 1` (previous script: 3). One new orchestration test fails before the correction, then all eight deploy tests pass. Multi-instance scaling requires shared atomic stores before raising the limit; real routing/restart acceptance stays open. No cloud deployment or new dependency.
 - Day 3 coding completion · User explicitly requests closing the audit's coding gaps. Strengthen the old controller test that permitted unrecorded spend: ledger failures now pause cloud work and report `cloud_paused`. Usage callbacks become awaitable; only callback syntax changes in three existing fixtures, with their assertions unchanged. No dependency or wire-schema change. Human/device/cloud completion gates remain open; keep this continuation local under the user's no-push preference.
@@ -446,3 +447,4 @@ _(task id · what changed · why · who approved)_
 - Day 3 coding checkpoint: all 470 TS cases, recursive typecheck/build, two local Day 2 scenarios, 36 Python tooling cases, shell syntax and seven Firestore emulator groups pass. Android source unchanged (prior 228 JVM/18 camera-free physical cases); no fresh camera/Firebase/human acceptance claimed. All unmet task/phase gates retained. Repair commits stay local and remote CI was not run for them; see docs/evals/day3-coding-completion.md.
 - 2026-11-01: B4-2 done: agent session (one decision per screen), Spark tool-calling planner with rules fallback, confirm/policy/budget/loop, pipeline + controller wiring (answer, confirm.reply, spoken yes/no, pinModeEntered). medium-cola, go-back and guide-start flows replay green over a real socket; 501 TS tests pass. Live Spark tool calling not yet tried.
 - 2026-11-01: Pipeline announces "Looking at the screen." before locate Spark calls once per goal; phone-dev flag parsing verified; 372 gateway tests pass.
+- 2026-11-02: A4-1/A4-2 code + task-6 app wiring: ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, SafetyPolicy, FlowReplayTest (medium-cola, guide-start). 190 guidance cases pass under kotlinc; awaiting Gradle + phone check. Gateway: duplicate answer no longer becomes a new goal; unclear confirm reply declines.

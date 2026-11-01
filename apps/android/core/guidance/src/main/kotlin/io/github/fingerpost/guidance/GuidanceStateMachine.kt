@@ -1,6 +1,6 @@
 package io.github.fingerpost.guidance
 
-enum class GState { IDLE, LISTENING, FRAMING, LOCATING, GUIDING, ON_TARGET, VERIFYING, DONE }
+enum class GState { IDLE, LISTENING, FRAMING, LOCATING, GUIDING, ON_TARGET, VERIFYING, ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, DONE }
 enum class Evidence { SIM, SCREEN_CHANGE, DWELL }
 enum class VerifyResult { OK, WRONG, NOCHANGE }
 enum class KeyframePurpose { LOCATE, VERIFY }
@@ -12,7 +12,8 @@ sealed interface GEvent {
     data class GoalHeard(override val nowMs: Long, val text: String) : GEvent
     /** One analysis frame. zone is null when there is no target yet or no valid fingertip. */
     data class Frame(override val nowMs: Long, val quadStable: Boolean, val handVisible: Boolean, val zone: Zone?) : GEvent
-    data class TargetArrived(override val nowMs: Long, val say: String) : GEvent
+    /** [role] is the element's protocol role ("button", "pay", …): pay/confirm/submit pass the device safety policy first. */
+    data class TargetArrived(override val nowMs: Long, val say: String, val role: String = "button") : GEvent
     data class TargetNotFound(override val nowMs: Long, val say: String) : GEvent
     data class PressDetected(override val nowMs: Long, val evidence: Evidence) : GEvent
     data class VerifyArrived(override val nowMs: Long, val result: VerifyResult, val say: String) : GEvent
@@ -24,6 +25,17 @@ sealed interface GEvent {
     data class ResumeAfterPin(override val nowMs: Long) : GEvent
     /** Timer tick, about every 100 ms. */
     data class Tick(override val nowMs: Long) : GEvent
+    /** goal.ack intent: "task" turns verified presses into AWAIT_NEXT instead of DONE. */
+    data class IntentArrived(override val nowMs: Long, val intent: String) : GEvent
+    data class AskArrived(override val nowMs: Long, val askId: String, val question: String, val options: List<String>) : GEvent
+    /** [amountSay] is spoken after the summary when the summary doesn't already contain it. */
+    data class ConfirmArrived(override val nowMs: Long, val confirmId: String, val summary: String, val amountSay: String?) : GEvent
+    /** A final transcript while the app listens for an answer (ASK or CONFIRM). */
+    data class UserSaid(override val nowMs: Long, val text: String) : GEvent
+    /** result is the protocol's "done" | "aborted" | "failed". */
+    data class FinishArrived(override val nowMs: Long, val result: String, val say: String) : GEvent
+    /** The local pre-upload PIN/payment gate (guidance-spec §10.1), once per checked frame. */
+    data class PinGate(override val nowMs: Long, val blocked: Boolean, val digitTokens: Int) : GEvent
 }
 
 sealed interface Effect {
@@ -36,6 +48,12 @@ sealed interface Effect {
     data class Haptic(val kind: HapticKind) : Effect
     data class SendTapDetected(val evidence: Evidence) : Effect
     data object SendTargetReached : Effect
+    data class SendAnswer(val askId: String, val text: String) : Effect
+    data class SendConfirmReply(val confirmId: String, val accepted: Boolean, val utterance: String) : Effect
+    data object EnterPinMode : Effect
+    data object ExitPinMode : Effect
+    data object StopUploads : Effect
+    data object ResumeUploads : Effect
 }
 
 /** English prompts for Day 2; Day 4 moves them behind the locale tables. */
@@ -53,11 +71,22 @@ object Prompts {
 }
 
 /**
- * guidance-spec §8 (the Day 2 subset: no ASK/CONFIRM/PIN_MODE yet). Pure and deterministic:
- * feed events, get effects. Timeouts are evaluated on Tick and Frame events.
+ * guidance-spec §8. Pure and deterministic: feed events, get effects. Timeouts are evaluated on Tick and
+ * Frame events. Task intent adds ASK, CONFIRM and AWAIT_NEXT (Days 4–7 plan, "Contracts"); PIN_MODE is
+ * entered from any active state by the local PIN gate and never asks for a keyframe.
  */
 class GuidanceStateMachine {
     var state = GState.IDLE; private set
+    /** True after goal.ack says "task". Cleared when the session goes IDLE. */
+    var taskIntent = false; private set
+    val policy = SafetyPolicy()
+    private var askId: String? = null
+    private var askQuestion = ""
+    private var confirmId: String? = null
+    private var confirmSay = ""
+    private var awaitResent = false
+    private var pinQuietSince: Long? = null
+    private var finishedInPin: String? = null
     private var enteredAt = 0L
     private var retried = false
     private var noHandSince: Long? = null
@@ -84,10 +113,107 @@ class GuidanceStateMachine {
             offeredExplore = false
             verifyRetried = false
             doneCompletionId = null
+            taskIntent = false
+            policy.reset()
+            askId = null; confirmId = null; finishedInPin = null
         }
+        if (s == GState.AWAIT_NEXT) awaitResent = false
+    }
+
+    /** guidance-spec §10: entry stops uploads first; exit after < 5 digit tokens for 2 s. */
+    private fun pinGate(ev: GEvent.PinGate): List<Effect> {
+        if (state == GState.PIN_MODE) {
+            if (ev.blocked || ev.digitTokens >= 5) { pinQuietSince = null; return emptyList() }
+            val since = pinQuietSince ?: ev.nowMs.also { pinQuietSince = it }
+            if (ev.nowMs - since < 2000) return emptyList()
+            pinQuietSince = null
+            val out = mutableListOf<Effect>(Effect.ExitPinMode, Effect.ResumeUploads)
+            val finished = finishedInPin
+            if (finished != null) {
+                val id = ++nextCompletionId
+                out += Effect.Say(finished, Priority.STATE, id)
+                go(GState.DONE, ev.nowMs)
+                doneCompletionId = id
+            } else {
+                out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
+                go(GState.LOCATING, ev.nowMs)
+            }
+            return out
+        }
+        if (!ev.blocked || state == GState.IDLE || state == GState.DONE) return emptyList()
+        pinQuietSince = null
+        go(GState.PIN_MODE, ev.nowMs)
+        return listOf(Effect.StopUploads, Effect.EnterPinMode, Effect.ToneOff, Effect.CloseMic)
+    }
+
+    /** Server ask/confirm/finish/target handling shared by LOCATING and AWAIT_NEXT. */
+    private fun serverTurn(ev: GEvent, now: Long, out: MutableList<Effect>): Boolean {
+        when (ev) {
+            is GEvent.TargetArrived -> {
+                if (!policy.mayGuide(ev.role, "")) {
+                    out += Effect.Say(TaskPrompts.CONFIRM_FIRST, Priority.SAFETY)
+                    if (taskIntent) go(GState.AWAIT_NEXT, now) else { out += Effect.OpenMic; go(GState.LISTENING, now) }
+                    return true
+                }
+                debounce.reset()
+                lastZone = null
+                noHandSince = null
+                noHandPrompted = false
+                offeredExplore = false
+                verifyRetried = false
+                out += Effect.Say(ev.say, Priority.STATE)
+                out += Effect.ToneOn
+                go(GState.GUIDING, now)
+            }
+            is GEvent.TargetNotFound -> {
+                out += Effect.Say(ev.say, Priority.STATE)
+                out += Effect.OpenMic
+                go(GState.LISTENING, now)
+            }
+            is GEvent.AskArrived -> {
+                out += Effect.ToneOff
+                out += Effect.Say(ev.question, Priority.STATE)
+                out += Effect.OpenMic
+                if (taskIntent) {
+                    askId = ev.askId; askQuestion = ev.question
+                    go(GState.ASK, now)
+                } else go(GState.LISTENING, now)
+            }
+            is GEvent.ConfirmArrived -> {
+                policy.onConfirm(ev.confirmId)
+                confirmId = ev.confirmId
+                val amount = ev.amountSay?.takeIf { it.isNotBlank() && !ev.summary.contains(it) }
+                confirmSay = listOfNotNull(ev.summary.trimEnd('.', ' '), amount).joinToString(", ") + ". " + TaskPrompts.SAY_YES_OR_NO
+                out += Effect.ToneOff
+                out += Effect.Say(confirmSay, Priority.SAFETY)
+                out += Effect.OpenMic
+                go(GState.CONFIRM, now)
+            }
+            else -> return false
+        }
+        return true
     }
 
     fun handle(ev: GEvent): List<Effect> {
+        if (ev is GEvent.PinGate) return pinGate(ev)
+        if (ev is GEvent.IntentArrived) { if (state != GState.IDLE) taskIntent = ev.intent == "task"; return emptyList() }
+        if (state == GState.PIN_MODE) {
+            // Only the gate (above), an abort, or the task's end matter while the keypad is up.
+            if (ev is GEvent.FinishArrived && ev.result == "done") finishedInPin = ev.say
+            if (ev is GEvent.Abort) { go(GState.IDLE, ev.nowMs); return listOf(Effect.ExitPinMode, Effect.ResumeUploads, Effect.ToneOff, Effect.CloseMic) }
+            return emptyList()
+        }
+        if (ev is GEvent.FinishArrived) {
+            if (state == GState.IDLE || state == GState.DONE) return emptyList()
+            if (ev.result == "done") {
+                val id = ++nextCompletionId
+                go(GState.DONE, ev.nowMs)
+                doneCompletionId = id
+                return listOf(Effect.ToneOff, Effect.CloseMic, Effect.Say(ev.say, Priority.STATE, id))
+            }
+            go(GState.IDLE, ev.nowMs)
+            return listOf(Effect.ToneOff, Effect.CloseMic, Effect.Say(ev.say, Priority.STATE))
+        }
         if (ev is GEvent.ResumeAfterPin) {
             if (state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) return emptyList()
             debounce.reset()
@@ -139,22 +265,7 @@ class GuidanceStateMachine {
                 }
             }
             GState.LOCATING -> when {
-                ev is GEvent.TargetArrived -> {
-                    debounce.reset()
-                    lastZone = null
-                    noHandSince = null
-                    noHandPrompted = false
-                    offeredExplore = false
-                    verifyRetried = false
-                    out += Effect.Say(ev.say, Priority.STATE)
-                    out += Effect.ToneOn
-                    go(GState.GUIDING, now)
-                }
-                ev is GEvent.TargetNotFound -> {
-                    out += Effect.Say(ev.say, Priority.STATE)
-                    out += Effect.OpenMic
-                    go(GState.LISTENING, now)
-                }
+                serverTurn(ev, now, out) -> Unit
                 timed && now - enteredAt >= 6000 -> if (!retried) {
                     out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                     retried = true
@@ -193,6 +304,56 @@ class GuidanceStateMachine {
                 ev is GEvent.VerifyArrived -> verify(ev.result, ev.say, now, out)
                 timed && now - enteredAt >= 4000 -> verify(VerifyResult.NOCHANGE, "The screen didn't change. Press a little firmer.", now, out)
             }
+            GState.AWAIT_NEXT -> when {
+                serverTurn(ev, now, out) -> Unit
+                timed && now - enteredAt >= 6000 -> if (!awaitResent) {
+                    out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
+                    awaitResent = true
+                    enteredAt = now
+                } else {
+                    out += Effect.Say(TaskPrompts.LOST_TRACK, Priority.STATE)
+                    out += Effect.OpenMic
+                    go(GState.LISTENING, now)
+                }
+            }
+            GState.ASK -> when {
+                ev is GEvent.UserSaid && ev.text.isNotBlank() -> {
+                    out += Effect.CloseMic
+                    out += Effect.SendAnswer(askId!!, ev.text)
+                    out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
+                    askId = null
+                    go(GState.LOCATING, now)
+                }
+                timed && now - enteredAt >= 10_000 -> if (!retried) {
+                    out += Effect.Say(askQuestion, Priority.STATE)
+                    out += Effect.OpenMic
+                    retried = true
+                    enteredAt = now
+                } else {
+                    out += Effect.Say(TaskPrompts.ASK_AGAIN_GIVE_UP, Priority.STATE)
+                    out += Effect.OpenMic
+                    askId = null
+                    go(GState.LISTENING, now)
+                }
+            }
+            GState.CONFIRM -> {
+                val id = confirmId!!
+                when {
+                    ev is GEvent.UserSaid -> when (YesNo.parse(ev.text)) {
+                        true -> {
+                            policy.onConfirmReply(id, true)
+                            out += Effect.CloseMic
+                            out += Effect.SendConfirmReply(id, true, ev.text)
+                            out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
+                            go(GState.LOCATING, now)
+                        }
+                        // guidance-spec §8: anything but a clear yes cancels the step.
+                        false, null -> cancelConfirm(id, ev.text, now, out)
+                    }
+                    timed && now - enteredAt >= 15_000 -> cancelConfirm(id, "", now, out)
+                }
+            }
+            GState.PIN_MODE -> Unit
             GState.DONE -> if (ev is GEvent.SpeechDone && ev.completionId == doneCompletionId) go(GState.IDLE, now)
         }
         return out
@@ -200,11 +361,23 @@ class GuidanceStateMachine {
 
     private var verifyRetried = false
 
+    private fun cancelConfirm(id: String, utterance: String, now: Long, out: MutableList<Effect>) {
+        policy.onConfirmReply(id, false)
+        out += Effect.CloseMic
+        out += Effect.SendConfirmReply(id, false, utterance)
+        out += Effect.Say(TaskPrompts.PAYMENT_NOT_CONFIRMED, Priority.SAFETY)
+        go(GState.IDLE, now)
+    }
+
     private fun verify(r: VerifyResult, say: String, now: Long, out: MutableList<Effect>) {
         val completionId = if (r == VerifyResult.OK) ++nextCompletionId else null
         out += Effect.Say(say, Priority.STATE, completionId)
         when (r) {
-            VerifyResult.OK -> {
+            VerifyResult.OK -> if (taskIntent) {
+                // The agent decides what comes next; keep the session open (no completion wait).
+                out[out.lastIndex] = Effect.Say(say, Priority.STATE)
+                go(GState.AWAIT_NEXT, now)
+            } else {
                 doneCompletionId = completionId
                 go(GState.DONE, now)
             }

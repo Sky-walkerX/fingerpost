@@ -9,4 +9,8 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    // FlowReplayTest reads the shared flow scripts, like core:protocol's contract tests.
+    systemProperty("fixtures.dir", rootDir.resolve("../../packages/protocol/fixtures").absolutePath)
+}

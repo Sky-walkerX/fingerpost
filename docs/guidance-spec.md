@@ -117,13 +117,14 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 | `IDLE` | App start, task end | Mic opens (app open, tile, shortcut) | — |
 | `LISTENING` | Prompt "What do you want to press?" | Final transcript → FRAMING | 8 s → reprompt once → IDLE |
 | `FRAMING` | Goal known | Quad fully in view with a 4% margin, stable for 10 frames (corner motion < 1% per frame) → keyframe sent → LOCATING | 30 s → framing tips, stay |
-| `LOCATING` | Keyframe sent | `target` → GUIDING; `ask` → ASK; `layout.screenType ∈ {pin_pad, payment_entry}` → PIN_MODE | 6 s → retry once → error message |
+| `LOCATING` | Keyframe sent | `target` → GUIDING; `ask` → ASK (task intent; guide intent → LISTENING); `confirm` → CONFIRM; `layout.screenType = pin_pad`, or `payment_entry` that has a key/input element or no pay/confirm/submit button → PIN_MODE (§10.1) | 6 s → retry once → error message |
 | `GUIDING` | Target known | Zone ON for 6 frames → ON_TARGET | No hand for 1.5 s → "Raise your pointing finger into view"; 45 s total → offer explore |
 | `ON_TARGET` | Pad stably ON | Press evidence (§9) → VERIFYING; leaves ON → GUIDING (300 ms quiet) | 5 s → "Press now" once, then stay |
 | `VERIFYING` | Press evidence | `verify.ok` → DONE or next agent step; `verify.wrong` → speak and follow the agent; `verify.nochange` → ON_TARGET once, then RETRY | 4 s → treat as nochange |
-| `ASK` | Server `ask` | User answer sent → LOCATING | 10 s → repeat the question once |
+| `VERIFYING`→`AWAIT_NEXT` | `verify.ok` in task intent | `target` → GUIDING; `ask` → ASK; `confirm` → CONFIRM; `finish` → DONE or IDLE | 6 s → resend a locate keyframe once; 6 s more → "I lost track. What do you want to do?" → LISTENING (initial value) |
+| `ASK` | Server `ask` | User answer sent, then a locate keyframe → LOCATING | 10 s → repeat the question once; 10 s more → LISTENING (initial value) |
 | `CONFIRM` | Server `confirm` | Spoken "yes" → LOCATING; anything else → cancel the step | 15 s → cancel, "Payment not confirmed" |
-| `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → VERIFYING | none (user-driven) |
+| `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → a fresh locate keyframe (LOCATING), or DONE if the gateway finished the task meanwhile | none (user-driven) |
 | `DONE` | Task finished | → IDLE after the speech ends | — |
 
 **DONE completion:** the final STATE utterance carries a completion id through the speech queue to the TTS adapter. Return to IDLE only when that utterance finishes; ignore stale or unrelated completion callbacks. Timer ticks do not substitute for speech completion.
@@ -146,7 +147,7 @@ The frame is **blocked** and PIN mode is entered if either holds:
 - **PIN text:** OCR text matches `/\b(PIN|enter pin|पिन|clave|NIP|passcode|password|contraseña|पासवर्ड)\b/i`.
 - **Fail closed (added Day 3):** a word that is one digit plus up to 4 letters ("2ABC") counts as that digit, OCR tokens holding several words ("1 2 3") are split evenly across their box, and the 3 grid columns are the column clusters holding at least 2 digits, so stray single digits elsewhere on screen can't hide a keypad.
 
-The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for missed cases. The ≥98% recall release gate measures **local gate OR server**, and the local gate alone is reported too.
+The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for missed cases. A `payment_entry` layout counts only when it takes input (a `key` or `input` element) or offers no pay/confirm/submit button: an amount summary with a Pay button is where the CONFIRM turn happens, so it must stay online (initial value, 2026-11-01). The ≥98% recall release gate measures **local gate OR server**, and the local gate alone is reported too.
 - **On entry:**
   - Stop keyframe uploads and stop the mic stream (`audio.end`).
   - Send `event{kind:"pinModeEntered"}`, which carries no content.

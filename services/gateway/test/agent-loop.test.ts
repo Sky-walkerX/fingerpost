@@ -125,19 +125,20 @@ describe('agent loop safety details', () => {
     expect(ask).toMatchObject({ kind: 'ask', options: ['Small ₹99', 'Medium ₹149', 'Large ₹179'] });
     if (ask.kind !== 'ask') throw new Error('expected ask');
     expect(agent.onAnswer('wrong-id', 'medium')).toBe(false);
+    expect(agent.onTranscript('medium')).toBe('answered');
+    // The phone also sends answer{re} for the same reply: a duplicate, not a new goal.
     expect(agent.onAnswer(ask.id, 'medium')).toBe(true);
     expect(action(await agent.decide(screen('drink-size')))).toMatchObject({ kind: 'target', element: { id: 'medium' } });
   });
 
   it('a spoken no, or an unclear reply, never accepts payment', async () => {
-    const agent = new AgentSession('Order a medium cola and pay', { planner: rulesPlanner() });
-    const c = action(await agent.decide(screen('pay')));
-    expect(c.kind).toBe('confirm');
-    expect(agent.onTranscript('maybe later')).toBe('unclear');
-    expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
-    expect(agent.onTranscript('no')).toBe('declined');
-    expect(agent.done).toBe(true);
-    expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
+    for (const reply of ['no', 'maybe later', 'how much is it']) {
+      const agent = new AgentSession('Order a medium cola and pay', { planner: rulesPlanner() });
+      expect(action(await agent.decide(screen('pay'))).kind).toBe('confirm');
+      expect(agent.onTranscript(reply)).toBe('declined');
+      expect(agent.done).toBe(true);
+      expect(action(await agent.decide(screen('pay')))).toEqual({ kind: 'wait' });
+    }
   });
 
   it('a failing model falls back to the rules planner for that step', async () => {

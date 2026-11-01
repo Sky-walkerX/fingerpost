@@ -53,6 +53,8 @@ export class AgentSession {
   private answers: string[] = [];
   private history: string[] = [];
   private pending: Pending = null;
+  /** Questions already answered (often by voice): the device's own answer for the same id is a duplicate. */
+  private readonly answered = new Set<string>();
   private wantBack = false;
   private loopScreen: string | null = null;
   private paidOn: string | null = null;
@@ -74,9 +76,11 @@ export class AgentSession {
 
   /** Reply to an ask. False when nothing with this id is pending (the caller treats the text as a new goal). */
   onAnswer(re: string, text: string): boolean {
+    if (this.answered.has(re)) return true;
     const p = this.pending;
     if (!p || p.id !== re || p.kind === 'confirm') return false;
     this.pending = null;
+    this.answered.add(re);
     if (p.kind === 'loop') {
       const yes = parseYesNo(text);
       if (yes === true) this.wantBack = true;
@@ -97,14 +101,15 @@ export class AgentSession {
     return 'declined';
   }
 
-  /** A final voice transcript while a question is open answers it. Returns null when nothing was pending. */
-  onTranscript(text: string): 'answered' | 'accepted' | 'declined' | 'unclear' | null {
+  /**
+   * A final voice transcript while a question is open answers it. Returns null when nothing was pending.
+   * For a confirm, anything but a clear yes declines (guidance-spec §8), the same rule as the phone.
+   */
+  onTranscript(text: string): 'answered' | 'accepted' | 'declined' | null {
     const p = this.pending;
     if (!p) return null;
     if (p.kind !== 'confirm') return this.onAnswer(p.id, text) ? 'answered' : null;
-    const yes = parseYesNo(text);
-    if (yes === null) return 'unclear';
-    return this.onConfirmReply(p.id, yes) === 'accepted' ? 'accepted' : 'declined';
+    return this.onConfirmReply(p.id, parseYesNo(text) === true) === 'accepted' ? 'accepted' : 'declined';
   }
 
   /** A verified press. After a confirmed payment press the session waits for PIN entry or a new screen. */
