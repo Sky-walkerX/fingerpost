@@ -72,7 +72,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-0 | Single-hand tracking + thermal stride | A | – | doing | Codex |
 | A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Codex |
 | A4-2 | Device pay-confirm policy | A | – | doing | Codex |
-| A4-3 | Local PIN mode on device | A | A4-1 | todo | |
+| A4-3 | Local PIN mode on device | A | A4-1 | doing | Codex |
 | A4-4 | HI/ES guidance strings | A | – | todo | |
 | A4-5 | Settings screen | A | – | todo | |
 | B4-1 | Model router (private, Spark fallback) | B | – | todo | |
