@@ -1,0 +1,283 @@
+package io.github.fingerpost.guidance
+
+import java.util.Locale
+
+/**
+ * All localized string keys for guidance prompts, phrases, and task turns.
+ * Used across English, Hindi, and Spanish (A4-4).
+ */
+enum class Key {
+    // Prompts (GuidanceStateMachine)
+    ASK_GOAL,
+    ASK_GOAL_AGAIN,
+    GIVE_UP_LISTENING,
+    FRAMING_TIPS,
+    LOCATE_FAILED,
+    RAISE_FINGER,
+    TAP,
+    PRESS_NOW,
+    OFFER_EXPLORE,
+    HOLD_STEADY,
+
+    // Phrases (Cue directions and qualifiers)
+    DIR_UP,
+    DIR_DOWN,
+    DIR_LEFT,
+    DIR_RIGHT,
+    DIR_FORWARD,
+    DIR_BACK,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    FORWARD,
+    BACK,
+    SLOW_DOWN,
+    A_LOT,
+    A_LITTLE,
+    AND,
+
+    // TaskPrompts (A4-1 task turns)
+    SAY_YES_OR_NO,
+    PAYMENT_NOT_CONFIRMED,
+    CONFIRM_FIRST,
+    LOST_TRACK,
+    ASK_AGAIN_GIVE_UP,
+    DONE,
+
+    // A4-3 Keypad & PIN mode
+    KEYPAD_PHONE,
+    KEYPAD_CALCULATOR,
+    KEYPAD_SCRAMBLED,
+    CONNECT_EARPHONES,
+    EARPHONES_DISCONNECTED,
+    PIN_PAD_DETECTED,
+    BACK_ONLINE,
+
+    // A4-4 TTS missing voice notices (spoken in English per spec)
+    HINDI_VOICE_MISSING,
+    SPANISH_VOICE_MISSING,
+
+    // Verification & guidance messages
+    SCREEN_NO_CHANGE,
+    CAMERA_TRACKING_FAILED,
+    MIC_PERMISSION_NEEDED,
+    GLARE_WARNING,
+    UNCERTAIN_PREFIX,
+    UNCERTAIN_SUFFIX,
+}
+
+typealias StringKey = Key
+
+/**
+ * Localized guidance strings for English, Hindi and Spanish (A4-4).
+ */
+object Strings {
+    val HI: Locale = Locale.forLanguageTag("hi")
+    val ES: Locale = Locale.forLanguageTag("es")
+    val EN: Locale = Locale.ENGLISH
+
+    private val en: Map<Key, String> = mapOf(
+        Key.ASK_GOAL to "What do you want to press?",
+        Key.ASK_GOAL_AGAIN to "Say what you want to press, for example: start.",
+        Key.GIVE_UP_LISTENING to "Tap the screen when you're ready.",
+        Key.FRAMING_TIPS to "Hold the phone about an arm's length from the screen, and point it straight at it.",
+        Key.LOCATE_FAILED to "I couldn't read the screen. Let's try again.",
+        Key.RAISE_FINGER to "Raise your pointing finger into view.",
+        Key.TAP to "Tap.",
+        Key.PRESS_NOW to "Press now.",
+        Key.OFFER_EXPLORE to "Having trouble? Say explore to hear what's on the screen.",
+        Key.HOLD_STEADY to "Hold the phone steady.",
+
+        Key.DIR_UP to "up",
+        Key.DIR_DOWN to "down",
+        Key.DIR_LEFT to "left",
+        Key.DIR_RIGHT to "right",
+        Key.DIR_FORWARD to "forward",
+        Key.DIR_BACK to "back",
+        Key.UP to "up",
+        Key.DOWN to "down",
+        Key.LEFT to "left",
+        Key.RIGHT to "right",
+        Key.FORWARD to "forward",
+        Key.BACK to "back",
+        Key.SLOW_DOWN to "Slow down.",
+        Key.A_LOT to "a lot",
+        Key.A_LITTLE to "a little",
+        Key.AND to "and",
+
+        Key.SAY_YES_OR_NO to "Say yes to pay, or no to cancel.",
+        Key.PAYMENT_NOT_CONFIRMED to "Payment not confirmed.",
+        Key.CONFIRM_FIRST to "I need you to confirm the amount first.",
+        Key.LOST_TRACK to "I lost track. What do you want to do?",
+        Key.ASK_AGAIN_GIVE_UP to "Tell me what you want to do.",
+        Key.DONE to "Done.",
+
+        Key.KEYPAD_PHONE to "Phone layout. 5 is in the centre.",
+        Key.KEYPAD_CALCULATOR to "Calculator layout. 5 is in the centre.",
+        Key.KEYPAD_SCRAMBLED to "The keys are scrambled. Slide your finger and I'll say each digit.",
+        Key.CONNECT_EARPHONES to "Connect earphones for PIN help.",
+        Key.EARPHONES_DISCONNECTED to "Earphones disconnected. Connect earphones for PIN help.",
+        Key.PIN_PAD_DETECTED to "PIN pad detected. I'll stay offline while you enter it.",
+        Key.BACK_ONLINE to "Back online.",
+
+        Key.HINDI_VOICE_MISSING to "Hindi voice not installed; using English.",
+        Key.SPANISH_VOICE_MISSING to "Spanish voice not installed; using English.",
+
+        Key.SCREEN_NO_CHANGE to "The screen didn't change. Press a little firmer.",
+        Key.CAMERA_TRACKING_FAILED to "Camera tracking couldn't start.",
+        Key.MIC_PERMISSION_NEEDED to "Microphone access is needed. Open settings to allow it.",
+        Key.GLARE_WARNING to "There's glare. Tilt the phone a little.",
+        Key.UNCERTAIN_PREFIX to "I think this is",
+        Key.UNCERTAIN_SUFFIX to "but I'm not sure.",
+    )
+
+    private val hi: Map<Key, String> = mapOf(
+        Key.ASK_GOAL to "आप क्या दबाना चाहते हैं?",
+        Key.ASK_GOAL_AGAIN to "बताएं कि आप क्या दबाना चाहते हैं, उदाहरण के लिए: स्टार्ट।",
+        Key.GIVE_UP_LISTENING to "तैयार होने पर स्क्रीन पर टैप करें।",
+        Key.FRAMING_TIPS to "फ़ोन को स्क्रीन से लगभग एक हाथ की दूरी पर रखें, और इसे सीधे उसकी ओर रखें।",
+        Key.LOCATE_FAILED to "मैं स्क्रीन नहीं पढ़ सका। फिर से प्रयास करें।",
+        Key.RAISE_FINGER to "अपनी तर्जनी उंगली को सामने लाएं।",
+        Key.TAP to "टैप करें।",
+        Key.PRESS_NOW to "अब दबाएं।",
+        Key.OFFER_EXPLORE to "परेशानी हो रही है? स्क्रीन पर क्या है सुनने के लिए एक्सप्लोर कहें।",
+        Key.HOLD_STEADY to "फ़ोन को स्थिर रखें।",
+
+        Key.DIR_UP to "ऊपर",
+        Key.DIR_DOWN to "नीचे",
+        Key.DIR_LEFT to "बाएं",
+        Key.DIR_RIGHT to "दाएं",
+        Key.DIR_FORWARD to "आगे",
+        Key.DIR_BACK to "पीछे",
+        Key.UP to "ऊपर",
+        Key.DOWN to "नीचे",
+        Key.LEFT to "बाएं",
+        Key.RIGHT to "दाएं",
+        Key.FORWARD to "आगे",
+        Key.BACK to "पीछे",
+        Key.SLOW_DOWN to "धीमे करें।",
+        Key.A_LOT to "काफ़ी",
+        Key.A_LITTLE to "थोड़ा",
+        Key.AND to "और",
+
+        Key.SAY_YES_OR_NO to "भुगतान के लिए हाँ, या रद्द करने के लिए नहीं कहें।",
+        Key.PAYMENT_NOT_CONFIRMED to "भुगतान की पुष्टि नहीं हुई।",
+        Key.CONFIRM_FIRST to "मुझे पहले आपसे राशि की पुष्टि चाहिए।",
+        Key.LOST_TRACK to "संपर्क टूट गया। आप क्या करना चाहते हैं?",
+        Key.ASK_AGAIN_GIVE_UP to "मुझे बताएं कि आप क्या करना चाहते हैं।",
+        Key.DONE to "हो गया।",
+
+        Key.KEYPAD_PHONE to "फ़ोन लेआउट। 5 केंद्र में है।",
+        Key.KEYPAD_CALCULATOR to "कैलकुलेटर लेआउट। 5 केंद्र में है।",
+        Key.KEYPAD_SCRAMBLED to "कुंजियाँ बदली हुई हैं। अपनी उंगली फिसलाएं और मैं प्रत्येक अंक बोलूंगा।",
+        Key.CONNECT_EARPHONES to "पिन सहायता के लिए इयरफ़ोन कनेक्ट करें।",
+        Key.EARPHONES_DISCONNECTED to "इयरफ़ोन डिस्कनेक्ट हो गए। पिन सहायता के लिए इयरफ़ोन कनेक्ट करें।",
+        Key.PIN_PAD_DETECTED to "पिन पैड मिला। आपके दर्ज करते समय मैं ऑफ़लाइन रहूँगा।",
+        Key.BACK_ONLINE to "वापस ऑनलाइन।",
+
+        Key.HINDI_VOICE_MISSING to "Hindi voice not installed; using English.",
+        Key.SPANISH_VOICE_MISSING to "Spanish voice not installed; using English.",
+
+        Key.SCREEN_NO_CHANGE to "स्क्रीन नहीं बदली। थोड़ा और ज़ोर से दबाएं।",
+        Key.CAMERA_TRACKING_FAILED to "कैमरा ट्रैकिंग शुरू नहीं हो सकी।",
+        Key.MIC_PERMISSION_NEEDED to "माइक्रोफ़ोन एक्सेस आवश्यक है। अनुमति देने के लिए सेटिंग्स खोलें।",
+        Key.GLARE_WARNING to "चमक आ रही है। फ़ोन को थोड़ा झुकाएं।",
+        Key.UNCERTAIN_PREFIX to "मुझे लगता है यह",
+        Key.UNCERTAIN_SUFFIX to "लेकिन मुझे पक्का यकीन नहीं है।",
+    )
+
+    private val es: Map<Key, String> = mapOf(
+        Key.ASK_GOAL to "¿Qué quieres pulsar?",
+        Key.ASK_GOAL_AGAIN to "Di qué quieres pulsar, por ejemplo: iniciar.",
+        Key.GIVE_UP_LISTENING to "Toca la pantalla cuando estés listo.",
+        Key.FRAMING_TIPS to "Sostén el teléfono a la distancia de un brazo de la pantalla y apunta directamente hacia ella.",
+        Key.LOCATE_FAILED to "No pude leer la pantalla. Intentémoslo de nuevo.",
+        Key.RAISE_FINGER to "Levanta el dedo índice a la vista.",
+        Key.TAP to "Toca.",
+        Key.PRESS_NOW to "Pulsa ahora.",
+        Key.OFFER_EXPLORE to "¿Tienes problemas? Di explorar para escuchar lo que hay en la pantalla.",
+        Key.HOLD_STEADY to "Mantén el teléfono quieto.",
+
+        Key.DIR_UP to "arriba",
+        Key.DIR_DOWN to "abajo",
+        Key.DIR_LEFT to "izquierda",
+        Key.DIR_RIGHT to "derecha",
+        Key.DIR_FORWARD to "adelante",
+        Key.DIR_BACK to "atrás",
+        Key.UP to "arriba",
+        Key.DOWN to "abajo",
+        Key.LEFT to "izquierda",
+        Key.RIGHT to "derecha",
+        Key.FORWARD to "adelante",
+        Key.BACK to "atrás",
+        Key.SLOW_DOWN to "Más despacio.",
+        Key.A_LOT to "mucho",
+        Key.A_LITTLE to "un poco",
+        Key.AND to "y",
+
+        Key.SAY_YES_OR_NO to "Di sí para pagar, o no para cancelar.",
+        Key.PAYMENT_NOT_CONFIRMED to "Pago no confirmado.",
+        Key.CONFIRM_FIRST to "Primero necesito que confirmes el importe.",
+        Key.LOST_TRACK to "He perdido el hilo. ¿Qué quieres hacer?",
+        Key.ASK_AGAIN_GIVE_UP to "Dime qué quieres hacer.",
+        Key.DONE to "Hecho.",
+
+        Key.KEYPAD_PHONE to "Disposición telefónica. El 5 está en el centro.",
+        Key.KEYPAD_CALCULATOR to "Disposición de calculadora. El 5 está en el centro.",
+        Key.KEYPAD_SCRAMBLED to "Las teclas están desordenadas. Desliza el dedo y diré cada dígito.",
+        Key.CONNECT_EARPHONES to "Conecta auriculares para ayuda con el PIN.",
+        Key.EARPHONES_DISCONNECTED to "Auriculares desconectados. Conecta auriculares para ayuda con el PIN.",
+        Key.PIN_PAD_DETECTED to "Teclado PIN detectado. Permaneceré sin conexión mientras lo introduces.",
+        Key.BACK_ONLINE to "De nuevo en línea.",
+
+        Key.HINDI_VOICE_MISSING to "Hindi voice not installed; using English.",
+        Key.SPANISH_VOICE_MISSING to "Spanish voice not installed; using English.",
+
+        Key.SCREEN_NO_CHANGE to "La pantalla no ha cambiado. Pulsa un poco más firme.",
+        Key.CAMERA_TRACKING_FAILED to "No se pudo iniciar el seguimiento de cámara.",
+        Key.MIC_PERMISSION_NEEDED to "Se necesita acceso al micrófono. Abre los ajustes para permitirlo.",
+        Key.GLARE_WARNING to "Hay reflejos. Inclina un poco el teléfono.",
+        Key.UNCERTAIN_PREFIX to "Creo que esto es",
+        Key.UNCERTAIN_SUFFIX to "pero no estoy seguro.",
+    )
+
+    val strings: Map<Locale, Map<Key, String>> = mapOf(
+        EN to en,
+        HI to hi,
+        ES to es,
+    )
+
+    val all: Map<Locale, Map<Key, String>> get() = strings
+    val STRINGS: Map<Locale, Map<Key, String>> get() = strings
+
+    operator fun get(locale: Locale): Map<Key, String> =
+        strings[locale]
+            ?: strings.entries.firstOrNull { it.key.language.equals(locale.language, ignoreCase = true) }?.value
+            ?: strings.getValue(EN)
+
+    operator fun get(locale: Locale, key: Key): String =
+        get(locale)[key] ?: strings.getValue(EN).getValue(key)
+
+    fun get(key: Key, locale: Locale = EN): String =
+        get(locale, key)
+
+    fun get(key: Key, localeTag: String): String {
+        val tag = localeTag.trim().lowercase()
+        val loc = when {
+            tag.startsWith("hi") -> HI
+            tag.startsWith("es") -> ES
+            else -> EN
+        }
+        return get(loc, key)
+    }
+
+    fun direction(dir: Dir, locale: Locale = EN): String = when (dir) {
+        Dir.UP -> get(Key.DIR_UP, locale)
+        Dir.DOWN -> get(Key.DIR_DOWN, locale)
+        Dir.LEFT -> get(Key.DIR_LEFT, locale)
+        Dir.RIGHT -> get(Key.DIR_RIGHT, locale)
+        Dir.FORWARD -> get(Key.DIR_FORWARD, locale)
+        Dir.BACK -> get(Key.DIR_BACK, locale)
+    }
+}

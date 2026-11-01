@@ -1,5 +1,7 @@
 package io.github.fingerpost.guidance
 
+import java.util.Locale
+
 enum class GState { IDLE, LISTENING, FRAMING, LOCATING, GUIDING, ON_TARGET, VERIFYING, ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, DONE }
 enum class Evidence { SIM, SCREEN_CHANGE, DWELL }
 enum class VerifyResult { OK, WRONG, NOCHANGE }
@@ -59,16 +61,16 @@ sealed interface Effect {
 
 /** English prompts for Day 2; Day 4 moves them behind the locale tables. */
 object Prompts {
-    const val ASK_GOAL = "What do you want to press?"
-    const val ASK_GOAL_AGAIN = "Say what you want to press, for example: start."
-    const val GIVE_UP_LISTENING = "Tap the screen when you're ready."
-    const val FRAMING_TIPS = "Hold the phone about an arm's length from the screen, and point it straight at it."
-    const val LOCATE_FAILED = "I couldn't read the screen. Let's try again."
-    const val RAISE_FINGER = "Raise your pointing finger into view."
-    const val TAP = "Tap."
-    const val PRESS_NOW = "Press now."
-    const val OFFER_EXPLORE = "Having trouble? Say explore to hear what's on the screen."
-    const val HOLD_STEADY = "Hold the phone steady."
+    val ASK_GOAL get() = Strings.get(Key.ASK_GOAL, Strings.EN)
+    val ASK_GOAL_AGAIN get() = Strings.get(Key.ASK_GOAL_AGAIN, Strings.EN)
+    val GIVE_UP_LISTENING get() = Strings.get(Key.GIVE_UP_LISTENING, Strings.EN)
+    val FRAMING_TIPS get() = Strings.get(Key.FRAMING_TIPS, Strings.EN)
+    val LOCATE_FAILED get() = Strings.get(Key.LOCATE_FAILED, Strings.EN)
+    val RAISE_FINGER get() = Strings.get(Key.RAISE_FINGER, Strings.EN)
+    val TAP get() = Strings.get(Key.TAP, Strings.EN)
+    val PRESS_NOW get() = Strings.get(Key.PRESS_NOW, Strings.EN)
+    val OFFER_EXPLORE get() = Strings.get(Key.OFFER_EXPLORE, Strings.EN)
+    val HOLD_STEADY get() = Strings.get(Key.HOLD_STEADY, Strings.EN)
 }
 
 /**
@@ -76,7 +78,8 @@ object Prompts {
  * Frame events. Task intent adds ASK, CONFIRM and AWAIT_NEXT (Days 4–7 plan, "Contracts"); PIN_MODE is
  * entered from any active state by the local PIN gate and never asks for a keyframe.
  */
-class GuidanceStateMachine {
+class GuidanceStateMachine(var locale: Locale = Strings.EN) {
+    private fun prompt(key: Key): String = Strings.get(key, locale)
     var state = GState.IDLE; private set
     /** True after goal.ack says "task". Cleared when the session goes IDLE. */
     var taskIntent = false; private set
@@ -152,7 +155,7 @@ class GuidanceStateMachine {
         when (ev) {
             is GEvent.TargetArrived -> {
                 if (!policy.mayGuide(ev.role, "")) {
-                    out += Effect.Say(TaskPrompts.CONFIRM_FIRST, Priority.SAFETY)
+                    out += Effect.Say(prompt(Key.CONFIRM_FIRST), Priority.SAFETY)
                     if (taskIntent) go(GState.AWAIT_NEXT, now) else { out += Effect.OpenMic; go(GState.LISTENING, now) }
                     return true
                 }
@@ -184,7 +187,7 @@ class GuidanceStateMachine {
                 policy.onConfirm(ev.confirmId)
                 confirmId = ev.confirmId
                 val amount = ev.amountSay?.takeIf { it.isNotBlank() && !ev.summary.contains(it) }
-                confirmSay = listOfNotNull(ev.summary.trimEnd('.', ' '), amount).joinToString(", ") + ". " + TaskPrompts.SAY_YES_OR_NO
+                confirmSay = listOfNotNull(ev.summary.trimEnd('.', ' '), amount).joinToString(", ") + ". " + prompt(Key.SAY_YES_OR_NO)
                 out += Effect.ToneOff
                 out += Effect.Say(confirmSay, Priority.SAFETY)
                 out += Effect.OpenMic
@@ -229,7 +232,7 @@ class GuidanceStateMachine {
         if (ev is GEvent.TrackingLost) {
             if (state != GState.LOCATING && state != GState.GUIDING && state != GState.ON_TARGET) return emptyList()
             go(GState.FRAMING, ev.nowMs)
-            return listOf(Effect.ToneOff, Effect.Haptic(HapticKind.LOST), Effect.Say(Prompts.HOLD_STEADY, Priority.STATE))
+            return listOf(Effect.ToneOff, Effect.Haptic(HapticKind.LOST), Effect.Say(prompt(Key.HOLD_STEADY), Priority.STATE))
         }
         val out = mutableListOf<Effect>()
         val now = ev.nowMs
@@ -237,7 +240,7 @@ class GuidanceStateMachine {
         when (state) {
             GState.IDLE -> if (ev is GEvent.Start) {
                 go(GState.LISTENING, now)
-                out += Effect.Say(Prompts.ASK_GOAL, Priority.STATE)
+                out += Effect.Say(prompt(Key.ASK_GOAL), Priority.STATE)
                 out += Effect.OpenMic
             }
             GState.LISTENING -> when {
@@ -246,12 +249,12 @@ class GuidanceStateMachine {
                     go(GState.FRAMING, now)
                 }
                 timed && now - enteredAt >= 8000 -> if (!retried) {
-                    out += Effect.Say(Prompts.ASK_GOAL_AGAIN, Priority.STATE)
+                    out += Effect.Say(prompt(Key.ASK_GOAL_AGAIN), Priority.STATE)
                     retried = true
                     enteredAt = now
                 } else {
                     out += Effect.CloseMic
-                    out += Effect.Say(Prompts.GIVE_UP_LISTENING, Priority.STATE)
+                    out += Effect.Say(prompt(Key.GIVE_UP_LISTENING), Priority.STATE)
                     go(GState.IDLE, now)
                 }
             }
@@ -261,7 +264,7 @@ class GuidanceStateMachine {
                     go(GState.LOCATING, now)
                 }
                 timed && now - enteredAt >= 30_000 && !retried -> {
-                    out += Effect.Say(Prompts.FRAMING_TIPS, Priority.STATE)
+                    out += Effect.Say(prompt(Key.FRAMING_TIPS), Priority.STATE)
                     retried = true
                 }
             }
@@ -272,7 +275,7 @@ class GuidanceStateMachine {
                     retried = true
                     enteredAt = now
                 } else {
-                    out += Effect.Say(Prompts.LOCATE_FAILED, Priority.STATE)
+                    out += Effect.Say(prompt(Key.LOCATE_FAILED), Priority.STATE)
                     go(GState.FRAMING, now)
                 }
             }
@@ -290,7 +293,7 @@ class GuidanceStateMachine {
                 if (timed && state == GState.GUIDING) {
                     noHandCheck(now, out)
                     if (now - guidingSince >= 45_000 && !offeredExplore) {
-                        out += Effect.Say(Prompts.OFFER_EXPLORE, Priority.STATE)
+                        out += Effect.Say(prompt(Key.OFFER_EXPLORE), Priority.STATE)
                         offeredExplore = true
                     }
                 }
@@ -306,13 +309,13 @@ class GuidanceStateMachine {
                     go(GState.GUIDING, now)
                 }
                 timed && now - enteredAt >= 5000 && !pressPrompted -> {
-                    out += Effect.Say(Prompts.PRESS_NOW, Priority.GUIDE)
+                    out += Effect.Say(prompt(Key.PRESS_NOW), Priority.GUIDE)
                     pressPrompted = true
                 }
             }
             GState.VERIFYING -> when {
                 ev is GEvent.VerifyArrived -> verify(ev.result, ev.say, now, out)
-                timed && now - enteredAt >= 4000 -> verify(VerifyResult.NOCHANGE, "The screen didn't change. Press a little firmer.", now, out)
+                timed && now - enteredAt >= 4000 -> verify(VerifyResult.NOCHANGE, prompt(Key.SCREEN_NO_CHANGE), now, out)
             }
             GState.AWAIT_NEXT -> when {
                 serverTurn(ev, now, out) -> Unit
@@ -321,7 +324,7 @@ class GuidanceStateMachine {
                     awaitResent = true
                     enteredAt = now
                 } else {
-                    out += Effect.Say(TaskPrompts.LOST_TRACK, Priority.STATE)
+                    out += Effect.Say(prompt(Key.LOST_TRACK), Priority.STATE)
                     out += Effect.OpenMic
                     go(GState.LISTENING, now)
                 }
@@ -340,7 +343,7 @@ class GuidanceStateMachine {
                     retried = true
                     enteredAt = now
                 } else {
-                    out += Effect.Say(TaskPrompts.ASK_AGAIN_GIVE_UP, Priority.STATE)
+                    out += Effect.Say(prompt(Key.ASK_AGAIN_GIVE_UP), Priority.STATE)
                     out += Effect.OpenMic
                     askId = null
                     go(GState.LISTENING, now)
@@ -375,7 +378,7 @@ class GuidanceStateMachine {
         policy.onConfirmReply(id, false)
         out += Effect.CloseMic
         out += Effect.SendConfirmReply(id, false, utterance)
-        out += Effect.Say(TaskPrompts.PAYMENT_NOT_CONFIRMED, Priority.SAFETY)
+        out += Effect.Say(prompt(Key.PAYMENT_NOT_CONFIRMED), Priority.SAFETY)
         go(GState.IDLE, now)
     }
 
@@ -408,7 +411,7 @@ class GuidanceStateMachine {
     private fun noHandCheck(now: Long, out: MutableList<Effect>) {
         val since = noHandSince ?: return
         if (!noHandPrompted && now - since >= 1500) {
-            out += Effect.Say(Prompts.RAISE_FINGER, Priority.GUIDE)
+            out += Effect.Say(prompt(Key.RAISE_FINGER), Priority.GUIDE)
             noHandPrompted = true
         }
     }
@@ -428,7 +431,7 @@ class GuidanceStateMachine {
         if (debounce.update(zone ?: Zone.FAR) && debounce.onTarget) {
             out += Effect.ToneOff
             out += Effect.Haptic(HapticKind.ON_TARGET)
-            out += Effect.Say(Prompts.TAP, Priority.STATE)
+            out += Effect.Say(prompt(Key.TAP), Priority.STATE)
             out += Effect.SendTargetReached
             go(GState.ON_TARGET, ev.nowMs)
         }

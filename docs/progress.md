@@ -73,7 +73,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Codex |
 | A4-2 | Device pay-confirm policy | A | – | doing | Codex |
 | A4-3 | Local PIN mode on device | A | A4-1 | doing | Codex |
-| A4-4 | HI/ES guidance strings | A | – | todo | |
+| A4-4 | HI/ES guidance strings | A | – | doing | Codex |
 | A4-5 | Settings screen | A | – | todo | |
 | B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
@@ -451,3 +451,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-01: B4-2 done: agent session (one decision per screen), Spark tool-calling planner with rules fallback, confirm/policy/budget/loop, pipeline + controller wiring (answer, confirm.reply, spoken yes/no, pinModeEntered). medium-cola, go-back and guide-start flows replay green over a real socket; 501 TS tests pass. Live Spark tool calling not yet tried.
 - 2026-11-01: Pipeline announces "Looking at the screen." before locate Spark calls once per goal; phone-dev flag parsing verified; 372 gateway tests pass.
 - 2026-11-02: A4-1/A4-2 code + task-6 app wiring: ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, SafetyPolicy, FlowReplayTest (medium-cola, guide-start). 190 guidance cases pass under kotlinc; awaiting Gradle + phone check. Gateway: duplicate answer no longer becomes a new goal; unclear confirm reply declines.
+- 2026-11-02: A4-4 EN/HI/ES string tables for Prompts, Phrases and A4 keys; TtsSpeaker says "<Language> voice not installed; using English." once on LANG_MISSING_DATA. 213 guidance + 12 app tests pass; phone voice check pending.

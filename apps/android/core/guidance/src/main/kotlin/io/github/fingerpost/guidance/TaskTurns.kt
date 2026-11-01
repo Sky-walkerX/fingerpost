@@ -17,10 +17,10 @@ object YesNo {
 
 /** English task-turn prompts; Day 4 HI/ES tables use the same keys. */
 object TaskPrompts {
-    const val SAY_YES_OR_NO = "Say yes to pay, or no to cancel."
-    const val PAYMENT_NOT_CONFIRMED = "Payment not confirmed."
-    const val CONFIRM_FIRST = "I need you to confirm the amount first."
-    const val LOST_TRACK = "I lost track. What do you want to do?"
-    const val ASK_AGAIN_GIVE_UP = "Tell me what you want to do."
-    const val DONE = "Done."
+    val SAY_YES_OR_NO get() = Strings.get(Key.SAY_YES_OR_NO, Strings.EN)
+    val PAYMENT_NOT_CONFIRMED get() = Strings.get(Key.PAYMENT_NOT_CONFIRMED, Strings.EN)
+    val CONFIRM_FIRST get() = Strings.get(Key.CONFIRM_FIRST, Strings.EN)
+    val LOST_TRACK get() = Strings.get(Key.LOST_TRACK, Strings.EN)
+    val ASK_AGAIN_GIVE_UP get() = Strings.get(Key.ASK_AGAIN_GIVE_UP, Strings.EN)
+    val DONE get() = Strings.get(Key.DONE, Strings.EN)
 }

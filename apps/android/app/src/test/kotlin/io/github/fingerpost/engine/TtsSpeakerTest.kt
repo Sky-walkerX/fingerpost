@@ -1,0 +1,76 @@
+package io.github.fingerpost.engine
+
+import android.media.AudioAttributes
+import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import java.util.Locale
+
+class TtsSpeakerTest {
+
+    private class FakeTtsEngine(var languageResult: Int = TextToSpeech.LANG_AVAILABLE) : TtsEngine {
+        val spoken = mutableListOf<String>()
+        val languagesSet = mutableListOf<Locale>()
+        var listener: UtteranceProgressListener? = null
+
+        override fun setAudioAttributes(attributes: AudioAttributes): Int = 0
+
+        override fun setLanguage(loc: Locale): Int {
+            languagesSet += loc
+            return languageResult
+        }
+
+        override fun setOnUtteranceProgressListener(listener: UtteranceProgressListener) {
+            this.listener = listener
+        }
+
+        override fun speak(text: CharSequence, queueMode: Int, params: Bundle?, utteranceId: String): Int {
+            spoken += text.toString()
+            return TextToSpeech.SUCCESS
+        }
+
+        override fun stop(): Int = 0
+        override fun shutdown() {}
+    }
+
+    @Test
+    fun hindiVoiceMissingDataSpeaksEnglishWarningOnce() {
+        val fakeEngine = FakeTtsEngine(languageResult = TextToSpeech.LANG_MISSING_DATA)
+        val speaker = TtsSpeaker(context = null, onDone = {}, onError = {}, engine = fakeEngine)
+
+        speaker.setLanguage(Locale.forLanguageTag("hi-IN"))
+
+        assertEquals(1, fakeEngine.spoken.size)
+        assertEquals("Hindi voice not installed; using English.", fakeEngine.spoken[0])
+        assertEquals(Locale.forLanguageTag("en-IN"), fakeEngine.languagesSet.last())
+
+        // Second call with same locale does not repeat warning
+        speaker.setLanguage(Locale.forLanguageTag("hi-IN"))
+        assertEquals(1, fakeEngine.spoken.size)
+    }
+
+    @Test
+    fun spanishVoiceMissingDataSpeaksEnglishWarningOnce() {
+        val fakeEngine = FakeTtsEngine(languageResult = TextToSpeech.LANG_MISSING_DATA)
+        val speaker = TtsSpeaker(context = null, onDone = {}, onError = {}, engine = fakeEngine)
+
+        speaker.setLanguage(Locale.forLanguageTag("es-ES"))
+
+        assertEquals(1, fakeEngine.spoken.size)
+        assertEquals("Spanish voice not installed; using English.", fakeEngine.spoken[0])
+        assertEquals(Locale.forLanguageTag("en-IN"), fakeEngine.languagesSet.last())
+    }
+
+    @Test
+    fun languageAvailableSpeaksNoWarning() {
+        val fakeEngine = FakeTtsEngine(languageResult = TextToSpeech.LANG_AVAILABLE)
+        val speaker = TtsSpeaker(context = null, onDone = {}, onError = {}, engine = fakeEngine)
+
+        speaker.setLanguage(Locale.forLanguageTag("hi-IN"))
+
+        assertTrue(fakeEngine.spoken.isEmpty())
+        assertEquals(Locale.forLanguageTag("hi-IN"), fakeEngine.languagesSet.last())
+    }
+}
