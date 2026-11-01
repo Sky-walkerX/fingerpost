@@ -12,8 +12,8 @@ const Flow = z.strictObject({
 const flows = readdirSync(dir).filter((name) => name.endsWith('.json')).sort()
   .map((name) => Flow.parse(JSON.parse(readFileSync(new URL(name, dir), 'utf8'))));
 
-test('all four frozen Day 4 flow contracts are present', () => {
-  expect(flows.map((flow) => flow.name)).toEqual(['explore-summary', 'go-back', 'guide-start', 'medium-cola']);
+test('the frozen Day 4 flows plus the Day 5 memory flow are present', () => {
+  expect(flows.map((flow) => flow.name)).toEqual(['explore-summary', 'go-back', 'guide-start', 'medium-cola', 'memory-hit']);
 });
 
 test.each(flows)('$name uses only existing fp.v1 messages and supported screen markers', (flow) => {
@@ -71,4 +71,13 @@ test('explore requests exploration and a short regional summary, without a guess
   expect(String(summary.text)).toMatch(/Say more for details\.$/);
   expect(flow.steps.some(({ msg }) => msg.type === 'keyframe' && msg.purpose === 'explore')).toBe(true);
   expect(flow.steps.some(({ msg }) => msg.type === 'target')).toBe(false);
+});
+
+test('memory-hit: a known screen is answered from kiosk memory with OCR tokens and no schema change', () => {
+  const flow = flows.find((flow) => flow.name === 'memory-hit')!;
+  const locate = flow.steps.findIndex(({ from, msg }) => from === 'client' && msg.type === 'keyframe' && msg.purpose === 'locate');
+  expect((flow.steps[locate]!.msg.ocrTokens as unknown[]).length).toBeGreaterThan(0);
+  expect(flow.steps[locate + 1]!.msg).toMatchObject({ type: 'layout', source: 'memory' });
+  expect(Layout.parse(flow.steps[locate + 1]!.msg).source).toBe('memory');
+  expect(flow.steps[locate + 2]!.msg).toMatchObject({ type: 'target', elementId: 'start-order' });
 });

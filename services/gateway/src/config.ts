@@ -10,6 +10,10 @@ const Env = z
     GIT_SHA: z.string().min(1).default('dev'),
     /** Per model call. Real Spark screen reads take 10–22 s (docs/progress.md, D1-T5), so 5 s always timed out. */
     MODEL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(30_000),
+    /** Kiosk memory: distinct attested installs that must agree before a screen is served from memory (design §4.9). */
+    MEMORY_MIN_INSTALLS: z.coerce.number().int().min(1).max(5).default(2),
+    /** Salt for install and text hashes in kiosk_layouts. Unset: a random per-process salt (memory then lasts one run). */
+    MEMORY_SALT: z.string().min(16).optional(),
     /** Task planner: Spark tool calling (falls back to rules on error) or the deterministic rules planner. */
     AGENT_PLANNER: z.enum(['spark', 'rules']).optional(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

@@ -6,6 +6,8 @@ import { buildApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
 import { mockModels } from '../src/models/mock/mock-models.ts';
 import type { ParsedLayout } from '../src/parse/spark-parse.ts';
+import { MemoryService } from '../src/memory/service.ts';
+import { InMemoryStore } from '../src/memory/store.ts';
 
 /**
  * Contract replay (Days 4–7 plan, "Contracts"): the client half of each shared flow script drives a real
@@ -22,11 +24,11 @@ afterEach(async () => { await app?.close(); app = undefined; });
 
 /** Fields that carry decisions; everything else (ids, ts, wording, refined polygons) may differ. */
 const DECISION_FIELDS: Record<string, string[]> = {
-  'goal.ack': ['intent'], layout: ['fingerprint', 'screenType'], target: ['elementId'], verify: ['re', 'result'],
+  'goal.ack': ['intent'], say: ['priority'], layout: ['fingerprint', 'screenType', 'source'], target: ['elementId'], verify: ['re', 'result'],
   confirm: ['amount'], ask: [], finish: ['result', 'say'], 'sim.touch': ['elementId'], ready: [],
 };
 
-async function replay(flow: Flow) {
+async function replay(flow: Flow, memory?: MemoryService) {
   const layouts = new Map<string, ParsedLayout>();
   for (const step of flow.steps) {
     if (step.from === 'server' && step.msg.type === 'layout' && step.screen && !layouts.has(step.screen)) {
@@ -37,7 +39,7 @@ async function replay(flow: Flow) {
   let screen = '';
   const models = mockModels();
   models.parseScreen = async () => ({ layout: layouts.get(screen)!, usage: { inputTokens: 0, outputTokens: 0 }, latencyMs: 0, promptId: 'flow' });
-  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models });
+  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models, ...(memory ? { memory } : {}) });
   await app.ready();
   const ws = await app.injectWS('/v1/session');
   const received: ServerMessage[] = [];
@@ -63,7 +65,8 @@ async function replay(flow: Flow) {
     }
     let got: ServerMessage | undefined;
     await vi.waitFor(() => {
-      const next = received.slice(consumed).findIndex((m) => !ignored.has(m.type));
+      // Spoken lines are skipped unless the script expects one here (explore's summaries).
+      const next = received.slice(consumed).findIndex((m) => want.type === 'say' ? m.type === 'say' && m.priority === want.priority : !ignored.has(m.type));
       expect(next).toBeGreaterThanOrEqual(0);
       consumed += next;
       got = received[consumed];
@@ -78,6 +81,7 @@ async function replay(flow: Flow) {
   await new Promise((r) => setTimeout(r, 20));
   expect(received.slice(consumed).filter((m) => !ignored.has(m.type)).map((m) => m.type), `${flow.name}: unexpected extra messages`).toEqual([]);
   ws.terminate();
+  return received;
 }
 
 test('medium-cola: task flow with amount confirm, pay target and PIN hand-off', async () => {
@@ -86,6 +90,27 @@ test('medium-cola: task flow with amount confirm, pay target and PIN hand-off', 
 
 test('go-back: an external Back press re-plans from the menu', async () => {
   await replay(load('go-back'));
+});
+
+test('explore-summary: a regional summary, then "more" reads the next region, never a target', async () => {
+  const received = await replay(load('explore-summary'));
+  const says = received.filter((m) => m.type === 'say' && m.priority === 'info').map((m) => (m as { text: string }).text);
+  expect(says).toHaveLength(2);
+  expect(says[0]).toMatch(/Say more for details\.$/);
+  expect(says[1]).not.toMatch(/Say more/);
+  expect(received.some((m) => m.type === 'target')).toBe(false);
+});
+
+test('memory-hit: a screen two installs vouched for is answered from kiosk memory', async () => {
+  const flow = load('memory-hit');
+  const keyframe = flow.steps.find((s) => s.msg.type === 'keyframe')!.msg as { ocrTokens: { text: string; box: { u: number; v: number; w: number; h: number } }[]; imageSize: { w: number; h: number } };
+  const home = flow.steps.find((s) => s.msg.type === 'layout')!.msg as unknown as import('@fingerpost/protocol').Layout;
+  const memory = new MemoryService(new InMemoryStore(), { salt: 'synthetic-flow-salt' });
+  for (const install of ['install-a', 'install-b'])
+    await memory.record({ ...home, source: 'model' }, keyframe.ocrTokens, keyframe.imageSize.w / keyframe.imageSize.h, install);
+  const received = await replay(flow, memory);
+  expect(received.find((m) => m.type === 'layout')).toMatchObject({ source: 'memory' });
+  expect(received.some((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toBe(false);
 });
 
 test('guide-start: guide intent keeps the single-target path', async () => {

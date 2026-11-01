@@ -11,6 +11,8 @@ import { fullFrameCoordinates } from './screen-coordinates.ts';
 import { AgentSession, type AgentTurn } from '../agent/loop.ts';
 import { inferIntent, type RequestedMode } from '../agent/intent.ts';
 import { rulesPlanner, type Planner } from '../agent/planner.ts';
+import { firstSay, isMore, nextSay, summarize } from '../explore/summary.ts';
+import type { MemoryService } from '../memory/service.ts';
 
 /** Sim element ids are kebab-case versions of their labels ("pay-card" ↔ "Pay by card"). */
 export const simMatches = (simElementId: string, el: LayoutElement) => tokenSetRatio(simElementId.replaceAll('-', ' '), el.label) >= 0.8;
@@ -27,6 +29,10 @@ export interface PipelineDeps {
   beforeTask?: TaskGate;
   /** The kill switch, checked (cached) before every billed keyframe, not only at task start. */
   cloudEnabled?: () => Promise<boolean>;
+  /** B5-2: kiosk memory. Known screens are answered without a model call. */
+  memory?: MemoryService;
+  /** The attested key id that vouches for what this session records (dev: 'dev-key'). */
+  keyId?: string;
   /** B4-1: picks Meta or Glimmer per frame from the session's privacy and the last screen's sensitivity. */
   route?: RoutedModels;
   /** Day 4: plans multi-step tasks. Default: the deterministic rules planner (mock/dev). */
@@ -92,8 +98,12 @@ export class SessionPipeline {
   private sensitive = false;
   /** The port that read the current frame; SAM refinement of its target uses the same provider. */
   private frameModels: ModelPort | null = null;
+  /** The current frame's layout came from kiosk memory: its polygons are final, no SAM refinement. */
+  private frameFromMemory = false;
   private agent: AgentSession | null = null;
   private lookingSpoken = false;
+  /** Explore (B5-1): the regions of the last summarized screen and how many were read. null outside explore. */
+  private explore: { regions: string[] | null; cursor: number } | null = null;
 
   private readonly d: PipelineDeps;
   constructor(d: PipelineDeps) { this.d = d; }
@@ -136,6 +146,13 @@ export class SessionPipeline {
   }
 
   onGoal(text: string): void {
+    // "more" while exploring reads the next region; it is not a new goal.
+    if (this.explore?.regions && isMore(text)) {
+      const next = nextSay(this.explore.regions, this.explore.cursor, this.locale);
+      this.explore.cursor = next.cursor;
+      this.d.send({ ...this.base(), type: 'say', priority: 'info', text: next.text.slice(0, 500) });
+      return;
+    }
     this.task.abort();
     this.task = new AbortController();
     this.goal = text;
@@ -145,8 +162,8 @@ export class SessionPipeline {
     this.target = null;
     this.hasSimTouch = false;
     this.lastTap = { keyframeId: null, simElementId: null };
-    // Explore is not built yet (cut for v1 beta): it behaves as a single-target guide.
-    const intent = inferIntent(text, this.mode) === 'task' ? 'task' : 'guide';
+    const intent = inferIntent(text, this.mode);
+    this.explore = intent === 'explore' ? { regions: null, cursor: 0 } : null;
     this.agent = intent === 'task' ? new AgentSession(text, {
       planner: this.d.planner ?? rulesPlanner(),
       ...(this.d.now ? { now: this.d.now } : {}),
@@ -191,6 +208,7 @@ export class SessionPipeline {
     this.layout = null;
     this.target = null;
     this.lookingSpoken = false;
+    this.explore = null;
     this.taskCharged = false;
     this.everCharged = false;
     this.callsSinceCharge = 0;
@@ -211,12 +229,14 @@ export class SessionPipeline {
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
     const signal = this.task.signal;
     // Nothing to look for yet: don't spend a model call.
-    if (h.purpose === 'locate' && !this.goal) return;
+    // An explore frame is read like a locate frame: it needs a goal and starts the charged task.
+    const reading = h.purpose === 'locate' || h.purpose === 'explore';
+    if (reading && !this.goal) return;
     // Route before charging: a private session without Glimmer is refused and costs nothing.
     const models = this.models();
     if (!models) return;
     this.frameModels = models;
-    if (h.purpose === 'locate' && !this.taskCharged) {
+    if (reading && !this.taskCharged) {
       const allowed = await whileActive(Promise.resolve(this.d.beforeTask?.()), signal);
       if (allowed === CANCELLED || signal.aborted) return;
       if (allowed && !allowed.ok) {
@@ -243,6 +263,16 @@ export class SessionPipeline {
     }
     const before = this.layout;
     const image = { bytes: jpeg, mime: 'image/jpeg' as const };
+    const remembered = await whileActive(this.fromMemory(h), signal).catch(() => null);
+    if (remembered === CANCELLED || signal.aborted) return;
+    this.frameFromMemory = !!remembered;
+    let layout: Layout;
+    let coordinates: ReturnType<typeof fullFrameCoordinates> = null;
+    let parsedElements: readonly LayoutElement[];
+    if (remembered) {
+      layout = Layout.parse({ ...remembered, ...this.base() });
+      parsedElements = layout.elements;
+    } else {
     if (h.purpose === 'locate' && !this.lookingSpoken) {
       this.lookingSpoken = true;
       this.d.send({ ...this.base(), type: 'say', priority: 'state', text: 'Looking at the screen.' });
@@ -254,23 +284,27 @@ export class SessionPipeline {
     const result = await whileActive(Promise.all([parse, screen]), signal);
     if (result === CANCELLED || signal.aborted) return;
     const [parsed, screenMask] = result;
-    const coordinates = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
-    if (h.kind === 'full' && !coordinates) {
+    const mapped = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
+    coordinates = mapped;
+    if (h.kind === 'full' && !mapped) {
       this.d.send({ ...this.base(), type: 'ask', question: "I can't find the screen. Hold the phone steady and try again.", options: [] });
       return;
     }
-    const elements = coordinates ? parsed.layout.elements.flatMap((element) => {
-      const polygon = coordinates.toScreen(element.polygon);
+    const elements = mapped ? parsed.layout.elements.flatMap((element) => {
+      const polygon = mapped.toScreen(element.polygon);
       return polygon ? [{ ...element, polygon }] : [];
     }) : parsed.layout.elements;
-    const layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout, elements,
-      ...(coordinates ? { screenQuad: coordinates.screenQuad } : {}),
+    layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout, elements,
+      ...(mapped ? { screenQuad: mapped.screenQuad } : {}),
       fingerprint: layoutFingerprint(elements), source: 'model' });
+    parsedElements = parsed.layout.elements;
+    this.remember(h, layout);
+    }
     this.layout = layout;
     this.sensitive = layout.sensitivity !== 'none';
     this.d.send(layout);
     if (signal.aborted) return;
-    const turn = (layout: Layout) => this.agentTurn(layout, h, image, coordinates, parsed.layout.elements, signal);
+    const turn = (layout: Layout) => this.agentTurn(layout, h, image, coordinates, parsedElements, signal);
     if (h.purpose === 'verify') {
       const pressed = this.target;
       const result = this.verify(h, before, layout);
@@ -281,6 +315,14 @@ export class SessionPipeline {
       return;
     }
     this.target = null;
+    if (this.explore) {
+      // Explore never guesses a target: it reads the screen by region (design §3.2).
+      const { regions } = summarize(layout, this.locale);
+      this.explore = { regions, cursor: Math.min(3, regions.length) };
+      this.d.send({ ...this.base(), type: 'say', priority: 'info', text: regions.length ? firstSay(regions, this.locale).slice(0, 500)
+        : 'I can\'t read anything on this screen. Hold the phone steady and try again.' });
+      return;
+    }
     if (this.agent) {
       await turn(layout);
       return;
@@ -296,7 +338,23 @@ export class SessionPipeline {
         options: elements.slice(0, 8).map(({ label }) => label.slice(0, 100)) }));
       return;
     }
-    await this.sendTarget(resolved.element, h, image, coordinates, parsed.layout.elements, signal);
+    await this.sendTarget(resolved.element, h, image, coordinates, parsedElements, signal);
+  }
+
+  /** Kiosk memory applies to rectified screen crops with on-device OCR, never to private sessions. */
+  private memoryUsable(h: Keyframe): boolean {
+    return !!this.d.memory && h.kind === 'screen' && h.ocrTokens.length > 0 && this.privacy !== 'private';
+  }
+
+  private async fromMemory(h: Keyframe): Promise<Layout | null> {
+    if (!this.memoryUsable(h)) return null;
+    return this.d.memory!.lookup(h.ocrTokens, h.imageSize.w / h.imageSize.h);
+  }
+
+  /** Vouch for a freshly parsed screen. Never blocks the user; a store failure is ignored. */
+  private remember(h: Keyframe, layout: Layout): void {
+    if (!this.memoryUsable(h)) return;
+    void this.d.memory!.record(layout, h.ocrTokens, h.imageSize.w / h.imageSize.h, this.d.keyId ?? 'dev-key').catch(() => {});
   }
 
   /** One agent decision for this screen, sent as fp.v1 messages. */
@@ -324,6 +382,13 @@ export class SessionPipeline {
   /** Refine the element with SAM from its Spark box, then send the target. */
   private async sendTarget(element: LayoutElement, h: Keyframe, image: { bytes: Uint8Array; mime: 'image/jpeg' },
     coordinates: ReturnType<typeof fullFrameCoordinates>, parsedElements: readonly LayoutElement[], signal: AbortSignal): Promise<void> {
+    if (this.frameFromMemory) {
+      // Stored polygons are already final: answering a known screen needs no model call at all.
+      this.target = element;
+      this.d.send(Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon: element.polygon,
+        confidence: element.confidence, say: `Found ${element.label}, ${describePosition(element.polygon)}.` }));
+      return;
+    }
     const original = parsedElements.find(({ id }) => id === element.id) ?? element;
     const us = original.polygon.map(({ u }) => u), vs = original.polygon.map(({ v }) => v);
     const mask = await whileActive((this.frameModels ?? this.d.models).segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {

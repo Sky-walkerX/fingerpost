@@ -16,7 +16,7 @@ class FlowContractTest {
 
     @TestFactory fun flowMessagesUseExistingKotlinModels(): List<DynamicTest> {
         val files = dir.listFiles()!!.filter { it.extension == "json" }.sortedBy { it.name }
-        assertEquals(4, files.size)
+        assertEquals(5, files.size)
         return files.map { file ->
             DynamicTest.dynamicTest(file.name) {
                 for (step in Json.parseToJsonElement(file.readText()).jsonObject.getValue("steps").jsonArray) {
