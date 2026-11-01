@@ -75,7 +75,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-3 | Local PIN mode on device | A | A4-1 | doing | Codex |
 | A4-4 | HI/ES guidance strings | A | – | todo | |
 | A4-5 | Settings screen | A | – | todo | |
-| B4-1 | Model router (private, Spark fallback) | B | – | todo | |
+| B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | todo | |
 | B4-4 | HI/ES server speech | B | – | todo | |
