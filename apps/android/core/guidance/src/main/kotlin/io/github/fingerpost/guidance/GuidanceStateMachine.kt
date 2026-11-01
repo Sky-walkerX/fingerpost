@@ -48,6 +48,7 @@ sealed interface Effect {
     data class Haptic(val kind: HapticKind) : Effect
     data class SendTapDetected(val evidence: Evidence) : Effect
     data object SendTargetReached : Effect
+    data object SendScreenChanged : Effect
     data class SendAnswer(val askId: String, val text: String) : Effect
     data class SendConfirmReply(val confirmId: String, val accepted: Boolean, val utterance: String) : Effect
     data object EnterPinMode : Effect
@@ -276,6 +277,15 @@ class GuidanceStateMachine {
                 }
             }
             GState.GUIDING -> {
+                // Task flow: the kiosk took a press before the finger reached the target (often its Back
+                // button). The plan is stale, so report the change and locate again (go-back flow).
+                if (ev is GEvent.PressDetected && ev.evidence == Evidence.SIM && taskIntent) {
+                    out += Effect.ToneOff
+                    out += Effect.SendScreenChanged
+                    out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
+                    go(GState.LOCATING, now)
+                    return out
+                }
                 if (ev is GEvent.Frame) guidingFrame(ev, out)
                 if (timed && state == GState.GUIDING) {
                     noHandCheck(now, out)

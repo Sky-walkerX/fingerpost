@@ -15,6 +15,7 @@ class FlowReplayTest {
 
     @Test fun mediumColaFlow() = replay("medium-cola")
     @Test fun guideStartFlow() = replay("guide-start")
+    @Test fun goBackFlow() = replay("go-back")
 
     @Suppress("UNCHECKED_CAST")
     private fun replay(name: String) {
@@ -41,7 +42,7 @@ class FlowReplayTest {
                 "finish" -> feed { GEvent.FinishArrived(it, msg["result"] as String, msg["say"] as String) }
                 else -> Unit // ready, sim.touch: the press evidence is fed with the client's tapDetected below
             } else {
-                if (type == "hello") continue
+                if (type == "hello" || type == "abort") continue  // engine-level: the session's user controls
                 if (type == "goal") { feed { GEvent.GoalHeard(it, msg["text"] as String) }; continue }
                 val want = clientSignature(msg)
                 if (produced.isEmpty()) when (want) {
@@ -51,6 +52,8 @@ class FlowReplayTest {
                     "confirm.reply:true" -> feed { GEvent.UserSaid(it, "yes") }
                     "confirm.reply:false" -> feed { GEvent.UserSaid(it, "no") }
                     "event:pinModeEntered" -> feed { GEvent.PinGate(it, blocked = true, digitTokens = 10) }
+                    // The kiosk took a press that wasn't our target (go-back): the relayed sim touch is the stimulus.
+                    "event:screenChanged" -> feed { GEvent.PressDetected(it, Evidence.SIM) }
                 }
                 assertEquals(want, produced.removeFirstOrNull(), "$name: client message at ${steps.indexOf(step)}")
             }
@@ -65,6 +68,7 @@ class FlowReplayTest {
         is Effect.SendConfirmReply -> "confirm.reply:${e.accepted}"
         is Effect.SendAnswer -> "answer"
         Effect.EnterPinMode -> "event:pinModeEntered"
+        Effect.SendScreenChanged -> "event:screenChanged"
         else -> null
     }
 

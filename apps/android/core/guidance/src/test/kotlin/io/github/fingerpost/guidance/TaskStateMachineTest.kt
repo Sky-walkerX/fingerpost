@@ -146,6 +146,24 @@ class TaskStateMachineTest {
         assertEquals(GState.LISTENING, m.state)
     }
 
+    @Test fun pressElsewhereWhileGuidingRelocates() {
+        locatingTask()
+        m.handle(GEvent.TargetArrived(100, "Found Medium."))
+        assertEquals(GState.GUIDING, m.state)
+        // The kiosk reported a press before the finger reached the target (e.g. its Back button).
+        val out = m.handle(GEvent.PressDetected(500, Evidence.SIM))
+        assertEquals(listOf(Effect.ToneOff, Effect.SendScreenChanged, Effect.SendKeyframe(KeyframePurpose.LOCATE)), out)
+        assertEquals(GState.LOCATING, m.state)
+    }
+
+    @Test fun pressElsewhereInGuideIntentIsIgnored() {
+        m.handle(GEvent.Start(0)); m.handle(GEvent.GoalHeard(0, "press start"))
+        m.handle(GEvent.Frame(0, true, false, null))
+        m.handle(GEvent.TargetArrived(100, "Found Start."))
+        assertTrue(m.handle(GEvent.PressDetected(500, Evidence.SIM)).isEmpty())
+        assertEquals(GState.GUIDING, m.state)
+    }
+
     @Test fun finishDoneSpeaksThenIdles() {
         locatingTask()
         val out = m.handle(GEvent.FinishArrived(100, "done", "Your order went through."))

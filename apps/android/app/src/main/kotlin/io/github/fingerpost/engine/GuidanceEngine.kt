@@ -191,6 +191,7 @@ class GuidanceEngine(
             Effect.ToneOff -> tone.stop()
             is Effect.Haptic -> haptics.play(effect.kind)
             Effect.SendTargetReached -> event(EventKind.TARGET_REACHED)
+            Effect.SendScreenChanged -> event(EventKind.SCREEN_CHANGED)
             is Effect.SendTapDetected -> event(EventKind.TAP_DETECTED, EventDetail(TapEvidence.valueOf(effect.evidence.name)))
             is Effect.SendAnswer -> client.send(Answer(newId(), nowMs(), effect.askId, effect.text))
             is Effect.SendConfirmReply -> client.send(ConfirmReply(newId(), nowMs(), effect.confirmId, effect.accepted, effect.utterance))
