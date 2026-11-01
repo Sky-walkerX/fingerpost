@@ -154,7 +154,7 @@ The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for mis
   - The UI shows "Cloud off".
 - **Audio route:** must be wired, Bluetooth A2DP, or BLE audio. Otherwise say "Connect earphones for PIN help" and pause; nothing is announced over the speaker.
 - **Layout announcement:** "phone layout", "calculator layout", or "keys are scrambled". It comes from the last layout plus on-device OCR (digits 0–9 inside the keypad region).
-- **Digit under finger:** announced when it changes, debounced 150 ms, at INFO priority, through earphones only. Digits are never logged and never stored. Speech audio isn't recorded.
+- **Digit under finger:** announced when it changes, debounced 150 ms, at INFO priority, through earphones only. Digits are never logged and never stored. Speech audio isn't recorded. A key counts as under the finger's pad within 1.5 digit-heights of its OCR label box (initial value, 2026-11-02). Digits use a separate on-device TextToSpeech, not the shared speech queue; if the earphones disconnect, digit speech stops at once and the app says "Earphones disconnected. Connect earphones for PIN help."
 - **Exit:** fewer than 5 digit tokens in the keypad region for 2 s. Then resume normal mode and request a fresh keyframe.
 
 ## 11. Two-source agreement (safety)

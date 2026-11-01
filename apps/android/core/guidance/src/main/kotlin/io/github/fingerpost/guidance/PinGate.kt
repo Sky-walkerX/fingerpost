@@ -29,6 +29,9 @@ object PinGate {
         return if (cluster(grid.map { it.cy }, tol) in 3..4) PinGateReason.DIGIT_GRID else PinGateReason.NONE
     }
 
+    /** One token per key digit, as the gate sees them (A4-3 reads the keypad with the same rules). */
+    fun keyDigits(tokens: List<OcrToken>): List<OcrToken> = tokens.flatMap(::digitTokens)
+
     /** Key digits as the gate parses them; PIN-mode exit counts with the same rules (guidance-spec §10.1). */
     fun digitCount(tokens: List<OcrToken>): Int = tokens.sumOf { digitTokens(it).size }
 

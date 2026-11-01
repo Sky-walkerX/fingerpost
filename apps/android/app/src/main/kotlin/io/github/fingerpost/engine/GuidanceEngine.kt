@@ -74,6 +74,12 @@ class GuidanceEngine(
     private var occluded = false
     /** The gateway closed the task while the keypad was up; end quietly once PIN entry is over. */
     private var finishedDuringPin = false
+    /** guidance-spec §10: layout and digit-under-finger, earphones only. Digits never reach logs or status. */
+    private val pinHelp = PinMode(context, onEarphonesLost = {
+        post { say("Earphones disconnected. Connect earphones for PIN help.", SpeechPriority.SAFETY) }
+    })
+    private val digitUnder = DigitUnderFinger()
+    private var layoutAnnounced = false
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val gravity = object : SensorEventListener {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
@@ -283,7 +289,8 @@ class GuidanceEngine(
     }
 
     private fun handResult(samples: List<FingerSample>) {
-        if (guard.pinMode || machine.state !in setOf(GState.GUIDING, GState.ON_TARGET)) return
+        if (guard.pinMode) { pinHand(samples); return }
+        if (machine.state !in setOf(GState.GUIDING, GState.ON_TARGET)) return
         val now = time()
         lastHandAt = now
         val frame = latest
@@ -300,6 +307,17 @@ class GuidanceEngine(
         val radius = finger.target?.nearRadius ?: 1.0
         tone.setPulseHz(if (result.zone == Zone.NEAR) 4 + 8 * (1 - result.error.length / radius).coerceIn(0.0, 1.0) else 0.0)
         tone.start()
+    }
+
+    /** PIN mode: announce the keypad layout once, then the digit under the finger's pad. Local only. */
+    private fun pinHand(samples: List<FingerSample>) {
+        val tokens = router.latestTokens ?: return
+        if (!layoutAnnounced) classifyKeypad(tokens)?.let { if (pinHelp.speak(it.spoken())) layoutAnnounced = true }
+        val s = samples.firstOrNull { it.presence >= 0.6f }
+        // guidance-spec §3 pad point: a quarter of the tip–DIP segment back from the tip.
+        val pad = s?.let { Vec2((it.tipX - 0.25f * (it.tipX - it.dipX)).toDouble() / it.frameW,
+            (it.tipY - 0.25f * (it.tipY - it.dipY)).toDouble() / it.frameH) }
+        digitUnder.update(time(), pad, tokens)?.let { pinHelp.speak(it.toString()) }
     }
 
     private fun encoded(value: KeyframeCapture) {
@@ -410,8 +428,13 @@ class GuidanceEngine(
         mutableStatus.value = mutableStatus.value.copy(cloudOff = true)
         event(EventKind.PIN_MODE_ENTERED)
         say("PIN pad detected. I'll stay offline while you enter it.", SpeechPriority.SAFETY)
+        digitUnder.reset(); layoutAnnounced = false
+        pinHelp.start()
+        // Without earphones nothing about the keys is spoken: the speaker could be overheard.
+        if (!pinHelp.earphonesConnected()) say("Connect earphones for PIN help.", SpeechPriority.SAFETY)
     }
     private fun pinExited() {
+        pinHelp.stop(); digitUnder.reset()
         event(EventKind.PIN_MODE_EXITED)
         mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready)
         if (finishedDuringPin) {
@@ -433,7 +456,7 @@ class GuidanceEngine(
         if (closed) return
         closed = true
         reset(); client.close(); sensorManager.unregisterListener(gravity)
-        hands.close(); tone.release(); haptics.release(); speaker.shutdown(); scope.cancel()
+        hands.close(); tone.release(); haptics.release(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
     }
     fun closeVision() { router.close() }
 
