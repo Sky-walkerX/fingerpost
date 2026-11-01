@@ -69,17 +69,17 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | Task | What | Lane | Needs | Status | Owner |
 |---|---|---|---|---|---|
 | B4-0 | Flow contracts + review hardening | B | – | done | Codex |
-| A4-0 | Single-hand tracking + thermal stride | A | – | todo | |
-| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Poshith |
-| A4-2 | Device pay-confirm policy | A | – | doing | Poshith |
+| A4-0 | Single-hand tracking + thermal stride | A | – | doing | Codex |
+| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Codex |
+| A4-2 | Device pay-confirm policy | A | – | doing | Codex |
 | A4-3 | Local PIN mode on device | A | A4-1 | todo | |
 | A4-4 | HI/ES guidance strings | A | – | todo | |
 | A4-5 | Settings screen | A | – | todo | |
 | B4-1 | Model router (private, Spark fallback) | B | – | todo | |
-| B4-2 | Agent loop + policy | B | B4-0 | done | Poshith |
+| B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | todo | |
 | B4-4 | HI/ES server speech | B | – | todo | |
-| C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Poshith |
+| C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
 | C4-2 | Virtual-device flow runner | C | B4-0 | todo | |
 | C4-3 | Tester session #1 + triage | C | – | todo | |
 | C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
@@ -335,6 +335,7 @@ _(task id · what changed · why · who approved)_
 | 2026-10-28 | Tone prototype device acceptance | user confirms pitch/pan, no clicks, TalkBack toggle, hand/background mute; response feels prompt (subjective) | docs/evals/day1-tone.md |
 
 ## Log
+- 2026-11-02: A4-0 single-hand tracking default with thermal frame stride and interpolation implemented; ThrottlePolicy unit tests and Android assembleDebug pass clean.
 - 2026-11-01: C4-1 fast-food pay now leads to scrambled PIN pad then done; 31 web tests pass including scenes4 and medium-cola flow validation.
 - 2026-10-31: D3-T8 repair: authenticated sockets now renew at the cached token's original 12-minute deadline, cancel renewal on disconnect/close, and report disconnected after close. Retained Firebase/Keystore implementation; bounded issued-token fields before use. A real local JVM WebSocket fixture reproduces missing renewal (one fail/one pass), then both pass; 228 Android JVM cases, APK/test APK builds and lint pass. These synthetic-token transport tests do not claim Firebase or hardware attestation on the phone.
 - 2026-10-31: D3-T6 retains the implemented challenge/auth routes and hardens JWT verification: require nonempty subject/key id, issued/expiry timestamps, no future issue time and at most the specified 900-second life. Six failing/two passing new synthetic cases become eight passing; 54 selected Day 3 auth/attestation/quota/revocation cases and recursive typecheck pass. Existing tests retained. Human root review/Firebase/device/cloud acceptance remain open.

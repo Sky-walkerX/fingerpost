@@ -21,7 +21,10 @@ import io.github.fingerpost.camera.AnalysisFrame
 import io.github.fingerpost.guidance.AnalysisFrameTransform
 import io.github.fingerpost.guidance.FrameTransform
 import io.github.fingerpost.guidance.Bbox
+import io.github.fingerpost.guidance.HandSample
+import io.github.fingerpost.guidance.ThrottlePolicy
 import io.github.fingerpost.guidance.Vec2
+import android.os.PowerManager
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,6 +62,11 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
     private var modelInput: ModelInput? = null
     private val results = ArrayDeque<Pair<Long, Long>>()
     private var lastLogMs = 0L
+    private val powerManager: PowerManager? = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+    internal var thermalStatusProvider: () -> Int = { powerManager?.currentThermalStatus ?: 0 }
+    private var frameCount = 0L
+    private var prevSamples: List<FingerSample> = emptyList()
+    private var lastSamples: List<FingerSample> = emptyList()
 
     private data class PendingFrame(
         val width: Int, val height: Int,
@@ -118,7 +126,29 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
     fun submit(frame: AnalysisFrame) {
         val bitmap = frame.bitmap
         synchronized(dispatchLock) {
-            if (closed.get() || !busy.compareAndSet(false, true)) {
+            if (closed.get()) {
+                bitmap.recycle()
+                return
+            }
+            val thermalStatus = thermalStatusProvider()
+            val recentInferenceMs = results.lastOrNull()?.second ?: 0L
+            val stride = ThrottlePolicy.stride(thermalStatus, recentInferenceMs)
+            val currentFrame = ++frameCount
+            if (stride > 1 && (currentFrame % stride != 0L)) {
+                bitmap.recycle()
+                if (lastSamples.isNotEmpty()) {
+                    if (frame.timestampMs - lastSamples.first().frameTsMs > 200L) {
+                        lastSamples = emptyList()
+                        prevSamples = emptyList()
+                        mutableSamples.value = emptyList()
+                    } else {
+                        val interpolated = interpolateSamples(prevSamples, lastSamples, frame.timestampMs)
+                        mutableSamples.value = interpolated
+                    }
+                }
+                return
+            }
+            if (!busy.compareAndSet(false, true)) {
                 bitmap.recycle()
                 return
             }
@@ -187,7 +217,7 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
         val now = SystemClock.elapsedRealtime()
         val inferenceMs = (callbackNs - frame.startedNs) / 1_000_000
         val dispatchMs = (SystemClock.elapsedRealtimeNanos() - callbackNs) / 1_000_000
-        mutableSamples.value = result.landmarks().mapIndexed { index, landmarks ->
+        val newSamples = result.landmarks().mapIndexed { index, landmarks ->
             val tip = frame.transform.unmap(landmarks[8].x() * MODEL_WIDTH, landmarks[8].y() * MODEL_HEIGHT)
             val dip = frame.transform.unmap(landmarks[7].x() * MODEL_WIDTH, landmarks[7].y() * MODEL_HEIGHT)
             val box = Bbox.of(landmarks.map { point ->
@@ -197,6 +227,9 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
             FingerSample(tip.x, tip.y, dip.x, dip.y, result.handedness()[index][0].score(),
                 frame.width, frame.height, frame.timestamp, inferenceMs, box)
         }
+        prevSamples = lastSamples
+        lastSamples = newSamples
+        mutableSamples.value = newSamples
         results.addLast(now to inferenceMs)
         while (results.isNotEmpty() && results.first().first <= now - 1_000) results.removeFirst()
         mutablePerformance.value = TrackingPerformance(results.size, inferenceMs)
@@ -221,6 +254,9 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
         modelInput?.image?.close()
         modelInput = null
         mutableSamples.value = emptyList()
+        prevSamples = emptyList()
+        lastSamples = emptyList()
+        frameCount = 0L
         results.clear()
         mutablePerformance.value = TrackingPerformance()
         if (delegate == Delegate.GPU && !closed.get()) {
@@ -247,8 +283,46 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
             modelInput = null
             releasePending()
             mutableSamples.value = emptyList()
+            prevSamples = emptyList()
+            lastSamples = emptyList()
+            frameCount = 0L
             mutablePerformance.value = TrackingPerformance()
             executor.shutdown()
+        }
+    }
+
+    private fun interpolateSamples(
+        prev: List<FingerSample>,
+        curr: List<FingerSample>,
+        targetTs: Long
+    ): List<FingerSample> {
+        return curr.mapIndexed { index, b ->
+            val a = prev.getOrNull(index)
+            if (a == null || a.frameTsMs == b.frameTsMs) {
+                b.copy(frameTsMs = targetTs, inferenceMs = 0L)
+            } else {
+                val handA = HandSample(Vec2(a.tipX.toDouble(), a.tipY.toDouble()), Vec2(a.dipX.toDouble(), a.dipY.toDouble()), a.presence.toDouble())
+                val handB = HandSample(Vec2(b.tipX.toDouble(), b.tipY.toDouble()), Vec2(b.dipX.toDouble(), b.dipY.toDouble()), b.presence.toDouble())
+                val interpHand = ThrottlePolicy.interpolate(handA, handB, a.frameTsMs, b.frameTsMs, targetTs)
+                val fraction = (targetTs - a.frameTsMs).toDouble() / (b.frameTsMs - a.frameTsMs).toDouble()
+                val interpBox = if (a.handBox != null && b.handBox != null) {
+                    ThrottlePolicy.interpolate(a.handBox, b.handBox, fraction)
+                } else {
+                    b.handBox
+                }
+                FingerSample(
+                    tipX = interpHand.tip.x.toFloat(),
+                    tipY = interpHand.tip.y.toFloat(),
+                    dipX = interpHand.dip.x.toFloat(),
+                    dipY = interpHand.dip.y.toFloat(),
+                    presence = interpHand.presence.toFloat(),
+                    frameW = b.frameW,
+                    frameH = b.frameH,
+                    frameTsMs = targetTs,
+                    inferenceMs = 0L,
+                    handBox = interpBox
+                )
+            }
         }
     }
 

@@ -158,12 +158,12 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 
 #### A4-0: tracking budget under throttling (guidance-spec §12)
 **Files:** Modify `vision/TrackingOptions.kt`, `vision/HandTracker.kt`.
-- [ ] **Change the defaults:** `maxHands = 1`.
-- [ ] **Add `ThrottlePolicy`** to `core:guidance` (pure):
+- [x] **Change the defaults:** `maxHands = 1`.
+- [x] **Add `ThrottlePolicy`** to `core:guidance` (pure):
   - `fun stride(thermalStatus: Int, recentInferenceMs: Long): Int`;
   - returns 1 when status <2 and inference <40 ms; 2 when status ≥2 **or** inference ≥40 ms; 3 when status ≥4;
   - `HandTracker` submits every `stride`th frame.
-- [ ] **Test `ThrottlePolicyTest`:** (0,20)→1, (2,20)→2, (0,45)→2, (4,20)→3.
+- [x] **Test `ThrottlePolicyTest`:** (0,20)→1, (2,20)→2, (0,45)→2, (4,20)→3.
 - [ ] **On-device check:** record fps and inference ms for one hand on the test phone at thermal status ≤1 in `docs/evals/daily.md`.
 - [ ] **Commit:** `perf(android): single-hand tracking and thermal frame stride`
 
