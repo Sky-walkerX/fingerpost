@@ -8,6 +8,7 @@ import { createMetaClient } from './models/meta-client.ts';
 import { rulesPlanner, sparkPlanner, type Planner } from './agent/planner.ts';
 import { createRouter } from './models/router.ts';
 import { createGlimmerClient, glimmerModels } from './parse/glimmer-parse.ts';
+import { MemoryDonationStore, registerDonateRoute, type DonationStore } from './donate/donation.ts';
 import { randomBytes } from 'node:crypto';
 import { MemoryService } from './memory/service.ts';
 import { InMemoryStore, type MemoryStore } from './memory/store.ts';
@@ -31,6 +32,8 @@ export interface AppOverrides {
   /** Local phone practice announces simulated targets; ignored entirely in live mode. */
   mockNotice?: string;
   models?: ModelPort; planner?: Planner; /** B4-3: Glimmer on Modal (private mode). */ glimmer?: ModelPort;
+  /** C5-4: live builds a GCS store in server.ts when DONATE_BUCKET is set; null = donations unavailable. */
+  donations?: DonationStore | null;
   /** B5-3: tests replace the 200–600 ms retry wait. */ routerSleep?: (ms: number) => Promise<void>;
   /** B5-2: tests inject a seeded service; live builds a Firestore store in server.ts. */ memory?: MemoryService; memoryStore?: MemoryStore; asrProbe?: () => Promise<AsrTimings>; asr?: AsrFactory; sims?: SimRegistry;
   /** Day 3. Tests inject memory stores and fake auth; live builds Firestore + firebase-admin in server.ts. */
@@ -68,6 +71,10 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
       secret: secret!, now,
     });
   }
+
+  // Mock/dev keeps donations in memory (no bytes leave the machine); live needs a configured bucket.
+  registerDonateRoute(app, { store: o.donations !== undefined ? o.donations : (live ? null : new MemoryDonationStore()),
+    authSecret: cfg.AUTH_REQUIRED ? secret : null, cloudEnabled: () => quota.cloudEnabled(), now });
 
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
   if (cfg.DEBUG_TOKEN) {

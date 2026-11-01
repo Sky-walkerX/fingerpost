@@ -1,11 +1,13 @@
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { loadConfig } from './config.ts';
 import { buildApp, type AppOverrides } from './app.ts';
 import { FirestoreFlagStore, FirestoreQuotaStore } from './quota/firestore-stores.ts';
 import { FirestoreMemoryStore } from './memory/firestore-store.ts';
 import { RevocationList } from './auth/revocation.ts';
+import { GcsDonationStore } from './donate/gcs-store.ts';
 
 const cfg = loadConfig(process.env);
 const overrides: AppOverrides = {};
@@ -16,6 +18,7 @@ if (cfg.MODEL_MODE === 'live') {
   overrides.quotaStore = new FirestoreQuotaStore(db);
   overrides.flagStore = new FirestoreFlagStore(db);
   overrides.memoryStore = new FirestoreMemoryStore(db);
+  if (cfg.DONATE_BUCKET) overrides.donations = new GcsDonationStore(getStorage(fb).bucket(cfg.DONATE_BUCKET), db);
   const revocation = new RevocationList();
   revocation.start(undefined, () => console.error('attestation status list refresh failed'));
   overrides.isRevoked = revocation.isRevoked;

@@ -95,7 +95,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C5-1 | Tester session #2 | C | – | todo | |
 | C5-2 | Privacy, data-safety, install pages | C | – | todo | |
 | C5-3 | README v1 + soak steps | C | – | todo | |
-| C5-4 | (cut first) Donation pipeline | C+B | – | todo | |
+| C5-4 | (cut first) Donation pipeline | C+B | – | doing | Codex |
 | A6-1 | Offline basic mode | A | – | todo | |
 | A6-2 | Low-vision UI + a11y audit | A | – | todo | |
 | A6-3 | Phrasing polish | A+C | A4-4 | todo | |
@@ -453,3 +453,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: A4-1/A4-2 code + task-6 app wiring: ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, SafetyPolicy, FlowReplayTest (medium-cola, guide-start). 190 guidance cases pass under kotlinc; awaiting Gradle + phone check. Gateway: duplicate answer no longer becomes a new goal; unclear confirm reply declines.
 - 2026-11-02: A4-4 EN/HI/ES string tables for Prompts, Phrases and A4 keys; TtsSpeaker says "<Language> voice not installed; using English." once on LANG_MISSING_DATA. 213 guidance + 12 app tests pass; phone voice check pending.
 - 2026-11-02: B4-3 mock-first: Glimmer adapter (Spark schema/toLayout, no SAM), all-or-none GLIMMER_* config, live-only client, ready.flags.privateAvailable, eval --mode private, Modal vLLM app (not deployed). 410 gateway + 51 eval tests pass. Live deploy + 20-image eval wait on Modal credits.
+- 2026-11-02: C5-4 gateway + consent: POST /v1/donate (consent donate.v1, redaction flags, ≤20 JPEG + 1 replay, 15-min signed PUTs, pointer before sign, no uid/IP stored, 90-day expiry), GCS/Firestore-TTL store, infra/setup-donations.sh (not run), EN/HI/ES consent text. 429 gateway tests pass. Android ask/blur/upload and bucket setup pending.

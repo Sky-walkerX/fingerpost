@@ -30,6 +30,8 @@ const Env = z
     ALLOW_UNAUTHENTICATED_LIVE: bool.default(false),
     DAILY_CAP_USD: z.coerce.number().positive().default(12),
     FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+    /** C5-4: restricted GCS bucket for opt-in donations (90-day lifecycle; infra/setup-donations.sh). Live only. */
+    DONATE_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$/).optional(),
     // Day 4, B4-3: Glimmer on Modal (private mode). All three or none.
     /** OpenAI-compatible base URL of the Modal vLLM server, ending in /v1. https, or http only to this machine. */
     GLIMMER_URL: z.url().refine((u) => { const { protocol, hostname } = new URL(u);
