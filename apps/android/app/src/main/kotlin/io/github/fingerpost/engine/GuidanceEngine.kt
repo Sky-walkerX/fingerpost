@@ -25,12 +25,14 @@ import org.opencv.android.OpenCVLoader
 import io.github.fingerpost.guidance.KeyframePurpose as Purpose
 import io.github.fingerpost.guidance.Priority as SpeechPriority
 import io.github.fingerpost.protocol.Target as ServerTarget
+import io.github.fingerpost.settings.Settings
 
 /** State, speech and session callbacks are serialized on the main dispatcher. Native vision stays off it. */
 class GuidanceEngine(
     private val context: Context,
     trackingOptions: TrackingOptions = TrackingOptions(),
     private val simRunId: String? = null,
+    private var settings: Settings = Settings(),
     private val onMeteringPoint: (Vec2, Int, Int) -> Unit = { _, _, _ -> },
     private val requestMicPermission: () -> Unit,
 ) {
@@ -88,8 +90,16 @@ class GuidanceEngine(
         }
     }
     private val client = SessionClient(
-        hello = { Hello(newId(), nowMs(), BuildConfig.VERSION_NAME, PROTOCOL, io.github.fingerpost.protocol.Locale.EN,
-            RequestedMode.AUTO, Privacy.NORMAL, Caps(simRunId = simRunId)) },
+        hello = {
+            val priv = if (settings.privateMode) Privacy.PRIVATE else Privacy.NORMAL
+            val loc = when (settings.locale.lowercase()) {
+                "hi" -> io.github.fingerpost.protocol.Locale.HI
+                "es" -> io.github.fingerpost.protocol.Locale.ES
+                else -> io.github.fingerpost.protocol.Locale.EN
+            }
+            Hello(newId(), nowMs(), BuildConfig.VERSION_NAME, PROTOCOL, loc,
+                RequestedMode.AUTO, priv, Caps(simRunId = simRunId))
+        },
         token = auth::token,
         refreshAfterMs = auth::refreshAfterMs,
         onAuthExpired = { auth.invalidate() },
@@ -112,6 +122,7 @@ class GuidanceEngine(
         onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = "Camera tracking couldn't start. Reopen Fingerpost.") } })
 
     init {
+        speaker.setLocale(settings.locale)
         if (!openCvReady) {
             mutableStatus.value = mutableStatus.value.copy(message = "Camera tracking couldn't start. Reopen Fingerpost.")
             say("Camera tracking couldn't start.", SpeechPriority.STATE)
@@ -138,6 +149,12 @@ class GuidanceEngine(
     private fun time() = SystemClock.elapsedRealtime()
     private fun post(action: () -> Unit) { scope.launch { if (!closed) action() } }
     fun submit(frame: AnalysisFrame) { if (closed || !openCvReady) frame.bitmap.recycle() else router.submit(frame) }
+
+    fun updateSettings(newSettings: Settings) {
+        settings = newSettings
+        speaker.setLocale(newSettings.locale)
+        if (!newSettings.tone) tone.stop()
+    }
 
     fun toggle() {
         if (guard.pinMode) return
@@ -195,7 +212,7 @@ class GuidanceEngine(
                 if (effect.purpose == Purpose.LOCATE) KeyframePurpose.LOCATE else KeyframePurpose.VERIFY, generation)
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
             Effect.ToneOff -> tone.stop()
-            is Effect.Haptic -> haptics.play(effect.kind)
+            is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind)
             Effect.SendTargetReached -> event(EventKind.TARGET_REACHED)
             Effect.SendScreenChanged -> event(EventKind.SCREEN_CHANGED)
             is Effect.SendTapDetected -> event(EventKind.TAP_DETECTED, EventDetail(TapEvidence.valueOf(effect.evidence.name)))
@@ -215,6 +232,19 @@ class GuidanceEngine(
     }
     private fun pumpSpeech() { act(speech.poll(time())) }
     private fun act(action: SpeechAction) {
+        if (!settings.speech) {
+            when (action) {
+                is SpeechAction.Speak, is SpeechAction.Interrupt -> {
+                    val u = if (action is SpeechAction.Speak) action.u else (action as SpeechAction.Interrupt).u
+                    if (speech.onDone(u)) {
+                        u.completionId?.let { dispatch(GEvent.SpeechDone(time(), it)) }
+                        pumpSpeech()
+                    }
+                }
+                SpeechAction.Wait -> Unit
+            }
+            return
+        }
         when (action) {
             is SpeechAction.Speak -> speaker.speak(action.u, false)
             is SpeechAction.Interrupt -> speaker.speak(action.u, true)
@@ -306,7 +336,7 @@ class GuidanceEngine(
         tone.setPan(tonePan(result.error.x))
         val radius = finger.target?.nearRadius ?: 1.0
         tone.setPulseHz(if (result.zone == Zone.NEAR) 4 + 8 * (1 - result.error.length / radius).coerceIn(0.0, 1.0) else 0.0)
-        tone.start()
+        if (settings.tone) tone.start() else tone.stop()
     }
 
     /** PIN mode: announce the keypad layout once, then the digit under the finger's pad. Local only. */

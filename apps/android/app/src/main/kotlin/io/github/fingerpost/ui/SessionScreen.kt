@@ -9,8 +9,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -31,11 +33,18 @@ import io.github.fingerpost.camera.CameraPipeline
 import io.github.fingerpost.engine.GuidanceEngine
 import io.github.fingerpost.guidance.FrameTransform
 import io.github.fingerpost.guidance.GState
+import io.github.fingerpost.settings.Settings
 import io.github.fingerpost.vision.TrackingOptions
 import java.util.Locale
 
 @Composable
-fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = TrackingOptions(), simRunId: String? = null) {
+fun SessionScreen(
+    onToggle: () -> Unit = {},
+    trackingOptions: TrackingOptions = TrackingOptions(),
+    simRunId: String? = null,
+    settings: Settings = Settings(),
+    onOpenSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val description = stringResource(R.string.session_description)
@@ -63,7 +72,7 @@ fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = 
             when (event) {
                 Lifecycle.Event.ON_START -> {
                     cameraUnavailable = false
-                    val current = GuidanceEngine(context, trackingOptions, simRunId,
+                    val current = GuidanceEngine(context, trackingOptions, simRunId, settings,
                         onMeteringPoint = { point, width, height -> pipeline?.meterAt(point, width, height) }) {
                         micPermission.launch(Manifest.permission.RECORD_AUDIO)
                     }
@@ -109,41 +118,60 @@ fun SessionScreen(onToggle: () -> Unit = {}, trackingOptions: TrackingOptions = 
     }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
     val toggle = { current?.toggle(); onToggle() }
-    Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClick = toggle).clearAndSetSemantics {
-        contentDescription = error ?: description
-        stateDescription = label
-        onClick(label = toggleLabel) { toggle(); true }
-    }) {
-        AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
-        Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
-            status.quad?.let { quad ->
-                val path = Path()
-                quad.forEachIndexed { i, p ->
-                    val point = FrameTransform.fillCenter(status.frameWidth, status.frameHeight,
-                        size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
-                        .map((p.x * status.frameWidth).toFloat(), (p.y * status.frameHeight).toFloat())
-                    val x = point.x
-                    val y = point.y
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    LaunchedEffect(settings) {
+        current?.updateSettings(settings)
+    }
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClick = toggle).clearAndSetSemantics {
+            contentDescription = error ?: description
+            stateDescription = label
+            onClick(label = toggleLabel) { toggle(); true }
+        }) {
+            AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+            Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
+                status.quad?.let { quad ->
+                    val path = Path()
+                    quad.forEachIndexed { i, p ->
+                        val point = FrameTransform.fillCenter(status.frameWidth, status.frameHeight,
+                            size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
+                            .map((p.x * status.frameWidth).toFloat(), (p.y * status.frameHeight).toFloat())
+                        val x = point.x
+                        val y = point.y
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    path.close()
+                    drawPath(path, if (status.tracking) Color.Green else Color.Yellow, style = Stroke(3.dp.toPx()))
                 }
-                path.close()
-                drawPath(path, if (status.tracking) Color.Green else Color.Yellow, style = Stroke(3.dp.toPx()))
+                for (sample in samples) {
+                    val transform = FrameTransform.fillCenter(sample.frameW, sample.frameH,
+                        size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
+                    val point = transform.map(sample.tipX, sample.tipY)
+                    drawCircle(Color.Yellow, 7.dp.toPx(), Offset(point.x, point.y))
+                }
             }
-            for (sample in samples) {
-                val transform = FrameTransform.fillCenter(sample.frameW, sample.frameH,
-                    size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
-                val point = transform.map(sample.tipX, sample.tipY)
-                drawCircle(Color.Yellow, 7.dp.toPx(), Offset(point.x, point.y))
+            Column(Modifier.safeDrawingPadding().padding(16.dp).background(Color.Black).clearAndSetSemantics {}) {
+                Text(error ?: label, color = Color.White)
+                if (BuildConfig.DEBUG && current != null) {
+                    val performance by current.hands.performance.collectAsStateWithLifecycle()
+                    Text(String.format(Locale.ROOT, "%d fps · %d ms", performance.fps, performance.inferenceMs), color = Color.Yellow)
+                    if (status.quad != null) Text(if (status.tracking) "Tracking rectangle" else "Screen candidate",
+                        color = if (status.tracking) Color.Green else Color.Yellow)
+                }
             }
         }
-        Column(Modifier.safeDrawingPadding().padding(16.dp).background(Color.Black).clearAndSetSemantics {}) {
-            Text(error ?: label, color = Color.White)
-            if (BuildConfig.DEBUG && current != null) {
-                val performance by current.hands.performance.collectAsStateWithLifecycle()
-                Text(String.format(Locale.ROOT, "%d fps · %d ms", performance.fps, performance.inferenceMs), color = Color.Yellow)
-                if (status.quad != null) Text(if (status.tracking) "Tracking rectangle" else "Screen candidate",
-                    color = if (status.tracking) Color.Green else Color.Yellow)
-            }
+        Button(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .safeDrawingPadding()
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .clearAndSetSemantics {
+                    contentDescription = "Settings"
+                    role = Role.Button
+                    onClick(label = "Open settings") { onOpenSettings(); true }
+                }
+        ) {
+            Text("Settings")
         }
     }
 }

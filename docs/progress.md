@@ -74,7 +74,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A4-2 | Device pay-confirm policy | A | – | doing | Codex |
 | A4-3 | Local PIN mode on device | A | A4-1 | doing | Codex |
 | A4-4 | HI/ES guidance strings | A | – | doing | Codex |
-| A4-5 | Settings screen | A | – | todo | |
+| A4-5 | Settings screen | A | – | doing | Codex |
 | B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | doing | Codex |
@@ -454,3 +454,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: A4-4 EN/HI/ES string tables for Prompts, Phrases and A4 keys; TtsSpeaker says "<Language> voice not installed; using English." once on LANG_MISSING_DATA. 213 guidance + 12 app tests pass; phone voice check pending.
 - 2026-11-02: B4-3 mock-first: Glimmer adapter (Spark schema/toLayout, no SAM), all-or-none GLIMMER_* config, live-only client, ready.flags.privateAvailable, eval --mode private, Modal vLLM app (not deployed). 410 gateway + 51 eval tests pass. Live deploy + 20-image eval wait on Modal credits.
 - 2026-11-02: C5-4 gateway + consent: POST /v1/donate (consent donate.v1, redaction flags, ≤20 JPEG + 1 replay, 15-min signed PUTs, pointer before sign, no uid/IP stored, 90-day expiry), GCS/Firestore-TTL store, infra/setup-donations.sh (not run), EN/HI/ES consent text. 429 gateway tests pass. Android ask/blur/upload and bucket setup pending.
+- 2026-11-02: A4-5 Settings (DataStore 1.1.7) + accessible SettingsScreen; locale, speech, tone, haptics and private mode wired; speechRate/verbosity/handedness/holdMode/volumeKeys stored only. 213 guidance + 15 app tests pass. TalkBack order, 200% font and restart checks pending on phone.

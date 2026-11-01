@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -36,10 +38,15 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.fingerpost.settings.Settings as AppSettings
+import io.github.fingerpost.settings.SettingsScreen
+import io.github.fingerpost.settings.settingsStore
 import io.github.fingerpost.ui.FingerpostTheme
 import io.github.fingerpost.ui.SessionScreen
 import io.github.fingerpost.ui.OnboardingGate
 import io.github.fingerpost.vision.TrackingOptions
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,9 +92,26 @@ class MainActivity : ComponentActivity() {
                         if (denied) view.announceForAccessibility(cameraNeeded)
                     }
 
+                    val settingsStore = remember(this@MainActivity) { settingsStore(this@MainActivity) }
+                    val settings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+                    var showSettings by rememberSaveable { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
+
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        if (cameraGranted) {
-                            SessionScreen(trackingOptions = trackingOptions, simRunId = simRunId)
+                        if (showSettings) {
+                            BackHandler { showSettings = false }
+                            SettingsScreen(
+                                settings = settings,
+                                onUpdate = { updated -> scope.launch { settingsStore.save(updated) } },
+                                onBack = { showSettings = false }
+                            )
+                        } else if (cameraGranted) {
+                            SessionScreen(
+                                trackingOptions = trackingOptions,
+                                simRunId = simRunId,
+                                settings = settings,
+                                onOpenSettings = { showSettings = true }
+                            )
                         } else {
                             Column(
                                 modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
