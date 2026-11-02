@@ -54,7 +54,7 @@ class SettingsTest {
         val custom = Settings(
             speech = false,
             tone = false,
-            haptics = false,
+            haptics = true,
             speechRate = 1.5f,
             verbosity = Verbosity.CONCISE,
             handedness = Hand.LEFT,
@@ -90,7 +90,7 @@ class SettingsTest {
             assertEquals(custom, reloaded)
             assertEquals(false, reloaded.speech)
             assertEquals(false, reloaded.tone)
-            assertEquals(false, reloaded.haptics)
+            assertEquals(true, reloaded.haptics)
             assertEquals(1.5f, reloaded.speechRate)
             assertEquals(Verbosity.CONCISE, reloaded.verbosity)
             assertEquals(Hand.LEFT, reloaded.handedness)
@@ -148,5 +148,34 @@ class SettingsTest {
             job.cancelAndJoin()
         }
     }
+    @Test fun cannotDisableTheLastOutputAndLegacySettingsRecoverSpeech() = runBlocking {
+        val silent = Settings(speech = false, tone = false, haptics = false)
+        assertTrue(silent.safeOutputs().speech)
+        assertFalse(Settings(tone = false, haptics = false).canDisableOutput(Output.SPEECH))
+        assertFalse(Settings(speech = false, haptics = false).canDisableOutput(Output.TONE))
+        assertFalse(Settings(speech = false, tone = false).canDisableOutput(Output.HAPTICS))
+        assertTrue(Settings().canDisableOutput(Output.SPEECH))
+        val job = SupervisorJob()
+        val data = PreferenceDataStoreFactory.create(scope = CoroutineScope(job + Dispatchers.IO),
+            produceFile = { directory.resolve("outputs.preferences_pb").toFile() })
+        try {
+            val store = SettingsStore(data)
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> { runBlocking { store.save(silent) } }
+            data.edit { prefs ->
+                for (key in listOf("speech", "tone", "haptics"))
+                    prefs[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = false
+            }
+            assertTrue(store.settings.first().speech)
+        } finally { job.cancelAndJoin() }
+    }
+    @Test fun volumeKeysOnlyConsumeFreshForegroundActionsWhenEnabled() {
+        assertNullAction(Settings(), HardwareCue.REPEAT)
+        assertEquals(HardwareCue.REPEAT, Settings(volumeKeys = true).hardwareCue(true, false, HardwareCue.REPEAT))
+        assertEquals(null, Settings(volumeKeys = true).hardwareCue(false, false, HardwareCue.UNDER_FINGER))
+        assertEquals(null, Settings(volumeKeys = true).hardwareCue(true, true, HardwareCue.REPEAT))
+    }
+    private fun assertNullAction(settings: Settings, cue: HardwareCue) =
+        assertEquals(null, settings.hardwareCue(true, false, cue))
+
 }
 

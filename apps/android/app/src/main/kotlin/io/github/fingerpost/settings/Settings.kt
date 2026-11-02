@@ -11,6 +11,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+enum class Output { SPEECH, TONE, HAPTICS }
+enum class HardwareCue { REPEAT, UNDER_FINGER }
+
 enum class Verbosity { NORMAL, CONCISE, DETAILED }
 enum class Hand { RIGHT, LEFT }
 enum class HoldMode { HANDHELD, CHEST_MOUNT }
@@ -26,7 +29,16 @@ data class Settings(
     val locale: String = "en",
     val privateMode: Boolean = false,
     val volumeKeys: Boolean = false
-)
+) {
+    fun safeOutputs(): Settings = if (!speech && !tone && !haptics) copy(speech = true) else this
+    fun canDisableOutput(output: Output): Boolean = when (output) {
+        Output.SPEECH -> tone || haptics
+        Output.TONE -> speech || haptics
+        Output.HAPTICS -> speech || tone
+    }
+    fun hardwareCue(foreground: Boolean, repeated: Boolean, cue: HardwareCue): HardwareCue? =
+        cue.takeIf { volumeKeys && foreground && !repeated }
+}
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -62,10 +74,11 @@ class SettingsStore(private val store: DataStore<Preferences>) {
             locale = locale,
             privateMode = prefs[PRIVATE_MODE] ?: false,
             volumeKeys = prefs[VOLUME_KEYS] ?: false
-        )
+        ).safeOutputs()
     }
 
     suspend fun save(settings: Settings) {
+        require(settings.speech || settings.tone || settings.haptics) { "At least one guidance output is required" }
         store.edit { prefs ->
             prefs[SPEECH] = settings.speech
             prefs[TONE] = settings.tone

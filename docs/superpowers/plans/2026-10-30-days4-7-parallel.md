@@ -224,6 +224,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [ ] **Commit:** `feat(guidance): device-side pay confirm policy`
 
 #### A4-3: PIN mode on device
+
+- [x] **User-requested coding repair (2026-11-02):** local synthesis without system playback; transient PCM through an actual-route-checked AudioTrack; cancelled/native/route failures fail closed. JVM/build/lint verified; physical earphone, disconnect and duplicate-output acceptance remains open.
 **Files:**
 - Create: `core/guidance/.../Keypad.kt` (pure) and `app/.../engine/PinMode.kt`.
 - Modify: `engine/GuidanceEngine.kt`, `session/Keyframer.kt`.
@@ -258,6 +260,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [ ] **Commit:** `feat(android): Hindi and Spanish guidance strings`
 
 #### A4-5: settings screen
+
+- [x] **User-requested coding repairs (2026-11-02):** runtime speech rate, verbosity, handedness, chest-mount cues and foreground volume keys; last-output UI/persistence guard and legacy recovery; saved preferences loaded before session startup. Regression/JVM/build/lint checks pass.
 **Files:** Create `app/.../settings/{Settings.kt,SettingsScreen.kt}` (DataStore).
 
 **Interface:** `data class Settings(val speech: Boolean = true, val tone: Boolean = true, val haptics: Boolean = true, val speechRate: Float = 1.0f, val verbosity: Verbosity = NORMAL, val handedness: Hand = RIGHT, val holdMode: HoldMode = HANDHELD, val locale: String = "en", val privateMode: Boolean = false, val volumeKeys: Boolean = false)`. These are the design §3.4 and §3.6 settings.
@@ -268,6 +272,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 ### Lane B — brain
 
 #### B4-1: model router
+
+- [x] **User-requested coding repair (2026-11-02):** financial/identity frames and refinement use Glimmer or refuse; goals/abort cannot clear sensitivity. Eight privacy and existing router/flow regressions pass with explicit mock private ports for financial flows.
 **Files:**
 - Create: `services/gateway/src/models/router.ts` and `test/router.test.ts`.
 - Modify: `app.ts`, `session/controller.ts`.
@@ -288,6 +294,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [ ] **Commit:** `feat(gateway): model router with private routing and Spark fallback`
 
 #### B4-2: agent loop with policy
+
+- [x] **User-requested coding repair (2026-11-02):** private/protected task state, answers and history use only the existing deterministic rules planner; no global Spark planner call. Protection persists after a later safe screen.
 **Files:**
 - Create: `services/gateway/src/agent/{loop,tools,policy,intent}.ts`, `prompts/agent.v1.md`.
 - Create tests: `test/agent-loop.test.ts`, `test/policy.test.ts`, `test/flows.test.ts`.

@@ -84,6 +84,8 @@ Rules:
   4. `INFO`: explore, touch-explore names.
 - **Overshoot:** if the sign of `e` on the dominant axis flips twice within 2 s, say "slow down" once, and use "a little" wording for the next 3 s.
 
+**Settings behavior (initial values, Day 4 repair):** speech rate applies to ordinary and local PIN TTS. Normal verbosity retains the wording above; concise speaks the dominant direction and magnitude; detailed adds a localized “Move your finger” instruction. Safety/state prompts and cadence are unchanged. In chest-mount mode framing asks the user to turn/tilt their body rather than move the handheld phone; screen-relative guidance axes are unchanged. With no target, handedness selects the preferred valid hand; with a target it breaks distance ties only. Optional foreground volume-up repeats the last public cue; volume-down names the local element under a fresh finger position, without uploads or microphone activation. Key repeats are consumed without repeating the action, and hardware cues are unavailable in PIN mode.
+
 ## 6. Upright vs flat screens
 The phone's gravity vector (from `TYPE_GRAVITY`) and the camera pitch decide which wording applies:
 - Pitch below the horizon is `degrees(atan2(abs(gz), hypot(gx, gy)))`, so rolling the phone between portrait and landscape does not change the tilt.

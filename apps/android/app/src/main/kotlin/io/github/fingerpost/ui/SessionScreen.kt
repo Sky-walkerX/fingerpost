@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
@@ -34,6 +35,7 @@ import io.github.fingerpost.engine.GuidanceEngine
 import io.github.fingerpost.guidance.FrameTransform
 import io.github.fingerpost.guidance.GState
 import io.github.fingerpost.settings.Settings
+import io.github.fingerpost.settings.HardwareCue
 import io.github.fingerpost.vision.TrackingOptions
 import java.util.Locale
 
@@ -45,9 +47,11 @@ fun SessionScreen(
     settings: Settings = Settings(),
     availableUpdate: String? = null,
     onUpdateAnnounced: (String) -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    onKeyHandlerChanged: (((HardwareCue) -> Boolean)?) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val description = stringResource(R.string.session_description)
     val preview = remember(context) { PreviewView(context).apply {
@@ -101,24 +105,24 @@ fun SessionScreen(
         else -> status.message
     }
     val label = when {
-        status.basicMode -> context.getString(R.string.basic_mode)
-        status.cloudOff -> context.getString(R.string.cloud_off)
-        !status.connected -> context.getString(R.string.connecting)
+        status.basicMode -> resources.getString(R.string.basic_mode)
+        status.cloudOff -> resources.getString(R.string.cloud_off)
+        !status.connected -> resources.getString(R.string.connecting)
         else -> when (status.state) {
-            GState.IDLE -> context.getString(R.string.ready)
-            GState.LISTENING -> context.getString(R.string.listening)
-            GState.FRAMING -> context.getString(R.string.frame_screen)
-            GState.LOCATING -> context.getString(R.string.finding)
-            GState.GUIDING -> context.getString(R.string.guiding)
-            GState.ON_TARGET -> context.getString(R.string.on_target)
-            GState.VERIFYING -> context.getString(R.string.checking_press)
-            GState.ASK -> context.getString(R.string.waiting_answer)
-            GState.CONFIRM -> context.getString(R.string.confirm_amount)
-            GState.AWAIT_NEXT -> context.getString(R.string.next_step)
-            GState.PIN_MODE -> context.getString(R.string.pin_entry)
-            GState.DONE -> context.getString(R.string.done)
-            GState.EXPLORING -> context.getString(R.string.reading_screen)
-            GState.TOUCH_EXPLORE -> context.getString(R.string.touch_explore)
+            GState.IDLE -> resources.getString(R.string.ready)
+            GState.LISTENING -> resources.getString(R.string.listening)
+            GState.FRAMING -> resources.getString(R.string.frame_screen)
+            GState.LOCATING -> resources.getString(R.string.finding)
+            GState.GUIDING -> resources.getString(R.string.guiding)
+            GState.ON_TARGET -> resources.getString(R.string.on_target)
+            GState.VERIFYING -> resources.getString(R.string.checking_press)
+            GState.ASK -> resources.getString(R.string.waiting_answer)
+            GState.CONFIRM -> resources.getString(R.string.confirm_amount)
+            GState.AWAIT_NEXT -> resources.getString(R.string.next_step)
+            GState.PIN_MODE -> resources.getString(R.string.pin_entry)
+            GState.DONE -> resources.getString(R.string.done)
+            GState.EXPLORING -> resources.getString(R.string.reading_screen)
+            GState.TOUCH_EXPLORE -> resources.getString(R.string.touch_explore)
         }
     }
     LaunchedEffect(current, status.state, availableUpdate, settings.speech) {
@@ -129,7 +133,11 @@ fun SessionScreen(
     }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
     val toggle = { current?.toggle(); onToggle() }
-    LaunchedEffect(settings) {
+    DisposableEffect(current, settings.volumeKeys) {
+        onKeyHandlerChanged(if (current != null && settings.volumeKeys) current::hardwareCue else null)
+        onDispose { onKeyHandlerChanged(null) }
+    }
+    LaunchedEffect(current, settings) {
         current?.updateSettings(settings)
     }
     Box(Modifier.fillMaxSize()) {
@@ -191,12 +199,12 @@ fun SessionScreen(
                 .fillMaxWidth()
                 .padding(16.dp)
                 .clearAndSetSemantics {
-                    contentDescription = context.getString(R.string.settings)
+                    contentDescription = resources.getString(R.string.settings)
                     role = Role.Button
-                    onClick(label = context.getString(R.string.open_settings)) { onOpenSettings(); true }
+                    onClick(label = resources.getString(R.string.open_settings)) { onOpenSettings(); true }
                 }
         ) {
-            Text(context.getString(R.string.settings))
+            Text(resources.getString(R.string.settings))
         }
     }
 }

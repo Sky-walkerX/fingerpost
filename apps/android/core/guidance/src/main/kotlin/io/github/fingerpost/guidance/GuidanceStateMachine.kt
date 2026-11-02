@@ -83,7 +83,8 @@ object Prompts {
  * entered from any active state by the local PIN gate and never asks for a keyframe.
  */
 class GuidanceStateMachine(var locale: Locale = Strings.EN) {
-    private fun prompt(key: Key): String = Strings.get(key, locale)
+    var chestMount: Boolean = false
+    private fun prompt(key: Key): String = Strings.get(if (chestMount && key == Key.FRAMING_TIPS) Key.CHEST_FRAME else key, locale)
     var state = GState.IDLE; private set
     /** True after goal.ack says "task". Cleared when the session goes IDLE. */
     var taskIntent = false; private set

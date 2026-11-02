@@ -13,6 +13,7 @@ import java.util.Locale
 
 internal interface TtsEngine {
     fun setAudioAttributes(attributes: AudioAttributes): Int
+    fun setSpeechRate(rate: Float): Int
     fun setLanguage(loc: Locale): Int
     fun setOnUtteranceProgressListener(listener: UtteranceProgressListener)
     fun speak(text: CharSequence, queueMode: Int, params: Bundle?, utteranceId: String): Int
@@ -30,6 +31,7 @@ class TtsSpeaker internal constructor(
     constructor(context: Context, onDone: (Utterance) -> Unit, onError: (Utterance?) -> Unit = {}) :
         this(context, onDone, onError, null)
 
+    private var rate = 1.0f
     private var ready = false
     private var closed = false
     private var currentId: String? = null
@@ -55,6 +57,7 @@ class TtsSpeaker internal constructor(
             }
             tts = object : TtsEngine {
                 override fun setAudioAttributes(attributes: AudioAttributes): Int = realTts.setAudioAttributes(attributes)
+                override fun setSpeechRate(rate: Float): Int = realTts.setSpeechRate(rate)
                 override fun setLanguage(loc: Locale): Int = realTts.setLanguage(loc)
                 override fun setOnUtteranceProgressListener(listener: UtteranceProgressListener) {
                     realTts.setOnUtteranceProgressListener(listener)
@@ -83,6 +86,7 @@ class TtsSpeaker internal constructor(
             // Unit tests / stubs
         }
         ready = true
+        tts.setSpeechRate(rate)
         applyLanguage(targetLocale)
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String) = Unit
@@ -92,6 +96,12 @@ class TtsSpeaker internal constructor(
             override fun onError(utteranceId: String, errorCode: Int) = finished(utteranceId, false)
         })
         pending?.let { pending = null; speak(it, false) }
+    }
+
+    @Synchronized fun setRate(value: Float) {
+        require(value.isFinite() && value > 0f) { "Invalid speech rate" }
+        rate = value
+        if (ready && !closed) tts.setSpeechRate(value)
     }
 
     @Synchronized fun setLocale(tag: String) {

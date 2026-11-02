@@ -36,6 +36,7 @@ data class FingerSample(
     val presence: Float, val frameW: Int, val frameH: Int,
     val frameTsMs: Long, val inferenceMs: Long,
     val handBox: Bbox? = null,
+    val hand: io.github.fingerpost.guidance.Handedness = io.github.fingerpost.guidance.Handedness.UNKNOWN,
 )
 
 data class TrackingPerformance(val fps: Int = 0, val inferenceMs: Long = 0)
@@ -225,7 +226,11 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
                 Vec2(image.x.toDouble(), image.y.toDouble())
             })
             FingerSample(tip.x, tip.y, dip.x, dip.y, result.handedness()[index][0].score(),
-                frame.width, frame.height, frame.timestamp, inferenceMs, box)
+                frame.width, frame.height, frame.timestamp, inferenceMs, box, when (result.handedness()[index][0].categoryName()) {
+                    "Left" -> io.github.fingerpost.guidance.Handedness.LEFT
+                    "Right" -> io.github.fingerpost.guidance.Handedness.RIGHT
+                    else -> io.github.fingerpost.guidance.Handedness.UNKNOWN
+                })
         }
         prevSamples = lastSamples
         lastSamples = newSamples
@@ -320,7 +325,8 @@ class HandTracker(context: Context, private val options: TrackingOptions = Track
                     frameH = b.frameH,
                     frameTsMs = targetTs,
                     inferenceMs = 0L,
-                    handBox = interpBox
+                    handBox = interpBox,
+                    hand = b.hand
                 )
             }
         }

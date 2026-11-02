@@ -12,6 +12,8 @@ class TtsSpeakerTest {
 
     private class FakeTtsEngine(var languageResult: Int = TextToSpeech.LANG_AVAILABLE) : TtsEngine {
         val spoken = mutableListOf<String>()
+        val rates = mutableListOf<Float>()
+        override fun setSpeechRate(rate: Float): Int { rates += rate; return 0 }
         val languagesSet = mutableListOf<Locale>()
         var listener: UtteranceProgressListener? = null
 
@@ -73,4 +75,17 @@ class TtsSpeakerTest {
         assertTrue(fakeEngine.spoken.isEmpty())
         assertEquals(Locale.forLanguageTag("hi-IN"), fakeEngine.languagesSet.last())
     }
+    @Test fun appliesSpeechRateWithoutDroppingTheCurrentUtterance() {
+        val engine = FakeTtsEngine()
+        var completed = false
+        val speaker = TtsSpeaker(null, { completed = true }, {}, engine)
+        speaker.setRate(1.5f)
+        speaker.speak(io.github.fingerpost.guidance.Utterance("Synthetic cue", io.github.fingerpost.guidance.Priority.GUIDE, 0), false)
+        speaker.setRate(0.75f)
+        engine.listener!!.onDone("fp-1")
+        assertEquals(listOf(1.0f, 1.5f, 0.75f), engine.rates)
+        assertTrue(completed)
+        org.junit.jupiter.api.assertThrows<IllegalArgumentException> { speaker.setRate(Float.NaN) }
+    }
+
 }

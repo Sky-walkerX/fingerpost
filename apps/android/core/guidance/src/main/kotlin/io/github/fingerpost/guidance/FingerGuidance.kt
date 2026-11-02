@@ -21,14 +21,14 @@ class FingerGuidance {
 
     private fun resetFilters() { u.reset(); v.reset(); lastSample = Long.MIN_VALUE }
 
-    fun update(sampleMs: Long, frameW: Int, frameH: Int, hands: List<HandSample>, quad: List<Vec2>?): GuidedFinger? {
+    fun update(sampleMs: Long, frameW: Int, frameH: Int, hands: List<HandSample>, quad: List<Vec2>?, preferred: Handedness = Handedness.UNKNOWN): GuidedFinger? {
         if (sampleMs <= lastSample) return null
         lastSample = sampleMs
         val geometry = target ?: return null
         val h = quad?.let(Homography::imageToScreen) ?: return null
         val screenToImage = Homography.fromPoints(Homography.UNIT_SQUARE, quad) ?: return null
         val anchor = screenToImage.map(Vec2(geometry.anchor.x / geometry.aspect, geometry.anchor.y))
-        val hand = chooseHand(hands, frameW, frameH, anchor)
+        val hand = chooseHand(hands, frameW, frameH, anchor, preferred)
         if (hand == null) { u.reset(); v.reset(); return null }
         val raw = h.map(padPoint(hand.tip, hand.dip)) ?: return null
         if (!raw.x.isFinite() || !raw.y.isFinite() || isOffScreen(raw)) { u.reset(); v.reset(); return null }

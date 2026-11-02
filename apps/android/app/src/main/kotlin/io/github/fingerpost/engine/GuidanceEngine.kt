@@ -25,7 +25,7 @@ import org.opencv.android.OpenCVLoader
 import io.github.fingerpost.guidance.KeyframePurpose as Purpose
 import io.github.fingerpost.guidance.Priority as SpeechPriority
 import io.github.fingerpost.protocol.Target as ServerTarget
-import io.github.fingerpost.settings.Settings
+import io.github.fingerpost.settings.*
 import io.github.fingerpost.offline.OfflineAsr
 import io.github.fingerpost.offline.OfflineLocate
 import io.github.fingerpost.offline.OfflineSession
@@ -112,6 +112,7 @@ class GuidanceEngine(
         post { say(Strings.get(Key.EARPHONES_DISCONNECTED, machine.locale), SpeechPriority.SAFETY) }
     }, onVoiceUnavailable = { warning -> post { say(warning, SpeechPriority.STATE) } })
     private val digitUnder = DigitUnderFinger()
+    private var lastCue: String? = null
     private var layoutAnnounced = false
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val gravity = object : SensorEventListener {
@@ -156,9 +157,13 @@ class GuidanceEngine(
         onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale)) } })
 
     init {
+        settings = settings.safeOutputs()
+        speaker.setRate(settings.speechRate)
+        pinHelp.setRate(settings.speechRate)
         speaker.setLocale(settings.locale)
         pinHelp.setLocale(settings.locale)
         machine.locale = guidanceLocale(settings.locale)
+        machine.chestMount = settings.holdMode == HoldMode.CHEST_MOUNT
         if (!openCvReady) {
             mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale))
             say(Strings.get(Key.CAMERA_TRACKING_FAILED, machine.locale), SpeechPriority.STATE)
@@ -189,10 +194,13 @@ class GuidanceEngine(
     fun submit(frame: AnalysisFrame) { if (closed || !openCvReady) frame.bitmap.recycle() else router.submit(frame) }
 
     fun updateSettings(newSettings: Settings) {
-        settings = newSettings
+        settings = newSettings.safeOutputs()
+        speaker.setRate(settings.speechRate)
+        pinHelp.setRate(settings.speechRate)
         speaker.setLocale(newSettings.locale)
         pinHelp.setLocale(newSettings.locale)
         machine.locale = guidanceLocale(newSettings.locale)
+        machine.chestMount = settings.holdMode == HoldMode.CHEST_MOUNT
         if (!newSettings.tone) tone.stop()
     }
 
@@ -217,6 +225,7 @@ class GuidanceEngine(
 
     private fun reset() {
         generation++
+        lastCue = null
         wantsMic = false
         mic.stop()
         offlineAsr.stop()
@@ -281,6 +290,7 @@ class GuidanceEngine(
 
     private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
     private fun say(text: String, priority: SpeechPriority, completion: Long? = null) {
+        if (!guard.pinMode) lastCue = text
         if (mic.isRunning) mic.stop()
         if (offlineAsr.isListening) offlineAsr.stop()
         act(speech.offer(Utterance(text, priority, time(), completion)))
@@ -386,6 +396,7 @@ class GuidanceEngine(
     }
 
     private fun handResult(samples: List<FingerSample>) {
+        if (samples.isNotEmpty()) lastHandAt = time()
         if (guard.pinMode) { pinHand(samples); return }
         if (machine.state == GState.TOUCH_EXPLORE) { touchHand(samples); return }
         if (machine.state !in setOf(GState.GUIDING, GState.ON_TARGET)) return
@@ -395,11 +406,11 @@ class GuidanceEngine(
         val first = samples.firstOrNull()
         val usable = frame?.tracking == TrackState.TRACKING && first != null
         val result = if (usable) finger.update(first.frameTsMs, first.frameW, first.frameH,
-            samples.map { HandSample(Vec2(it.tipX.toDouble(), it.tipY.toDouble()), Vec2(it.dipX.toDouble(), it.dipY.toDouble()), it.presence.toDouble()) },
-            frame.quad?.map { Vec2(it.x * first.frameW, it.y * first.frameH) }) else null
+            samples.map { HandSample(Vec2(it.tipX.toDouble(), it.tipY.toDouble()), Vec2(it.dipX.toDouble(), it.dipY.toDouble()), it.presence.toDouble(), it.hand) },
+            frame.quad?.map { Vec2(it.x * first.frameW, it.y * first.frameH) }, preferredHand()) else null
         dispatch(GEvent.Frame(now, false, result != null, result?.zone))
         if (result == null || machine.state != GState.GUIDING || now < quietUntil) { tone.stop(); return }
-        planner.plan(result.error, orientationFor(pitch), now)?.let { Phrases.render(it, machine.locale.language) }?.let { say(it, SpeechPriority.GUIDE) }
+        planner.plan(result.error, orientationFor(pitch), now)?.let { Phrases.render(it, machine.locale.language, CueVerbosity.valueOf(settings.verbosity.name)) }?.let { say(it, SpeechPriority.GUIDE) }
         tone.setFrequency(toneFrequencyHz(result.error.length))
         tone.setPan(tonePan(result.error.x))
         val radius = finger.target?.nearRadius ?: 1.0
@@ -541,7 +552,7 @@ class GuidanceEngine(
         lastHandAt = now
         tone.stop()
         val frame = latest
-        val s = samples.firstOrNull { it.presence >= 0.6f }
+        val s = selectedHand(samples)
         val quad = frame?.quad
         val pad = if (s != null && frame != null && quad != null && frame.tracking == TrackState.TRACKING) {
             Homography.imageToScreen(quad.map { Vec2(it.x * s.frameW, it.y * s.frameH) })
@@ -562,7 +573,7 @@ class GuidanceEngine(
     private fun pinHand(samples: List<FingerSample>) {
         val tokens = router.latestTokens ?: return
         if (!layoutAnnounced) classifyKeypad(tokens)?.let { if (pinHelp.speak(it.spoken(machine.locale))) layoutAnnounced = true }
-        val s = samples.firstOrNull { it.presence >= 0.6f }
+        val s = selectedHand(samples)
         // guidance-spec §3 pad point: a quarter of the tip–DIP segment back from the tip.
         val pad = s?.let { Vec2((it.tipX - 0.25f * (it.tipX - it.dipX)).toDouble() / it.frameW,
             (it.tipY - 0.25f * (it.tipY - it.dipY)).toDouble() / it.frameH) }
@@ -730,6 +741,36 @@ class GuidanceEngine(
         return true
     }
 
+    private fun preferredHand(): Handedness = if (settings.handedness == Hand.LEFT) Handedness.LEFT else Handedness.RIGHT
+
+    private fun selectedHand(samples: List<FingerSample>): FingerSample? =
+        samples.filter { it.presence >= MIN_HAND_PRESENCE && it.tipX in 0f..it.frameW.toFloat() && it.tipY in 0f..it.frameH.toFloat() }
+            .minByOrNull { if (it.hand == preferredHand()) 0 else 1 }
+
+    /** Foreground hardware actions never open the mic or request a keyframe. PIN speech stays isolated. */
+    fun hardwareCue(cue: HardwareCue): Boolean {
+        if (closed || guard.pinMode || settings.hardwareCue(true, false, cue) == null) return false
+        when (cue) {
+            HardwareCue.REPEAT -> lastCue?.let { say(it, SpeechPriority.INFO) }
+            HardwareCue.UNDER_FINGER -> {
+                val frame = latest
+                val sample = selectedHand(hands.samples.value)
+                val quad = frame?.quad
+                val uv = if (sample != null && quad != null && frame.tracking == TrackState.TRACKING && time() - lastHandAt <= 200) {
+                    Homography.imageToScreen(quad.map { Vec2(it.x * sample.frameW, it.y * sample.frameH) })
+                        ?.map(padPoint(Vec2(sample.tipX.toDouble(), sample.tipY.toDouble()), Vec2(sample.dipX.toDouble(), sample.dipY.toDouble())))
+                } else null
+                val element = uv?.let { point -> layout?.elements?.filter { pointInPolygon(point, it.polygon.map { p -> Vec2(p.u, p.v) }) }
+                    ?.minByOrNull { e -> Bbox.of(e.polygon.map { Vec2(it.u, it.v) }).let { b -> b.w * b.h } } }
+                val text = if (element != null) {
+                    if (element.role == ElementRole.TEXT) Strings.get(Key.TEXT_PREFIX, machine.locale) + ": " + element.label else element.label
+                } else Strings.get(Key.RAISE_FINGER, machine.locale)
+                say(text, SpeechPriority.INFO)
+            }
+        }
+        return true
+    }
+
     fun close() {
         updateNotice.clear()
         if (closed) return
@@ -739,7 +780,7 @@ class GuidanceEngine(
     }
     fun closeVision() { router.close() }
 
-    private fun framingText(cue: FramingCue): String = Strings.framing(cue, machine.locale)
+    private fun framingText(cue: FramingCue): String = Strings.framing(cue, machine.locale, settings.holdMode == HoldMode.CHEST_MOUNT)
     private companion object {
         val openCvReady by lazy { OpenCVLoader.initLocal() }
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */

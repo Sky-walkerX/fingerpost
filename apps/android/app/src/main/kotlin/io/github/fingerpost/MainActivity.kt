@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
+import android.view.KeyEvent
+import io.github.fingerpost.settings.HardwareCue
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,7 +43,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.fingerpost.settings.Settings as AppSettings
 import io.github.fingerpost.settings.SettingsScreen
 import io.github.fingerpost.settings.settingsStore
 import io.github.fingerpost.memory.layoutStore
@@ -52,6 +53,28 @@ import io.github.fingerpost.vision.TrackingOptions
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var sessionKeys: ((HardwareCue) -> Boolean)? = null
+    private val consumedKeys = mutableSetOf<Int>()
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val cue = when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> HardwareCue.REPEAT
+            KeyEvent.KEYCODE_VOLUME_DOWN -> HardwareCue.UNDER_FINGER
+            else -> return super.onKeyDown(keyCode, event)
+        }
+        if (keyCode in consumedKeys) return true
+        if (event.repeatCount == 0 && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && sessionKeys?.invoke(cue) == true) {
+            consumedKeys.add(keyCode)
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        if (consumedKeys.remove(keyCode)) true else super.onKeyUp(keyCode, event)
+
+    override fun onPause() { consumedKeys.clear(); super.onPause() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -96,7 +119,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                     val settingsStore = remember(this@MainActivity) { settingsStore(this@MainActivity) }
-                    val settings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+                    val storedSettings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = null)
+                    val settings = storedSettings ?: return@OnboardingGate
                     var showSettings by rememberSaveable { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
                     val updateCheck = remember { io.github.fingerpost.updates.UpdateCheck(this@MainActivity) }
@@ -125,7 +149,8 @@ class MainActivity : ComponentActivity() {
                                 settings = settings,
                                 availableUpdate = availableUpdate,
                                 onUpdateAnnounced = { tag -> updateCheck.announced(tag); availableUpdate = null },
-                                onOpenSettings = { showSettings = true }
+                                onOpenSettings = { showSettings = true },
+                                onKeyHandlerChanged = { sessionKeys = it }
                             )
                         } else {
                             Column(

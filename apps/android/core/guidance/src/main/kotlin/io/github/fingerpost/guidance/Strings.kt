@@ -7,6 +7,7 @@ import java.util.Locale
  * Used across English, Hindi, and Spanish (A4-4).
  */
 enum class Key {
+    MOVE_FINGER, CHEST_FRAME, CHEST_CLOSER, CHEST_BACK,
     // Prompts (GuidanceStateMachine)
     ASK_GOAL,
     ASK_GOAL_AGAIN,
@@ -114,6 +115,10 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.MOVE_FINGER to "Move your finger",
+        Key.CHEST_FRAME to "Stand about an arm's length from the screen and point your chest-mounted camera at it.",
+        Key.CHEST_CLOSER to "Step closer.",
+        Key.CHEST_BACK to "Step back a little.",
         Key.ASK_GOAL to "What do you want to press?",
         Key.ASK_GOAL_AGAIN to "Say what you want to press, for example: start.",
         Key.GIVE_UP_LISTENING to "Tap the screen when you're ready.",
@@ -201,6 +206,10 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.MOVE_FINGER to "अपनी उंगली ले जाएँ",
+        Key.CHEST_FRAME to "स्क्रीन से लगभग एक हाथ की दूरी पर खड़े हों और सीने पर लगे कैमरे को उसकी ओर करें।",
+        Key.CHEST_CLOSER to "थोड़ा पास जाएँ।",
+        Key.CHEST_BACK to "थोड़ा पीछे जाएँ।",
         Key.ASK_GOAL to "आप क्या दबाना चाहते हैं?",
         Key.ASK_GOAL_AGAIN to "बताएं कि आप क्या दबाना चाहते हैं, उदाहरण के लिए: स्टार्ट।",
         Key.GIVE_UP_LISTENING to "तैयार होने पर स्क्रीन पर टैप करें।",
@@ -288,6 +297,10 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.MOVE_FINGER to "Mueve el dedo",
+        Key.CHEST_FRAME to "Ponte a un brazo de distancia de la pantalla y apunta la cámara del pecho hacia ella.",
+        Key.CHEST_CLOSER to "Da un paso hacia la pantalla.",
+        Key.CHEST_BACK to "Da un paso atrás.",
         Key.ASK_GOAL to "¿Qué quieres pulsar?",
         Key.ASK_GOAL_AGAIN to "Di qué quieres pulsar, por ejemplo: iniciar.",
         Key.GIVE_UP_LISTENING to "Toca la pantalla cuando estés listo.",
@@ -404,7 +417,23 @@ object Strings {
         return get(loc, key)
     }
 
-    fun framing(cue: FramingCue, locale: Locale = EN): String = when (cue) {
+    fun framing(cue: FramingCue, locale: Locale = EN, chestMount: Boolean = false): String {
+        if (chestMount && cue != FramingCue.GOOD) {
+            val direction = when (cue) {
+                FramingCue.CUT_LEFT, FramingCue.MOVE_LEFT -> Dir.LEFT
+                FramingCue.CUT_RIGHT, FramingCue.MOVE_RIGHT -> Dir.RIGHT
+                FramingCue.CUT_TOP, FramingCue.MOVE_UP -> Dir.UP
+                FramingCue.CUT_BOTTOM, FramingCue.MOVE_DOWN -> Dir.DOWN
+                else -> null
+            }
+            if (direction != null) return when (locale.language) {
+                "hi" -> "अपने शरीर को ${Strings.direction(direction, locale)} घुमाएँ।"
+                "es" -> "Gira el cuerpo hacia ${Strings.direction(direction, locale)}."
+                else -> "${if (direction == Dir.UP || direction == Dir.DOWN) "Tilt" else "Turn"} your body ${Strings.direction(direction, locale)}."
+            }
+            return get(when (cue) { FramingCue.MOVE_CLOSER -> Key.CHEST_CLOSER; FramingCue.MOVE_BACK -> Key.CHEST_BACK; else -> Key.CHEST_FRAME }, locale)
+        }
+        return when (cue) {
         FramingCue.NO_SCREEN -> get(Key.FRAME_NO_SCREEN, locale)
         FramingCue.CUT_LEFT -> get(Key.FRAME_CUT_LEFT, locale)
         FramingCue.CUT_RIGHT -> get(Key.FRAME_CUT_RIGHT, locale)
@@ -417,6 +446,7 @@ object Strings {
         FramingCue.MOVE_UP -> get(Key.FRAME_MOVE_UP, locale)
         FramingCue.MOVE_DOWN -> get(Key.FRAME_MOVE_DOWN, locale)
         FramingCue.GOOD -> ""
+        }
     }
 
     fun direction(dir: Dir, locale: Locale = EN): String = when (dir) {
