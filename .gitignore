@@ -37,3 +37,6 @@ evals/datasets/day1/
 
 # os
 .DS_Store
+
+# generated demo footage
+video/out/
