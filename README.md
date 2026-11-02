@@ -50,6 +50,8 @@ The [30-minute soak procedure](evals/scripts/soak.md) is ready for teammates; no
 
 The [Day 6 coding checkpoint](docs/evals/day6-coding-completion.md) records the current local results and remaining acceptance. Android JVM tests, debug builds and lint pass. Cloud deployment, signed release installation, physical accessibility/safety, tester sessions and footage remain open.
 
+The [Day 7 release checker](docs/release-readiness.md) produces a [gate report](docs/evals/report-v1.md) from reviewed numeric evidence. Current public release readiness is **BLOCKED**. RC builds stay draft; no public beta is accepted from synthetic tests or missing evidence.
+
 ## Project layout
 
 | Path | Purpose |

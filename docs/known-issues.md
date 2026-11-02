@@ -2,6 +2,8 @@
 
 The beta is not yet accepted for public release. This page distinguishes known failures, unverified behavior and unfinished work. Synthetic tests and prepared deployment files do not demonstrate a safe physical task.
 
+The [Day 7 gate report](evals/report-v1.md) remains BLOCKED. Its [checker](release-readiness.md) requires actual revision-bound evidence; it does not turn these unverified limitations into measured passes. No release tag, real bug bash or two-phone soak was performed for the local Day 7 coding continuation.
+
 | Area | Current limitation | Required evidence or work |
 |---|---|---|
 | Live recognition | Earlier photo evaluation scored 6/10 correct targets; later five-second Spark probe timed out | Improve and remeasure quality/latency without weakening timeout policy; see progress evidence |

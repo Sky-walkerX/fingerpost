@@ -4,6 +4,8 @@
 
 Fingerpost releases are distributed as signed APKs published to GitHub Releases via automated GitHub Actions workflow triggered on version tags (`v*`).
 
+Before a public tag, complete and review [Day 7 release evidence](release-readiness.md). The workflow checks the numeric safety/completion gates and tested-source revision before loading signing secrets. Missing or failed hard gates prevent publication. Exact `-rc<positive-integer>` versions are built as **draft** prereleases for installation testing; a draft does not establish public readiness. Never publish a blocked draft manually.
+
 ### 1. Keystore Generation (Human Step)
 
 Generate the release signing keystore locally using `keytool`.
@@ -66,7 +68,7 @@ The `.github/workflows/release.yml` workflow will:
 2. Extract the certificate SHA-256 digest and print it to `$GITHUB_STEP_SUMMARY`.
 3. Build the signed release APK (`:app:assembleRelease`).
 4. Generate the `fingerpost-<tag>.apk.sha256` checksum.
-5. Create a GitHub Release for `<tag>` with `fingerpost-<tag>.apk` and `fingerpost-<tag>.apk.sha256` attached.
+5. Create a GitHub Release for `<tag>` with the APK, checksum and generated `report-v1.md` attached. RC versions stay draft/prerelease; other versions require accepted readiness. The report becomes the release notes.
 6. Clean up `$RUNNER_TEMP/release.jks` in an `always()` post-step.
 
 

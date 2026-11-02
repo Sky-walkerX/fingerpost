@@ -591,6 +591,11 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 
 ## Day 7 — Mon Nov 2: freeze, prove, ship
 
+**User-requested local coding continuation (2026-11-03):** physical testing is unavailable for this turn. Implement the independent evidence/report/release checks while preserving the unmet Day 6 prerequisites. This does not declare the feature freeze, waive a gate or authorize a beta tag.
+
+- [x] **Local coding:** strict numeric evidence/matrix validation, tested-source revision binding, design §5.6 report generation and release-workflow enforcement. Mock/empty/stale evidence cannot authorize a public release; RC builds remain draft for clean-phone acceptance. See [procedure](../../release-readiness.md).
+- [ ] **Actual acceptance:** two-phone soaks, full live eval, all physical matrix cells, P0/P1 triage, real footage, accepted report, signed beta clean install and production/hosting/minimum-instance work below. No local tool test ticks these gates.
+
 **12:00 IST feature freeze.** After it, only P0/P1 fixes, each as its own commit with the issue number.
 
 | Time | A | B | C |

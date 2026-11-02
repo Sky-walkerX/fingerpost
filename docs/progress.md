@@ -2,13 +2,13 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim ownership in the first real task commit; no separate claim commits (see AGENTS.md §3).
 
-**Current phase:** user-requested coding completion through Day 6 (2026-11-03), preserving unfinished earlier gates; GCP acceptance deferred. All unfinished Day 1/2 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
+**Current phase:** user-requested Day 7 local coding (2026-11-03), preserving unfinished earlier gates; GCP acceptance deferred and user unavailable for phone tests this turn. All unfinished Day 1/2 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
-**Coding checkpoint:** required independent coding through Day 6 is implemented and locally verified: 666 TS,369 Android JVM and53 Python cases, typechecks/builds, debug APK/test APK and lint pass. Day 6 is **not accepted complete**: cloud, signed-release, device, tester and footage gates remain open. See [Day 6 evidence and next actions](evals/day6-coding-completion.md).
+**Coding checkpoint:** Day 7 local release-readiness/report/workflow safeguards pass 22 new regressions; all75 Python cases, all666 TS cases and recursive typecheck pass. Android source is unchanged from the Day 6 checkpoint (369 JVM cases, debug APK/test APK and lint passed). Day 6/7 are **not accepted complete**: cloud, signed-release, device, tester and footage gates remain open. See [Day 7 report](evals/report-v1.md), [procedure](release-readiness.md) and [Day 6 evidence](evals/day6-coding-completion.md).
 
 **Previous priority (2026-10-31, superseded by Day 4 repair request):** user requests the remaining Day 2 development followed by completion through Day 3. Proceed with available Day 3 coding while retaining unfinished prerequisite acceptance; use local checks where possible and defer GCP-only tests until an account is available. Pause further Day 4 development. Ask the user to attach a phone before future mobile testing; JVM/browser checks never establish device acceptance. No device, quality or release gate is waived. See [revalidation checklist](evals/cloud-revalidation.md).
 
-**Latest priority (2026-11-03):** user requests implementing the remaining coding through Day 6, starting with B6-3 and A6-1. The five Day 4 coding repairs are already implemented. Preserve every earlier unmet live/device/cloud gate; no GCP provisioning or phone acceptance is inferred from local tests.
+**Latest priority (2026-11-03):** user requests Day 7 and then explicitly selects “Not now; finish available local coding” for phone checks. Implement report/readiness/release safeguards without a new application feature, real trial, deployment or tag. Day 6 acceptance and earlier unmet live/device/cloud gates remain open.
 
 **Historical completion audit (2026-10-28):** [all 37 tasks](task-audit.md); its implementation counts predate the incoming work recorded in [the sync inventory](evals/repository-sync-2026-10-30.md). D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2–T6 are complete under the user-directed phase exception. [Testing through T7 (2026-10-30)](evals/through-day2-t7-2026-10-30.md) verifies the live gateway flow; T7 still requires regional redeployment. Unfinished Day 1 requirements remain open. A blocker blocks dependents only, under AGENTS.md §3.
 
@@ -107,7 +107,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C6-1 | Launch landing page | C | B6-2 | blocked | Codex |
 | C6-2 | Video script, shots, B-roll | C | – | blocked | Codex |
 | C6-3 | Tester session #3, X warm-up | C | – | todo | |
-| D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | todo | |
+| D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | blocked | Codex / Human |
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
 - Implemented in the incoming Day 3 source and locally tested: live config fails closed (AUTH_REQUIRED=false needs ALLOW_UNAUTHENTICATED_LIVE=true); software attestation off by default in live; challenge/attest rate-limited per IP; sim route disabled in live without SIM_TOKEN, timing-safe compare; kill switch also applies to unauthenticated sessions. Cloud/device acceptance remains open.
@@ -115,6 +115,8 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 ## Blockers
 _(task id · exact command · last lines of output · what you tried)_
+
+- D7 (2026-11-03) · `python3 scripts/release-readiness.py --write-report` exits 1 as expected: `Public release readiness: BLOCKED. See the Day 7 evidence report.` All 72 matrix cells and required real measurements remain NOT_RUN. User defers phone tests; cloud/signing/earlier safety acceptance and real footage remain unavailable. Local tooling cannot satisfy these gates; no tag, release or deployment attempted. [Gate report](evals/report-v1.md).
 
 - Day 6 continuation (2026-11-03) · Coding is locally verified; A6-1/A6-2/A6-3 still need physical speech/accessibility/network acceptance. B6-1/B6-2/B6-3/C6-1 need human signing/cloud setup and actual deployment/notification/persistence results. C6-2/C6-3 require real footage/consented sessions/outreach. No phone or GCP action was run; [per-task next actions](evals/day6-coding-completion.md) retain all gates.
 
@@ -505,3 +507,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-03 B6-3 coding: bounded ADC Pub/Sub pull job validates the allowlisted monthly billing budget and persists disablement before acknowledgement; duplicate delivery never enables cloud. Twelve budget entry/port/job tests pass, including gateway flag-cache integration; no credentials or cloud execution used. Monitoring emits idle heartbeat/sample/overflow/ledger-health gauges and renders six disabled policies plus a dashboard. Health regressions pass; 53 Python tooling cases pass. Full B6-3 remains blocked on cloud IAM/job scheduling, actual metric/policy validation and delivered notifications.
 
 - 2026-11-03 A6-1 coding: generic speech recognition is replaced by an on-device-only API31+ port, per-utterance cleanup and stale-callback guards; offline TTS refuses network voices and reports missing local output safely. Four ASR and one TTS regression pass after expected missing-API failures. Required independent coding through Day 6 is verified: 666 TS/369 Android JVM/53 Python tests, typechecks/builds/debug APK/test APK and lint (0 errors/16 warnings). No new dependency, phone test, live API call, GCP change or release tag; all acceptance statuses retained. [Report](evals/day6-coding-completion.md).
+
+- 2026-11-03 D7 local coding: missing report/workflow gate reproduced first; numeric evidence/matrix checker now enforces design §5.6, all72 executed revision-bound cells, two-phone soak coverage, recorded P0 count and prior acceptance. Hard failures/empty or mock-only/stale evidence cannot authorize public release; measured soft misses require documented issue references. Tested-source binding permits evidence/README updates without accepting changed runtime/config/tests/workflow. Duplicate CSV/oversized-number edge failures reproduced and repaired; all22 new cases pass, including isolated Git/CLI and stubbed publication-shell checks. All75 Python/666 TS cases and recursive typecheck pass. Generated report intentionally exits1/BLOCKED. Exact RC tags remain draft; no tag, signed build, phone trial, deployment or real release executed. D7 remains blocked on its actual acceptance, not unfinished local tool bodies.

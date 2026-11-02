@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "testedRevision": null,
+  "pinPayment": null,
+  "payment": null,
+  "singleTarget": null,
+  "timeToTargetMs": null,
+  "firstParseMs": null,
+  "soaks": [],
+  "acceptance": {
+    "day6": "NOT_RUN",
+    "fullLiveEval": "NOT_RUN",
+    "privateMode": "NOT_RUN",
+    "pinNoUpload": "NOT_RUN",
+    "signedRcInstall": "NOT_RUN",
+    "landingWaitlist": "NOT_RUN",
+    "footage": "NOT_RUN"
+  },
+  "openIssues": [],
+  "softExceptions": {
+    "single_target": [],
+    "time_to_target": [],
+    "first_parse": [],
+    "crash_free": []
+  }
+}
