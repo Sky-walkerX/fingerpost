@@ -91,7 +91,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
 | B5-2 | Kiosk memory | B | – | done | Codex |
 | B5-3 | Breaker + fallback chain | B | B4-1 | done | Codex |
-| B5-4 | 50-session load test | B | C4-2 | todo | |
+| B5-4 | 50-session load test | B | C4-2 | done | Codex |
 | C5-1 | Tester session #2 | C | – | todo | |
 | C5-2 | Privacy, data-safety, install pages | C | – | todo | |
 | C5-3 | README v1 + soak steps | C | – | todo | |
@@ -462,3 +462,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: A5-1 EXPLORING/TOUCH_EXPLORE states, explore keyframe, local TouchExplorer (150 ms, smallest polygon, text prefix, edge earcon), en/hi/es strings, explore-summary flow replay; machine locale now follows settings. 236 guidance tests pass. Phone check pending.
 - 2026-11-02: C4-2 virtual flow runner: WebSocket replay with binary keyframes, sim touches, wildcard matching and divergence index. medium-cola, go-back, guide-start pass; 578 TS tests in pnpm -r test.
 - 2026-11-02: A6-1 offline basic mode: OfflineResolver (gateway resolveByText rules, no digit targets, icon goals refused), OfflineAsr (SpeechRecognizer, prefer offline), local verify, enters on mode{offline}/cloud_paused/quota/5 s no connection. 248 guidance + 5 app tests pass. Phone check pending.
+- 2026-11-02: B5-4 50-session load test (mock models, 5 min): 751,245 messages, p50 1.7 ms, p95 10.1 ms, max 110.6 ms, 0 errors. PASS (gate p95 < 200 ms). Report docs/evals/load-day5.md.

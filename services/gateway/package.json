@@ -12,6 +12,7 @@
     "check:firestore": "node --conditions=source scripts/firestore-local.ts",
     "start": "node dist/server.js",
     "smoke": "node --conditions=source scripts/smoke-meta.ts",
+    "load": "node --conditions=source scripts/load.ts",
     "latency": "node --conditions=source scripts/latency-matrix.ts",
     "latency:region": "node --conditions=source scripts/region-latency.ts"
   },
