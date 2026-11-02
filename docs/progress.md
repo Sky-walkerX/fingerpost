@@ -82,7 +82,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
 | C4-2 | Virtual-device flow runner | C | B4-0 | done | Codex |
 | C4-3 | Tester session #1 + triage | C | – | todo | |
-| C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
+| C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | doing | Codex |
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
 | A5-1 | Explore summary + touch-explore | A | B5-0 | doing | Codex |
 | A5-2 | On-device layout cache | A | – | doing | Codex |
@@ -269,6 +269,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- C4-4 (2026-11-02) · PinGate.check takes the token space's pixel aspect: the §10.1 column tolerance was compared in mixed units and merged key columns on wide screens. Callers (FrameRouter, UploadGuard, Keyframer) pass the frame or rectified-screen aspect; square spaces unchanged. The sim token file is committed (evals/out/pinpay-tokens.json) with a freshness test.
 - A5-1 (2026-11-02) · Added EXPLORING and TOUCH_EXPLORE states with initial-value timeouts (6 s summary retry, 12 s idle hint) and a 30 ms edge earcon (guidance-spec §8, §11a). The state machine's locale now follows settings (prompts were English-only).
 - A4-5 (2026-11-02) · speechRate, verbosity, handedness, holdMode and volumeKeys are stored but not applied yet (TtsSpeaker has no rate API); A6-3 picks up speech rate.
 - C5-4 (2026-11-02) · Gateway half only: /v1/donate, storage and consent text. Pointers store no uid, so deletion is by 90-day expiry only. Android ask/blur/upload not built; the tester rule "do not offer donations" stands.
@@ -465,3 +466,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: B5-4 50-session load test (mock models, 5 min): 751,245 messages, p50 1.7 ms, p95 10.1 ms, max 110.6 ms, 0 errors. PASS (gate p95 < 200 ms). Report docs/evals/load-day5.md.
 - 2026-11-02: A5-2 LocalLayoutCache (aspect bucket + trigram SimHash, Hamming ≤3, LRU 50, DataStore), OCR-agreed instant re-lock for guide goals with gateway confirm/replace, never pay/confirm/submit/icon or PIN/payment screens, Clear saved screens. 262 guidance tests pass. Phone check (<0.8 s re-lock) pending.
 - 2026-11-02: B6-2 POST /v1/waitlist (honeypot 400, 5/min/IP 429, dedupe, waitlist/{sha256(email)} with email/locale/createdAt only, email never logged) and GET /v1/config {minVersion, cloudEnabled} cached 30 s (Remote Config min_supported_version, last good value on error). 438 gateway tests pass. Live Firestore/Remote Config check needs GCP.
+- 2026-11-02: C4-4 mock: PinGateDatasetTest on 170 sim items: recall 120/120 (also text-free and under OCR noise), 0/50 amount summaries blocked. Found and fixed PIN gate column tolerance ignoring pixel aspect (noisy grid-only recall 0/120 → 120/120). Live server/real-photo recall still 🔑.
