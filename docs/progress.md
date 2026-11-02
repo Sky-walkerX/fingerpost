@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim ownership in the first real task commit; no separate claim commits (see AGENTS.md §3).
 
-**Current phase:** finish available Day 2 work and implement/verify through Day 3, explicitly requested by the user on 2026-10-31; GCP acceptance deferred. All unfinished Day 1/2 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
+**Current phase:** user-requested Day 4 coding repairs (2026-11-02), preserving unfinished earlier gates; GCP acceptance deferred. All unfinished Day 1/2 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
 **Coding checkpoint:** the user-requested Day 3 audit repairs are implemented locally: fail-closed accounting, server-enforced socket expiry and v1 deployment alignment. Fresh 470 TS/36 tooling checks pass; full acceptance stays open. No push performed for this continuation. See [coding evidence](evals/day3-coding-completion.md).
 
@@ -489,3 +489,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02 final code completion: user explicitly assigns live gates to teammates. Production telemetry lifecycle/exporter, Hosting/HTTP CI checks, signer/version/gateway verification and Android speech/UI/PIN localization source are finished. Review findings (hung exporter accumulation and incompatible release versions) fixed with red→green regressions. Required source tasks now wait on teammate acceptance rather than implying active implementation. See [code handoff](evals/local-code-handoff-2026-11-02.md).
 - Local verification: 644 TS tests (59 protocol / 53 web / 475 gateway / 57 evals), recursive TS typecheck/build, 52 Python tests and production-site HTTP smoke pass. Resource XML/key parity/reference checks pass, excluding the intentionally non-translatable brand name.
 - Android offline JVM attempt: existing JDK21 + cached Gradle9.8.2, `gradle --offline --configure-on-demand :core:guidance:test :core:protocol:test --console=plain` stops during root configuration: `Plugin [id: 'com.google.firebase.crashlytics', version: '3.0.8', apply: false] was not found` in the offline cache; `BUILD FAILED in 3s`. No tests ran, no SDK/library was downloaded, and no retry was made. Teammates must resolve the planned plugin and run Android checks; this is not a test pass or a compiled-source failure.
+
+- 2026-11-02 Day 4 repair prerequisite: actual Android build reproduces Gradle DSL shadowing of java.net/java.util in the incoming gateway URL validation. Explicit URI/Locale imports restore compilation without weakening release validation or changing pins. Local full Android JVM/build/lint verification succeeds; no physical acceptance claimed.

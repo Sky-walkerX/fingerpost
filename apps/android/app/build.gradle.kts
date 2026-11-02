@@ -1,3 +1,6 @@
+import java.net.URI
+import java.util.Locale
+
 // First-build corrections are recorded in docs/progress.md.
 plugins {
     alias(libs.plugins.android.application)
@@ -15,8 +18,8 @@ if (file("google-services.json").exists()) {
 // Restrict source-code literals before interpolation, including local debug overrides.
 val gatewayUrl = providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"
 require(gatewayUrl.matches(Regex("^[A-Za-z0-9:/.-]+$"))) { "Gateway URL contains unsupported characters" }
-val gatewayUri = requireNotNull(runCatching { java.net.URI(gatewayUrl) }.getOrNull()) { "Invalid gateway URL" }
-val gatewayHost = gatewayUri.host?.lowercase(java.util.Locale.ROOT).orEmpty()
+val gatewayUri = requireNotNull(runCatching { URI(gatewayUrl) }.getOrNull()) { "Invalid gateway URL" }
+val gatewayHost = gatewayUri.host?.lowercase(Locale.ROOT).orEmpty()
 val dnsLabel = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
 require(gatewayUri.scheme in setOf("ws", "wss") && gatewayHost.length in 1..253 &&
     gatewayHost.matches(Regex("$dnsLabel(?:\\.$dnsLabel)*")) &&
