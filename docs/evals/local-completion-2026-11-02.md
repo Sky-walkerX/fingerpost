@@ -28,3 +28,11 @@ The audit reports minimatch GHSA-g3hv-75wg-m249 and glob GHSA-3g3m-2fjr-6pw4 thr
 This is not a completed beta. Android source/acceptance tasks still need review, including low-vision UI, crash reporting/update checks and device phrasing; SDK-dependent checks belong to teammates. Human tester sessions, live model/real-photo quality gates, regional/cloud acceptance, hardware security review, Modal verification, production alerts, hosting, release signing/clean-phone installation and actual video capture remain open. Existing board entries marked doing/blocked retain their acceptance requirements.
 
 Before opening the waitlist publicly, verify production persistence and deploy the page with the intended HTTPS gateway. A mock in-memory registration is not a public waitlist. No deployment, release tag, message to testers or paid model call was made in this pass.
+
+## Continued implementation
+
+Subsequent main commits prepare secure release preflight/version/gateway/signature checks; an independently decoded release QR; per-version EN/HI/ES update notices acknowledged only after matching TTS completion; high-contrast target/fingertip outlines; and Crashlytics integration with collection off by default. Crashlytics uses the existing BoM and a new planned-integration plugin pin 3.0.8; no existing pinned version changed. Android regression tests are authored but **not run**, and compilation/plugin compatibility/device acceptance are unverified under the user's SDK-check deferral.
+
+Monitoring now has a tested generator for three disabled policies. Its proposed task/parse/spend metrics are not yet exported; live validation and notification delivery are still required. The 72-case bug-bash sheet remains NOT_RUN. A clearly labelled synthetic simulator-only take was captured locally (12.64 seconds, 1280×800) and decoded/visually inspected; actual phone/appliance/user footage and final edit remain pending.
+
+Fresh continued checks: recursive typecheck/build pass; the complete TS suite passes 616 cases; the changed public pages pass the 53-case web suite including axe checks; all 43 Python tooling tests pass. Final review found premature update-notice acknowledgement; the fix adds exact-utterance completion/cancellation regression tests, unrun pending teammate Android checks. No assertion of verified Android behavior is made.
