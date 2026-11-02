@@ -59,17 +59,19 @@
     <li>Free and open source. Works with TalkBack. English, Hindi and Spanish.</li>
   </ul>
 
+  <p><a href="https://github.com/Sky-walkerX/fingerpost/releases/latest">Check GitHub for signed APK releases</a>. Release availability and device acceptance are still pending; read the <a href="/install/">install guide</a> first.</p>
   <h2 id="waitlist-heading">Get the beta</h2>
-  <p id="waitlist-preview">Waitlist registration is not open yet. This preview does not collect or save your details. Check back when the beta is ready.</p>
+  <p id="waitlist-preview" role="status" aria-live="polite">Waitlist registration is not open yet. This preview does not collect or save your details. Check back when the beta is ready.</p>
   <form id="waitlist" aria-labelledby="waitlist-heading" aria-describedby="waitlist-preview">
     <label for="email">Email</label>
-    <input id="email" name="email" type="email" autocomplete="off" disabled>
+    <input id="email" name="email" type="email" autocomplete="email" required disabled>
     <label for="locale">Preferred language</label>
     <select id="locale" name="locale" disabled>
       <option value="en">English</option>
       <option value="hi">हिन्दी (Hindi)</option>
       <option value="es">Español (Spanish)</option>
     </select>
+    <div class="hp" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off" disabled></div>
     <button type="submit" disabled>Waitlist not open yet</button>
   </form>
 
@@ -80,5 +82,6 @@
   <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
   <p><a href="/privacy/">Privacy</a> · <a href="/data-safety/">Data safety</a> · <a href="/install/">Install guide</a> · <a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
 </footer>
+<script type="module" src="/src/site/main.ts"></script>
 </body>
 </html>

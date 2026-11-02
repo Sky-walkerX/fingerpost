@@ -102,7 +102,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B6-1 | Signed APK release workflow | B | – | doing | Codex |
 | B6-2 | Waitlist + config endpoints | B | – | doing | Codex |
 | B6-3 | Threat model, alerts, runbook | B | – | todo | |
-| C6-1 | Launch landing page | C | B6-2 | todo | |
+| C6-1 | Launch landing page | C | B6-2 | doing | Codex |
 | C6-2 | Video script, shots, B-roll | C | – | todo | |
 | C6-3 | Tester session #3, X warm-up | C | – | todo | |
 | D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | todo | |
@@ -474,3 +474,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: B6-1 release.yml (tag v* → signed :app:assembleRelease, fingerpost-<tag>.apk + .sha256, GitHub Release, cert SHA-256 in job summary, keystore deleted always()); release signingConfig from 4 env vars, unsigned without them; docs/runbook.md Releasing. Doing until v1.0.0-rc1 installs on a clean phone.
 
 - 2026-11-02: Pulled origin/main at 9ce4a15 (66 incoming commits). Earlier work is preserved on codex/local-completion-2026-11-02 and its stash rather than overwriting teammates’ implementations. C5-3 README now describes current source and mock commands; 30-minute soak procedure prepared, device execution still pending.
+
+- 2026-11-02: C6-1 waitlist form connects to the existing gateway only when VITE_GATEWAY_URL is configured to HTTPS; absent configuration stays visibly closed. Success requires confirmed API success; rejection, throttling and network failure stay retryable. Web 53 tests (including page axe checks) and production build pass. Hosting deployment, release QR and physical browser acceptance remain open.
