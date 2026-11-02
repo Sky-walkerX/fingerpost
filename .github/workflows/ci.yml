@@ -7,7 +7,7 @@ jobs:
   ts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4   # reads packageManager (pnpm@11.10.0) from package.json
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: pnpm }
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest      # has the Android SDK preinstalled
     defaults: { run: { working-directory: apps/android } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4
