@@ -13,7 +13,9 @@ def validate(env):
         if not env.get(name, '').strip():
             raise ValueError('Required release configuration is missing')
     tag = env.get('GITHUB_REF_NAME', '')
-    if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?', tag):
+    version = re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?', tag)
+    # Android's updater parses each core component as a Kotlin Int.
+    if not version or any(len(part) > 10 or int(part) > 2147483647 for part in version.groups()):
         raise ValueError('Release tag must contain a version')
     code = env.get('GITHUB_RUN_NUMBER', '')
     if not re.fullmatch(r'[1-9][0-9]*', code) or len(code) > 10 or int(code) > 2147483647:

@@ -41,3 +41,15 @@ class ReleasePreflightTest(unittest.TestCase):
         for url in ['wss://gateway.example.test:443', 'wss://203.0.113.1:8443', 'wss://[2001:db8::1]']:
             env = self.valid(); env['RELEASE_GATEWAY_URL'] = url
             with self.subTest(url=url): self.assertEqual(module.validate(env)[2], url)
+
+    def test_rejects_versions_the_android_updater_cannot_parse(self):
+        for core in ['01.0.0', '1.01.0', '1.0.01', '00.0.0',
+                     '2147483648.0.0', '1.2147483648.0', '1.0.2147483648',
+                     f'{"9" * 5000}.0.0']:
+            env = self.valid(); env['GITHUB_REF_NAME'] = f'v{core}'
+            with self.subTest(core=core[:40]), self.assertRaises(ValueError): module.validate(env)
+
+    def test_accepts_android_version_component_boundaries(self):
+        for version in ['0.0.0', '1.0.0-rc1', '2147483647.2147483647.2147483647']:
+            env = self.valid(); env['GITHUB_REF_NAME'] = f'v{version}'
+            with self.subTest(version=version): self.assertEqual(module.validate(env)[0], version)
