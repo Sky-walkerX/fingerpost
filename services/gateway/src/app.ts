@@ -27,6 +27,10 @@ import { verifySessionGrant } from './auth/tokens.ts';
 import { loadGoogleRoots } from './auth/google-roots.ts';
 import { MemoryFlagStore, MemoryQuotaStore, type FlagStore, type QuotaStore } from './quota/ports.ts';
 import { DEFAULT_QUOTA, QuotaService } from './quota/service.ts';
+import { MemoryWaitlistStore, type WaitlistStore } from './waitlist/store.ts';
+import { registerWaitlistRoute } from './waitlist/routes.ts';
+import { CachedMinVersionSource, MemoryMinVersionSource, type MinVersionSource } from './min-version/source.ts';
+import { registerConfigRoute } from './min-version/routes.ts';
 
 export interface AppOverrides {
   /** Local phone practice announces simulated targets; ignored entirely in live mode. */
@@ -40,6 +44,10 @@ export interface AppOverrides {
   quotaStore?: QuotaStore; flagStore?: FlagStore; auth?: Partial<AuthDeps>; now?: () => number;
   /** Live: Google's attestation status list (auth/revocation.ts). */
   isRevoked?: (serialHex: string) => boolean;
+  /** B6-2: waitlist store. In-memory for mock/tests, Firestore in server.ts. */
+  waitlistStore?: WaitlistStore;
+  /** B6-2: min-version source. In-memory default "0.1.0" for mock/tests, Remote Config in server.ts. */
+  minVersionSource?: MinVersionSource;
 }
 
 export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<FastifyInstance> {
@@ -75,6 +83,14 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   // Mock/dev keeps donations in memory (no bytes leave the machine); live needs a configured bucket.
   registerDonateRoute(app, { store: o.donations !== undefined ? o.donations : (live ? null : new MemoryDonationStore()),
     authSecret: cfg.AUTH_REQUIRED ? secret : null, cloudEnabled: () => quota.cloudEnabled(), now });
+
+  // B6-2: waitlist and config endpoints
+  const waitlistStore = o.waitlistStore ?? new MemoryWaitlistStore();
+  registerWaitlistRoute(app, { store: waitlistStore, now });
+
+  const rawMinVersion = o.minVersionSource ?? new MemoryMinVersionSource('0.1.0');
+  const minVersionSource = new CachedMinVersionSource(rawMinVersion, 30_000, now);
+  registerConfigRoute(app, { minVersionSource, cloudEnabled: () => quota.cloudEnabled() });
 
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
   if (cfg.DEBUG_TOKEN) {
