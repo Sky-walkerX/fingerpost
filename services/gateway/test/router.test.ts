@@ -40,14 +40,14 @@ test('financial layout switches later frames to glimmer', async () => {
   expect(router.privateAvailable).toBe(true);
 });
 
-test('without glimmer a sensitive screen stays on meta (the PIN gate is local); only a private session refuses', async () => {
+test('sensitive screens refuse without glimmer instead of falling back to meta', () => {
   const calls: string[] = [];
-  const meta = spy('meta', calls);
-  const router = createRouter({ meta });
-  expect(router.privateAvailable).toBe(false);
-  await router.forSession('normal', 'financial').parseScreen(image, { locale: 'en' });
-  expect(calls).toEqual(['meta.parse']);
-  expect(() => router.forSession('private', 'financial')).toThrow(PrivateUnavailable);
+  const router = createRouter({ meta: spy('meta', calls) });
+  for (const sensitivity of ['financial', 'identity'] as const) {
+    expect(() => router.forSession('normal', sensitivity)).toThrow(PrivateUnavailable);
+    expect(() => router.forSession('private', sensitivity)).toThrow(PrivateUnavailable);
+  }
+  expect(calls).toEqual([]);
 });
 
 /** A fetch that answers per model id: lets the real SDK client exercise the Spark 1.3 → 1.2 fallback. */

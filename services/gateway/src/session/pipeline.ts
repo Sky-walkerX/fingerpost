@@ -99,8 +99,9 @@ export class SessionPipeline {
   private task = new AbortController();
   private mode: RequestedMode = 'auto';
   private privacy: 'normal' | 'private' = 'normal';
-  /** The last screen was financial or identity: its later frames go private when Glimmer exists. */
+  /** Only a freshly parsed safe layout clears routing protection; goals/abort cannot. */
   private sensitive = false;
+  private privatePlanning = false;
   /** The port that read the current frame; SAM refinement of its target uses the same provider. */
   private frameModels: ModelPort | null = null;
   /** The current frame's layout came from kiosk memory: its polygons are final, no SAM refinement. */
@@ -133,8 +134,9 @@ export class SessionPipeline {
 
   /** The models for the next frame, or null after telling the user private mode is unavailable. */
   private models(): ModelPort | null {
-    if (!this.d.route) return this.d.models;
+    if (!this.d.route && this.privacy === 'normal' && !this.sensitive) return this.d.models;
     try {
+      if (!this.d.route) throw new PrivateUnavailable();
       return this.d.route.forSession(this.privacy, this.sensitive ? 'financial' : 'none');
     } catch (error) {
       if (!(error instanceof PrivateUnavailable)) throw error;
@@ -162,7 +164,6 @@ export class SessionPipeline {
     this.task = new AbortController();
     this.goal = text;
     this.lookingSpoken = false;
-    this.sensitive = false;
     this.taskCharged = false;
     this.target = null;
     this.hasSimTouch = false;
@@ -170,7 +171,11 @@ export class SessionPipeline {
     const intent = inferIntent(text, this.mode);
     this.explore = intent === 'explore' ? { regions: null, cursor: 0 } : null;
     this.agent = intent === 'task' ? new AgentSession(text, {
-      planner: this.d.planner ?? rulesPlanner(),
+      planner: { id: 'privacy-guarded', next: (state, signal) => {
+        // Once a task sees protected data, its history/answers must stay off Spark too.
+        this.privatePlanning ||= this.privacy === 'private' || this.sensitive;
+        return (this.privatePlanning ? rulesPlanner() : this.d.planner ?? rulesPlanner()).next(state, signal);
+      } },
       ...(this.d.now ? { now: this.d.now } : {}),
       onUsage: (u) => this.d.onUsage?.({ kind: 'spark', ...u }),
       onPlannerError: (id) => this.d.onPlannerError?.(id),
@@ -215,7 +220,6 @@ export class SessionPipeline {
     this.task = new AbortController();
     this.goal = null;
     this.agent = null;
-    this.sensitive = false;
     this.layout = null;
     this.target = null;
     this.lookingSpoken = false;
@@ -342,7 +346,14 @@ export class SessionPipeline {
     }
     this.layout = layout;
     this.sensitive = layout.sensitivity !== 'none';
+    this.privatePlanning ||= this.privacy === 'private' || this.sensitive;
     this.d.send(layout);
+    // Classification now protects refinement and planning as well as the next frame.
+    if (this.sensitive) {
+      const protectedModels = this.models();
+      if (!protectedModels) { this.completeTask('error', signal); return; }
+      this.frameModels = protectedModels;
+    }
     if (signal.aborted) return;
     const turn = (layout: Layout) => this.agentTurn(layout, h, image, coordinates, parsedElements, signal);
     if (h.purpose === 'verify') {

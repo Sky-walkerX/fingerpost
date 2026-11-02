@@ -39,7 +39,7 @@ async function replay(flow: Flow, memory?: MemoryService) {
   let screen = '';
   const models = mockModels();
   models.parseScreen = async () => ({ layout: layouts.get(screen)!, usage: { inputTokens: 0, outputTokens: 0 }, latencyMs: 0, promptId: 'flow' });
-  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models, ...(memory ? { memory } : {}) });
+  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models, glimmer: models, ...(memory ? { memory } : {}) });
   await app.ready();
   const ws = await app.injectWS('/v1/session');
   const received: ServerMessage[] = [];

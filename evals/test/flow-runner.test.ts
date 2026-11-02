@@ -47,7 +47,7 @@ async function startGateway(flow: Flow) {
     promptId: 'flow',
   });
 
-  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models });
+  app = await buildApp(loadConfig({ LOG_LEVEL: 'silent' }), { models, glimmer: models });
   await app.listen({ port: 0, host: '127.0.0.1' });
   const addr = app.server.address() as AddressInfo;
   return {

@@ -41,8 +41,7 @@ const retryWorthy = (error: unknown) =>
 
 /**
  * Days 4–7 plan, B4-1 + B5-3 (design §4.4). Routing: a private session never touches the Meta API; a screen
- * the gateway marked financial or identity sends later frames to Glimmer when it is configured (without
- * Glimmer they stay on Meta Standard mode: the PIN gate already blocks secrets on the device).
+ * marked financial or identity sends later frames to Glimmer, refusing when it is unavailable.
  * Resilience on the Meta path: Spark 1.3 → 1.2 (inside liveModels) → one jittered retry (200–600 ms) →
  * warm Glimmer → ModelsUnavailable, which the session turns into offline mode. A breaker (5 failures in
  * 30 s, 20 s open) stops hammering a provider that is down.
@@ -83,11 +82,10 @@ export function createRouter(o: RouterOptions): RoutedModels {
   return {
     privateAvailable: !!o.glimmer,
     forSession(privacy, sensitivity) {
-      if (privacy === 'private') {
+      if (privacy === 'private' || sensitivity !== 'none') {
         if (!o.glimmer) throw new PrivateUnavailable();
         return o.glimmer;
       }
-      if (sensitivity !== 'none' && o.glimmer) return o.glimmer;
       return metaPath;
     },
   };
