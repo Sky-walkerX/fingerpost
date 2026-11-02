@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data safety · Fingerpost</title>
+<meta name="description" content="What data Fingerpost collects, why, and how long it is kept.">
+<style>
+  :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #cbd5e1; --accent: #facc15; --panel: #111827; --focus: #38bdf8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 1.125rem/1.6 system-ui, sans-serif; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; background: var(--fg); color: var(--bg); padding: 8px 12px; z-index: 1; }
+  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 32px; font-weight: 700; letter-spacing: .02em; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 48px 0 16px; }
+  h2 { font-size: 1.4rem; margin-top: 48px; }
+  .lede { color: var(--muted); font-size: 1.25rem; }
+  .badge { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: .95rem; font-weight: 600; }
+  ul { padding-left: 1.2em; }
+  form { background: var(--panel); border-radius: 12px; padding: 20px; margin-top: 16px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input, select, button { font: inherit; border-radius: 8px; }
+  input, select { width: 100%; padding: 12px; border: 2px solid #64748b; background: var(--bg); color: var(--fg); margin-bottom: 16px; }
+  button { background: var(--accent); color: #111; border: 0; padding: 12px 20px; font-weight: 700; cursor: pointer; min-height: 48px; }
+  .hp { position: absolute; left: -9999px; }
+  #thanks { font-weight: 600; }
+  footer { color: var(--muted); padding-top: 48px; padding-bottom: 48px; font-size: 1rem; }
+  nav { max-width: 44rem; margin: 0 auto; padding: 8px 16px 0; }
+  nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; min-width: 36rem; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid #334155; }
+  ol li { margin-bottom: 14px; }
+  .note { background: var(--panel); border-radius: 12px; padding: 16px 20px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>Fingerpost</header>
+<nav aria-label="Site">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/install/">Install guide</a></li>
+    <li><a href="/privacy/">Privacy</a></li>
+    <li><a href="/data-safety/">Data safety</a></li>
+  </ul>
+</nav>
+<main id="main">
+  <h1>Data safety</h1>
+  <p class="lede">What Fingerpost collects, why, and how long it's kept. The <a href="/privacy/">privacy notice</a> explains each part.</p>
+  <div class="table-wrap" role="region" aria-labelledby="data-table-caption" tabindex="0">
+  <table>
+    <caption class="note" id="data-table-caption">Data in the Fingerpost beta for Android, 2 November 2026</caption>
+    <thead>
+      <tr><th scope="col">Data</th><th scope="col">Collected?</th><th scope="col">Shared with</th><th scope="col">Why</th><th scope="col">Kept</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Pictures of the touchscreen</th><td>Processed only</td><td>Meta, or Fingerpost's own server in private mode</td><td>Find buttons and check presses</td><td>Not kept</td></tr>
+      <tr><th scope="row">Your voice</th><td>Processed only</td><td>Meta Voice Transcribe (none in basic mode)</td><td>Understand what you want to press</td><td>Not kept</td></tr>
+      <tr><th scope="row">PIN and card numbers</th><td>Not collected</td><td>No one</td><td>None</td><td>Never</td></tr>
+      <tr><th scope="row">Anonymous account id and hardware key id</th><td>Collected</td><td>Google Firebase (sign-in)</td><td>Free daily tasks and abuse limits</td><td>While the beta runs</td></tr>
+      <tr><th scope="row">Saved screens (button names and positions)</th><td>Stays on your phone</td><td>No one</td><td>Find buttons faster next time</td><td>Until you clear them or uninstall</td></tr>
+      <tr><th scope="row">Public screen layouts (kiosk memory)</th><td>Collected, without any id</td><td>No one</td><td>Find buttons faster for everyone</td><td>While the beta runs</td></tr>
+      <tr><th scope="row">Location, contacts, files, other apps</th><td>Not collected</td><td>No one</td><td>None</td><td>Never</td></tr>
+      <tr><th scope="row">Crash reports and analytics</th><td>Not collected</td><td>No one</td><td>None</td><td>Never</td></tr>
+      <tr><th scope="row">Email (website waitlist only)</th><td>Only if you join</td><td>No one</td><td>Tell you when the beta is ready</td><td>Until you ask us to remove it</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h2>Security</h2>
+  <ul>
+    <li>Everything between the app and the server is encrypted in transit.</li>
+    <li>The app proves it is a genuine copy with Android Key Attestation before it may use the server.</li>
+    <li>No Fingerpost keys are stored on your phone.</li>
+  </ul>
+</main>
+<footer>
+  <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
+  <p><a href="/privacy/">Privacy</a> · <a href="/data-safety/">Data safety</a> · <a href="/install/">Install guide</a> · <a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
+</footer>
+</body>
+</html>

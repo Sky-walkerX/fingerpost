@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy · Fingerpost</title>
+<meta name="description" content="How Fingerpost handles pictures, your voice and your PIN.">
+<style>
+  :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #cbd5e1; --accent: #facc15; --panel: #111827; --focus: #38bdf8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 1.125rem/1.6 system-ui, sans-serif; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; background: var(--fg); color: var(--bg); padding: 8px 12px; z-index: 1; }
+  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 32px; font-weight: 700; letter-spacing: .02em; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 48px 0 16px; }
+  h2 { font-size: 1.4rem; margin-top: 48px; }
+  .lede { color: var(--muted); font-size: 1.25rem; }
+  .badge { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: .95rem; font-weight: 600; }
+  ul { padding-left: 1.2em; }
+  form { background: var(--panel); border-radius: 12px; padding: 20px; margin-top: 16px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input, select, button { font: inherit; border-radius: 8px; }
+  input, select { width: 100%; padding: 12px; border: 2px solid #64748b; background: var(--bg); color: var(--fg); margin-bottom: 16px; }
+  button { background: var(--accent); color: #111; border: 0; padding: 12px 20px; font-weight: 700; cursor: pointer; min-height: 48px; }
+  .hp { position: absolute; left: -9999px; }
+  #thanks { font-weight: 600; }
+  footer { color: var(--muted); padding-top: 48px; padding-bottom: 48px; font-size: 1rem; }
+  nav { max-width: 44rem; margin: 0 auto; padding: 8px 16px 0; }
+  nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; min-width: 36rem; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid #334155; }
+  ol li { margin-bottom: 14px; }
+  .note { background: var(--panel); border-radius: 12px; padding: 16px 20px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>Fingerpost</header>
+<nav aria-label="Site">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/install/">Install guide</a></li>
+    <li><a href="/privacy/">Privacy</a></li>
+    <li><a href="/data-safety/">Data safety</a></li>
+  </ul>
+</nav>
+<main id="main">
+  <h1>Privacy</h1>
+  <p class="lede">Fingerpost looks at touchscreens for you. It's built so that pictures and your voice are used for that and then thrown away, and so that your PIN never leaves your phone.</p>
+  <p>This notice describes the beta as it is built today. Updated 2 November 2026.</p>
+
+  <h2>The short version</h2>
+  <ul>
+    <li>Pictures of the screen and your voice are processed to find buttons, then <strong>never stored</strong> by Fingerpost.</li>
+    <li>While a <strong>PIN</strong> pad is in view, nothing is uploaded and the microphone is off. Digits are spoken only into your earphones.</li>
+    <li>No ads, no third-party analytics and no crash reporting in this beta.</li>
+    <li>No account with your name or email. The app uses an anonymous sign-in.</li>
+  </ul>
+
+  <h2>What the camera sees</h2>
+  <p>The phone tracks your finger and the screen on the phone itself. To read a screen, the app sends a picture of it to the Fingerpost server. After the first picture, it sends only a cropped, straightened picture of the touchscreen, not your surroundings. Faces in the first picture are blurred on the phone before it is sent.</p>
+  <p>The server asks Meta's models (Muse Spark and SAM 3.1) to read the picture. Fingerpost uses Meta's Standard mode, never Contributor mode. Pictures are held in memory only while they are read and are never stored by Fingerpost.</p>
+  <p><strong>Private mode</strong> (in settings, when available) reads the screen with an open model on Fingerpost's own server at Modal instead, and nothing goes to Meta.</p>
+
+  <h2>Your voice</h2>
+  <p>While the app is listening for you, your voice is streamed to the server and turned into text by Meta Voice Transcribe. The audio and the text are not stored. In basic mode (no internet), Android's own speech recognition on your phone is used and nothing is sent.</p>
+
+  <h2>PIN pads and payments</h2>
+  <p>Before any picture leaves the phone, the app checks it for a keypad or PIN wording. When it finds one, it stops uploading and turns the microphone off until the keypad is gone. It can tell you which digit is under your finger, but only through earphones, and it never asks for, sends, logs or stores your PIN. Before any pay or confirm button, it reads the amount and waits for your spoken yes.</p>
+
+  <h2>What is kept</h2>
+  <h3>On your phone</h3>
+  <ul>
+    <li>Your settings, and whether you finished the spoken tutorial.</li>
+    <li><strong>Saved screens</strong>: button names and positions of up to 50 screens you used, so the app finds buttons faster next time. No pictures, no prices, and never payment or PIN screens. Use <strong>Clear saved screens</strong> in settings to delete them.</li>
+  </ul>
+  <h3>On the Fingerpost server</h3>
+  <ul>
+    <li>An anonymous account id and the id of your phone's hardware security key, used for the free daily task limit and to block abuse. They are not linked to your name, email or phone number.</li>
+    <li>How many tasks you used today, and total spending on models.</li>
+    <li>Kiosk memory: the button layout of public screens (labels and positions), shared once two different phones agree on it. No pictures, account ids, prices, names or numbers.</li>
+    <li>Logs with numbers only, such as timings and outcomes. Never pictures, audio, what you said or what was on the screen.</li>
+  </ul>
+
+  <h2>Donating a session (not in this beta)</h2>
+  <p>A later version may ask, after a task fails, whether you want to donate that session's screen pictures to help improve Fingerpost. It will only upload if you say yes, after blurring faces and hiding card numbers on the phone, and everything is deleted after 90 days. This beta never asks.</p>
+
+  <h2>The waitlist on this website</h2>
+  <p>If you join the waitlist, we keep your email and preferred language to tell you when the beta is ready. We don't share it or use it for anything else, and we remove it when you ask.</p>
+
+  <h2>Who processes data</h2>
+  <ul>
+    <li>Meta: reading pictures and transcribing speech (Standard mode).</li>
+    <li>Google Cloud and Firebase: the server, anonymous sign-in and the database.</li>
+    <li>Modal: the private-mode server, only when you use private mode.</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>Questions or requests: <a href="https://github.com/Sky-walkerX/fingerpost/issues">open an issue on GitHub</a>. Please don't post personal details there. To be removed from the waitlist, say so in the issue and we'll reply with a private way to confirm.</p>
+</main>
+<footer>
+  <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
+  <p><a href="/privacy/">Privacy</a> · <a href="/data-safety/">Data safety</a> · <a href="/install/">Install guide</a> · <a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
+</footer>
+</body>
+</html>
