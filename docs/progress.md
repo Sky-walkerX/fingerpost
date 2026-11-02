@@ -80,7 +80,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | doing | Codex |
 | B4-4 | HI/ES server speech | B | – | todo | |
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
-| C4-2 | Virtual-device flow runner | C | B4-0 | todo | |
+| C4-2 | Virtual-device flow runner | C | B4-0 | done | Codex |
 | C4-3 | Tester session #1 + triage | C | – | todo | |
 | C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
@@ -269,6 +269,10 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- A5-1 (2026-11-02) · Added EXPLORING and TOUCH_EXPLORE states with initial-value timeouts (6 s summary retry, 12 s idle hint) and a 30 ms edge earcon (guidance-spec §8, §11a). The state machine's locale now follows settings (prompts were English-only).
+- A4-5 (2026-11-02) · speechRate, verbosity, handedness, holdMode and volumeKeys are stored but not applied yet (TtsSpeaker has no rate API); A6-3 picks up speech rate.
+- C5-4 (2026-11-02) · Gateway half only: /v1/donate, storage and consent text. Pointers store no uid, so deletion is by 90-day expiry only. Android ask/blur/upload not built; the tester rule "do not offer donations" stands.
+- B4-3 (2026-11-02) · Added `eval --mode private` (the plan's live step needs it). GLIMMER_TOKEN is a Modal proxy-auth key:secret; GLIMMER_* is all-or-none and used only in live mode.
 - B5-2 (2026-11-02) · `layout.fingerprint` keeps the label hash (shared flows, agent loop detection); kiosk memory keys on its own SimHash of stable OCR words + grid shape, with the aspect bucket as a separate match field. Payment, PIN, confirm and sensitive screens are never remembered (their amounts must be read fresh). Static text is stored only after a second install sees the same words (until then as salted hashes), so a name shown to one user is never stored. Memory serves `screen` keyframes only (full frames need SAM's screen quad). `MEMORY_MIN_INSTALLS` (default 2) and `MEMORY_SALT` added; dev sessions vouch as `dev-key`, so a single dev install never reaches trust.
 - B4-1 (2026-11-02) · Without Glimmer configured, a financial/identity screen keeps later frames on Meta Standard mode instead of refusing (the plan routes them to Glimmer or PrivateUnavailable). Refusing would end the user's payment mid-task; secrets are already blocked on the device by the PIN gate. A session the user set to private is still refused without Glimmer, and never calls Meta. Breaker deferred to B5-3.
 - A4-1/A4-2 (2026-11-02) · The device's server PIN layer no longer treats every `payment_entry` layout as a PIN screen: the shared medium-cola flow labels the amount summary ("Total ₹149", "Pay by card") `payment_entry` and requires the CONFIRM turn on it. guidance-spec §8/§10.1 updated (initial value); the local pre-upload gate is unchanged. `AskArrived`/`SendAnswer` carry the ask id because `answer` needs `re`. The app keeps UploadGuard as the PIN owner until A4-3 wires the machine's PIN effects. Kotlin tests were run with kotlinc 2.4.21 and a JUnit stand-in (Maven unreachable from the coding sandbox); Gradle run pending on a dev machine.
@@ -456,3 +460,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: C5-4 gateway + consent: POST /v1/donate (consent donate.v1, redaction flags, ≤20 JPEG + 1 replay, 15-min signed PUTs, pointer before sign, no uid/IP stored, 90-day expiry), GCS/Firestore-TTL store, infra/setup-donations.sh (not run), EN/HI/ES consent text. 429 gateway tests pass. Android ask/blur/upload and bucket setup pending.
 - 2026-11-02: A4-5 Settings (DataStore 1.1.7) + accessible SettingsScreen; locale, speech, tone, haptics and private mode wired; speechRate/verbosity/handedness/holdMode/volumeKeys stored only. 213 guidance + 15 app tests pass. TalkBack order, 200% font and restart checks pending on phone.
 - 2026-11-02: A5-1 EXPLORING/TOUCH_EXPLORE states, explore keyframe, local TouchExplorer (150 ms, smallest polygon, text prefix, edge earcon), en/hi/es strings, explore-summary flow replay; machine locale now follows settings. 236 guidance tests pass. Phone check pending.
+- 2026-11-02: C4-2 virtual flow runner: WebSocket replay with binary keyframes, sim touches, wildcard matching and divergence index. medium-cola, go-back, guide-start pass; 578 TS tests in pnpm -r test.
