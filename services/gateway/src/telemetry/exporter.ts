@@ -23,6 +23,7 @@ export class MonitoringExporter {
   private readonly now: () => number;
   private readonly fetch: typeof globalThis.fetch;
   private active: Promise<ExportResult> | undefined;
+  private workPending = false;
   private controller: AbortController | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
   private lastAttemptAt = -Infinity;
@@ -43,6 +44,7 @@ export class MonitoringExporter {
   exportOnce(): Promise<ExportResult> {
     if (!this.options.enabled) return Promise.resolve({ status: 'disabled' });
     if (this.active) return this.active;
+    if (this.workPending) return Promise.resolve({ status: 'skipped' });
     const now = this.now();
     // Failed HTTP writes may have partially succeeded. Never retry a timestamp automatically.
     if (now <= this.lastAttemptAt) return Promise.resolve({ status: 'skipped' });
@@ -71,8 +73,12 @@ export class MonitoringExporter {
     const aborted = new Promise<never>((_resolve, reject) => {
       controller.signal.addEventListener('abort', () => reject(new Error('Telemetry timeout')), { once: true });
     });
+    // SDK credential/ledger calls can ignore abort. Keep one underlying operation even after
+    // the bounded caller returns, until that operation actually settles.
+    this.workPending = true;
+    const work = this.write(controller.signal).finally(() => { this.workPending = false; });
     try {
-      return await Promise.race([this.write(controller.signal), aborted]);
+      return await Promise.race([work, aborted]);
     } catch {
       return { status: 'failed' };
     } finally {

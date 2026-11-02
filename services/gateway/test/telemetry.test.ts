@@ -169,6 +169,64 @@ test('timeout then late credential resolution cannot send a stale request', asyn
   expect(state.fetch).not.toHaveBeenCalled();
 });
 
+test('a timed-out uncancellable ledger read remains the only underlying operation', async () => {
+  vi.useFakeTimers();
+  let now = T0;
+  const readSpend = vi.fn(async () => new Promise<number>(() => {}));
+  const state = setup({ now: () => now, readSpend });
+  const first = state.exporter.exportOnce();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(await first).toEqual({ status: 'failed' });
+  for (let n = 0; n < 3; n++) {
+    now += 60_000;
+    const next = state.exporter.exportOnce();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(await next).toEqual({ status: 'skipped' });
+  }
+  expect(readSpend).toHaveBeenCalledTimes(1);
+  expect(state.fetch).not.toHaveBeenCalled();
+});
+
+test('late ledger settlement releases the underlying latch without posting aborted samples', async () => {
+  vi.useFakeTimers();
+  let now = T0;
+  let release!: (value: number) => void;
+  const readSpend = vi.fn(async () => 100)
+    .mockImplementationOnce(() => new Promise<number>((resolve) => { release = resolve; }));
+  const state = setup({ now: () => now, readSpend });
+  const first = state.exporter.exportOnce();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(await first).toEqual({ status: 'failed' });
+  now += 60_000;
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'skipped' });
+  state.exporter.stop(); state.exporter.stop();
+  release(999);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(state.fetch).not.toHaveBeenCalled();
+  expect(state.getAccessToken).not.toHaveBeenCalled();
+  now += 60_000;
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 1 });
+  expect(readSpend).toHaveBeenCalledTimes(2);
+  expect(state.fetch).toHaveBeenCalledTimes(1);
+});
+
+test('stop bounds the caller while retaining the latch for uncancellable credential refresh', async () => {
+  vi.useFakeTimers();
+  let now = T0;
+  const getAccessToken = vi.fn(async () => new Promise<string>(() => {}));
+  const state = setup({ now: () => now, getAccessToken });
+  const first = state.exporter.exportOnce();
+  await vi.advanceTimersByTimeAsync(0);
+  state.exporter.stop();
+  expect(await first).toEqual({ status: 'failed' });
+  now += 60_000;
+  const next = state.exporter.exportOnce();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(await next).toEqual({ status: 'skipped' });
+  expect(getAccessToken).toHaveBeenCalledTimes(1);
+  expect(state.readSpend).toHaveBeenCalledTimes(1);
+});
+
 test('scheduler emits every minute, is idempotent and stops on disposal', async () => {
   vi.useFakeTimers();
   let now = T0;
