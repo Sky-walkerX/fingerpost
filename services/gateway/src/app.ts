@@ -1,3 +1,4 @@
+import type { TelemetryCollector } from './telemetry/collector.ts';
 import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import { ulid } from 'ulid';
@@ -33,6 +34,7 @@ import { CachedMinVersionSource, MemoryMinVersionSource, type MinVersionSource }
 import { registerConfigRoute } from './min-version/routes.ts';
 
 export interface AppOverrides {
+  telemetry?: TelemetryCollector;
   /** Local phone practice announces simulated targets; ignored entirely in live mode. */
   mockNotice?: string;
   models?: ModelPort; planner?: Planner; /** B4-3: Glimmer on Modal (private mode). */ glimmer?: ModelPort;
@@ -168,6 +170,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
           type: 'say', id: ulid(), ts: now(), priority: 'safety', text: o.mockNotice,
         }));
       }, models, asr, sims, now, quota, ...(claims ? { claims } : {}),
+        ...(live && cfg.MONITORING_ENABLED && o.telemetry ? { telemetry: o.telemetry } : {}),
         planner, router, memory, onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
       dispose = session.dispose;
       const { hub } = session;

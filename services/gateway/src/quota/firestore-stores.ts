@@ -20,6 +20,22 @@ export class FirestoreQuotaStore implements QuotaStore {
     });
   }
 
+  /** A fresh ledger query for monitoring; never reuses a cached previous-day total. */
+  async readSpend(day: string): Promise<number> {
+    try {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error();
+      const all = await this.db.collection('spend').doc(day).collection('shards').get();
+      let total = 0;
+      for (const document of all.docs) {
+        const micros: unknown = document.get('micros');
+        if (typeof micros !== 'number' || !Number.isSafeInteger(micros) || micros < 0) throw new Error();
+        total += micros;
+        if (!Number.isSafeInteger(total)) throw new Error();
+      }
+      return total;
+    } catch { throw new Error('Spend ledger unavailable'); }
+  }
+
   async addSpend(day: string, micros: number): Promise<number> {
     const shards = this.db.collection('spend').doc(day).collection('shards');
     await shards.doc(String(Math.floor(Math.random() * SHARDS))).set({ micros: FieldValue.increment(micros) }, { merge: true });

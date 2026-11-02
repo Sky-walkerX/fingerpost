@@ -19,7 +19,9 @@ export const simMatches = (simElementId: string, el: LayoutElement) => tokenSetR
 
 import type { StartResult } from './types.ts';
 export type TaskGate = () => Promise<StartResult>;
+export type TaskOutcome = 'success' | 'error' | 'cancelled';
 export interface PipelineDeps {
+  onTask?: () => (outcome: TaskOutcome) => void;
   models: ModelPort;
   send: (m: ServerMessage) => void;
   now?: () => number;
@@ -90,6 +92,7 @@ export class SessionPipeline {
   private target: LayoutElement | null = null;
   private lastTap: { keyframeId: string | null; simElementId: string | null } = { keyframeId: null, simElementId: null };
   private taskCharged = false;
+  private endTask: ((outcome: TaskOutcome) => void) | undefined;
   private everCharged = false;
   private callsSinceCharge = 0;
   private hasSimTouch = false;
@@ -154,6 +157,7 @@ export class SessionPipeline {
       this.d.send({ ...this.base(), type: 'say', priority: 'info', text: next.text.slice(0, 500) });
       return;
     }
+    this.completeTask('cancelled');
     this.task.abort();
     this.task = new AbortController();
     this.goal = text;
@@ -193,15 +197,20 @@ export class SessionPipeline {
 
   /** The device entered PIN mode after a confirmed payment press: the cloud part of the task is done. */
   onPinModeEntered(): void {
-    if (this.agent?.pinEntered()) this.d.send({ ...this.base(), type: 'finish', result: 'done', say: t(this.locale, 'pin_ready') });
+    if (this.agent?.pinEntered()) {
+      this.completeTask('success');
+      this.d.send({ ...this.base(), type: 'finish', result: 'done', say: t(this.locale, 'pin_ready') });
+    }
   }
 
   private paymentDeclined(): void {
+    this.completeTask('cancelled');
     this.target = null;
     this.d.send({ ...this.base(), type: 'finish', result: 'aborted', say: t(this.locale, 'payment_not_confirmed') });
   }
 
   abort(): void {
+    this.completeTask('cancelled');
     this.task.abort();
     this.task = new AbortController();
     this.goal = null;
@@ -224,11 +233,30 @@ export class SessionPipeline {
     this.lastTap = { keyframeId: this.layout?.id ?? null, simElementId: elementId };
   }
 
+  private completeTask(outcome: TaskOutcome, signal = this.task.signal): void {
+    if (signal !== this.task.signal) return;
+    const terminal = this.endTask;
+    this.endTask = undefined;
+    terminal?.(outcome);
+  }
+
+  failTask(): void { this.completeTask('error'); }
+
   private refuse(code: 'cloud_paused' | 'quota_exhausted' | 'rate_limited') {
+    this.completeTask('error');
     this.d.send({ ...this.base(), type: 'error', code, ...spokenError(code, this.locale) });
   }
 
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
+    const signal = this.task.signal;
+    try { await this.processKeyframe(h, jpeg); }
+    catch (error) {
+      if (!signal.aborted) this.completeTask('error', signal);
+      throw error;
+    }
+  }
+
+  private async processKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
     const signal = this.task.signal;
     // Nothing to look for yet: don't spend a model call.
     // An explore frame is read like a locate frame: it needs a goal and starts the charged task.
@@ -245,6 +273,7 @@ export class SessionPipeline {
         this.refuse(allowed.code);
         return;
       }
+      this.endTask = this.d.onTask?.();
       this.taskCharged = true;
       this.everCharged = true;
       this.callsSinceCharge = 0;
@@ -289,6 +318,7 @@ export class SessionPipeline {
     } catch (error) {
       if (!(error instanceof ModelsUnavailable)) throw error;
       // The whole chain failed (Spark 1.3, 1.2, retry, Glimmer): switch the session to offline basic mode.
+      this.completeTask('error', signal);
       this.d.send({ ...this.base(), type: 'mode', mode: 'offline', reason: t(this.locale, 'offline') });
       return;
     }
@@ -318,6 +348,7 @@ export class SessionPipeline {
     if (h.purpose === 'verify') {
       const pressed = this.target;
       const result = this.verify(h, before, layout);
+      if (!this.agent && result === 'ok') this.completeTask('success', signal);
       if (this.agent && result === 'ok' && pressed) {
         this.agent.pressed(pressed, layout);
         await turn(layout);
@@ -326,6 +357,7 @@ export class SessionPipeline {
     }
     this.target = null;
     if (this.explore) {
+      this.completeTask('success', signal);
       // Explore never guesses a target: it reads the screen by region (design §3.2).
       const { regions } = summarize(layout, this.locale);
       this.explore = { regions, cursor: Math.min(3, regions.length) };
@@ -373,6 +405,7 @@ export class SessionPipeline {
     const turn = await whileActive<AgentTurn>(agent.decide(layout, signal), signal).catch(() => null);
     if (turn === CANCELLED || signal.aborted || agent !== this.agent) return;
     if (!turn) {
+      this.completeTask('error', signal);
       this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', ...spokenError('model_unavailable', this.locale) });
       return;
     }
@@ -382,7 +415,7 @@ export class SessionPipeline {
       case 'target': await this.sendTarget(a.element, h, image, coordinates, parsedElements, signal); break;
       case 'ask': this.d.send(Ask.parse({ ...this.base(), id: a.id, type: 'ask', question: a.question, options: a.options })); break;
       case 'confirm': this.d.send({ ...this.base(), id: a.id, type: 'confirm', summary: a.summary, ...(a.amount ? { amount: a.amount } : {}) }); break;
-      case 'finish': this.target = null; this.d.send({ ...this.base(), type: 'finish', result: a.result, say: a.say }); break;
+      case 'finish': this.completeTask(a.result === 'done' ? 'success' : 'error', signal); this.target = null; this.d.send({ ...this.base(), type: 'finish', result: a.result, say: a.say }); break;
       case 'expect': this.d.send({ ...this.base(), type: 'expect', description: a.description }); break;
       case 'wait': break;
     }

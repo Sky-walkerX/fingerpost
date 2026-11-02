@@ -3,6 +3,8 @@ import { z } from 'zod';
 const bool = z.enum(['true', 'false']).transform((v) => v === 'true');
 const Env = z
   .object({
+    MONITORING_ENABLED: bool.default(false),
+    MONITORING_SINGLE_WRITER: bool.default(false),
     PORT: z.coerce.number().int().min(1).max(65535).default(8080),
     MODEL_MODE: z.enum(['mock', 'live']).default('mock'),
     META_API_KEY: z.string().min(1).optional(),
@@ -47,6 +49,9 @@ const Env = z
     if (e.MODEL_MODE === 'live' && !e.META_API_KEY) ctx.addIssue({ code: 'custom', path: ['META_API_KEY'], message: 'META_API_KEY is required when MODEL_MODE=live' });
     if (e.MODEL_MODE === 'live' && !e.AUTH_REQUIRED && !e.ALLOW_UNAUTHENTICATED_LIVE) ctx.addIssue({ code: 'custom', path: ['AUTH_REQUIRED'], message: 'AUTH_REQUIRED=false in live mode needs ALLOW_UNAUTHENTICATED_LIVE=true (dev deploys only)' });
     if (e.AUTH_REQUIRED && !e.SESSION_SECRET) ctx.addIssue({ code: 'custom', path: ['SESSION_SECRET'], message: 'SESSION_SECRET (32+ chars) is required when AUTH_REQUIRED' });
+    if (e.MONITORING_ENABLED && (e.MODEL_MODE !== 'live' || !e.AUTH_REQUIRED || !e.MONITORING_SINGLE_WRITER || !e.FIREBASE_PROJECT_ID || !/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(e.FIREBASE_PROJECT_ID))) {
+      ctx.addIssue({ code: 'custom', path: ['MONITORING_ENABLED'], message: 'monitoring requires authenticated live mode, explicit single-writer assertion and a valid FIREBASE_PROJECT_ID' });
+    }
     const glimmer = [e.GLIMMER_URL, e.GLIMMER_TOKEN, e.GLIMMER_MODEL].filter((v) => v !== undefined).length;
     if (glimmer !== 0 && glimmer !== 3) ctx.addIssue({ code: 'custom', path: ['GLIMMER_URL'], message: 'set all of GLIMMER_URL, GLIMMER_TOKEN and GLIMMER_MODEL, or none' });
     if (e.AUTH_REQUIRED && !e.SIGNING_DIGESTS) ctx.addIssue({ code: 'custom', path: ['SIGNING_DIGESTS'], message: 'SIGNING_DIGESTS is required when AUTH_REQUIRED' });

@@ -10,7 +10,7 @@ The beta is not yet accepted for public release. This page distinguishes known f
 | Android changes | New update notices, release guards and low-vision overlays are source-reviewed only in this pass | Teammate compilation, authored JVM tests, 200% text and device accessibility checks |
 | Crash reporting | Crashlytics source integration is prepared with collection off by default | Android build/plugin checks, SDK retention/privacy review and console acceptance before enabling |
 | Private mode | Adapter/deployment source exists; live Modal quality and cold/warm latency are unverified | Credential holder deploys and runs the private eval |
-| Monitoring | Three disabled policy drafts exist; proposed measurements are not exported | Implement telemetry, validate policies and deliver test notifications |
+| Monitoring | Opt-in collector/exporter and disabled policy drafts are locally tested; deployment is unverified | Verify one active writer, metric-writer IAM, actual exports/policies and delivered notifications |
 | Hosting/waitlist | Form requires configured HTTPS gateway; hosting/persistent public registration unverified | Verify production Firestore persistence, deploy and check registration |
 | Signed release | Preflight/signature checks prepared; actual APK signing and clean-phone install unverified | Human supplies signing/Firebase configuration; teammate runs release acceptance |
 | User evaluation | Consented tester sessions, tuning and 30-minute device soak remain open | Human recruitment/consent, actual trials and retained numeric evidence |
