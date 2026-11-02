@@ -64,6 +64,7 @@ class GuidanceEngine(
      * on-device OCR boxes, and nothing is uploaded. It lasts until the session ends while the cloud is back.
      */
     private var offline = false
+    private val speechPrivacy = SpeechPrivacy(settings.privateMode)
     /**
      * A5-2: the user's own screens, for an instant re-lock. A guide goal on a remembered screen is guided at once
      * when fresh OCR agrees; the keyframe still goes to the gateway, whose target confirms or replaces it.
@@ -79,7 +80,7 @@ class GuidanceEngine(
     private var disconnectedSince: Long? = null
     private var offlineAsrMissing = false
     private val offlineSession = OfflineSession()
-    private val offlineAsr = OfflineAsr(context, onFinal = { text -> post { offlineHeard(text) } }, onUnavailable = { post {
+    private val offlineAsr = OfflineAsr(context, onFinal = { text -> post { localHeard(text) } }, onUnavailable = { post {
         wantsMic = false
         if (!offlineAsrMissing) { offlineAsrMissing = true; say(Strings.get(Key.OFFLINE_ASR_UNAVAILABLE, machine.locale), SpeechPriority.STATE) }
     } })
@@ -151,13 +152,14 @@ class GuidanceEngine(
     } }, onError = { failed -> post {
         updateNotice.clear()
         if (failed == null || speech.onDone(failed))
-            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(if (offline) Key.OFFLINE_TTS_UNAVAILABLE else Key.SPEECH_UNAVAILABLE, machine.locale))
+            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(if (offline || speechPrivacy.localOnly) Key.OFFLINE_TTS_UNAVAILABLE else Key.SPEECH_UNAVAILABLE, machine.locale))
     } })
     private val router = FrameRouter(hands, guard, onFrame = { post { vision(it) } }, onKeyframe = { post { encoded(it) } },
         onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale)) } })
 
     init {
         settings = settings.safeOutputs()
+        if (speechPrivacy.localOnly) speaker.setOfflineOnly(true)
         speaker.setRate(settings.speechRate)
         pinHelp.setRate(settings.speechRate)
         speaker.setLocale(settings.locale)
@@ -195,6 +197,7 @@ class GuidanceEngine(
 
     fun updateSettings(newSettings: Settings) {
         settings = newSettings.safeOutputs()
+        if (settings.privateMode) protectSpeech()
         speaker.setRate(settings.speechRate)
         pinHelp.setRate(settings.speechRate)
         speaker.setLocale(newSettings.locale)
@@ -334,12 +337,13 @@ class GuidanceEngine(
         pumpSpeech()
         // guidance-spec §11b: 5 s without the gateway (no network) → basic mode.
         if (!offline && !guard.pinMode && disconnectedSince?.let { now - it >= 5_000 } == true) enterOffline()
-        if (offline && wantsMic && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
+        val input = speechPrivacy.input(offline, guard.pinMode)
+        if (input == SpeechInput.LOCAL && wantsMic && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
                 offlineAsr.listen(asrLanguage(settings.locale))
             else { wantsMic = false; requestMicPermission() }
         }
-        if (!offline && wantsMic && ready && speech.current == null && !mic.isRunning) {
+        if (input == SpeechInput.CLOUD && wantsMic && ready && speech.current == null && !mic.isRunning) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) mic.start()
             else { wantsMic = false; requestMicPermission() }
         }
@@ -497,18 +501,36 @@ class GuidanceEngine(
     private fun leaveOffline() {
         speaker.stop(); speech.clear(); updateNotice.clear()
         offline = false; onlineWhenIdle = false
-        speaker.setOfflineOnly(false)
+        speaker.setOfflineOnly(speechPrivacy.localOnly)
         offlineAsr.stop()
         mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready, basicMode = false)
         // A dropped socket counts again only from now on.
         disconnectedSince = if (mutableStatus.value.connected) null else time()
     }
 
-    /** A final on-device transcript. Basic mode has only goals (no task or explore turns). */
-    private fun offlineHeard(text: String) {
-        if (!offline || machine.state != GState.LISTENING) return
-        offlineGoal = text
-        dispatch(GEvent.GoalHeard(time(), text))
+    private fun protectSpeech() {
+        if (speechPrivacy.localOnly) return
+        speechPrivacy.requireLocal()
+        mic.stop(); offlineAsr.stop(); speaker.stop(); speech.clear(); updateNotice.clear()
+        speaker.setOfflineOnly(true)
+        offlineAsrMissing = false
+    }
+
+    /** On-device replies use the existing goal/answer/confirm contract, never cloud audio. */
+    private fun localHeard(text: String) {
+        when (speechPrivacy.turn(machine.state, offline, guard.pinMode, text)) {
+            LocalSpeechTurn.GOAL -> if (offline) {
+                offlineGoal = text
+                dispatch(GEvent.GoalHeard(time(), text))
+            } else {
+                client.send(Goal(newId(), nowMs(), text, GoalSource.ASR_DEVICE))
+                if (machine.state == GState.EXPLORING) dispatch(GEvent.UserSaid(time(), text))
+                else { goalIntent = null; dispatch(GEvent.GoalHeard(time(), text)) }
+            }
+            LocalSpeechTurn.REPLY -> dispatch(GEvent.UserSaid(time(), text))
+            LocalSpeechTurn.TOUCH_EXPLORE -> dispatch(GEvent.TouchExploreRequested(time(), layout != null))
+            null -> Unit
+        }
     }
 
     /**
@@ -593,6 +615,7 @@ class GuidanceEngine(
     }
 
     private fun server(message: ServerMessage) {
+        if (message is Layout && message.sensitivity != Sensitivity.NONE) protectSpeech()
         if (message is Ready) {
             if (offline) {
                 // The cloud is back: finish this session in basic mode, then switch.
@@ -615,7 +638,7 @@ class GuidanceEngine(
             return
         }
         when (message) {
-            is Transcript -> if (message.final && message.text.isNotBlank()) when (machine.state) {
+            is Transcript -> if (!speechPrivacy.localOnly && message.final && message.text.isNotBlank()) when (machine.state) {
                 GState.LISTENING -> { goalIntent = null; dispatch(GEvent.GoalHeard(time(), message.text)) }
                 GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
                 // "more" and new goals are answered by the gateway; only "touch explore" is handled here.
@@ -651,7 +674,11 @@ class GuidanceEngine(
                 if (machine.state == GState.EXPLORING) dispatch(GEvent.ExploreSaid(time()))
             }
             is Confirm -> if (machine.state in TURN_STATES) dispatch(GEvent.ConfirmArrived(time(), message.id, message.summary, message.amount?.let { spokenAmount(it) }))
-            is Mode -> if (message.mode == SessionMode.OFFLINE) enterOffline()
+            is Mode -> when (message.mode) {
+                SessionMode.OFFLINE -> enterOffline()
+                SessionMode.PRIVATE -> protectSpeech()
+                else -> Unit
+            }
             is ErrorMessage -> {
                 if (message.code == ErrorCode.CLOUD_PAUSED || message.code == ErrorCode.QUOTA_EXHAUSTED) { enterOffline(message.say); return }
                 reset(); say(message.say, SpeechPriority.STATE)
@@ -705,7 +732,7 @@ class GuidanceEngine(
         generation++; relockKey = null
         wantsMic = false
         updateNotice.clear()
-        mic.stop(); tone.stop(); speaker.stop(); speech.clear()
+        mic.stop(); offlineAsr.stop(); tone.stop(); speaker.stop(); speech.clear()
         finger.clear(); planner.reset(); router.cancelKeyframes()
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
         mutableStatus.value = mutableStatus.value.copy(cloudOff = true)

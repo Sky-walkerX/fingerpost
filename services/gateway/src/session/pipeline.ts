@@ -88,6 +88,8 @@ export class SessionPipeline {
   private locale: Locale = 'en';
   /** The session's language for spoken text (B4-4). */
   get speechLocale(): Locale { return this.locale; }
+  /** Protected speech/history stays on-device for the remainder of this socket. */
+  get requiresLocalSpeech(): boolean { return this.privacy === 'private' || this.sensitive || this.privatePlanning; }
   private layout: Layout | null = null;
   private target: LayoutElement | null = null;
   private lastTap: { keyframeId: string | null; simElementId: string | null } = { keyframeId: null, simElementId: null };
@@ -395,7 +397,7 @@ export class SessionPipeline {
 
   /** Kiosk memory applies to rectified screen crops with on-device OCR, never to private sessions. */
   private memoryUsable(h: Keyframe): boolean {
-    return !!this.d.memory && h.kind === 'screen' && h.ocrTokens.length > 0 && this.privacy !== 'private';
+    return !!this.d.memory && h.kind === 'screen' && h.ocrTokens.length > 0 && this.privacy !== 'private' && !this.sensitive;
   }
 
   private async fromMemory(h: Keyframe): Promise<Layout | null> {

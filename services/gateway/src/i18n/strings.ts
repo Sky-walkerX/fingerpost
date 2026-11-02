@@ -6,6 +6,7 @@ import type { ErrorCode, Locale } from '@fingerpost/protocol';
  * Only spoken text lives here; feedback strings for the planner model stay English.
  */
 const en = {
+  local_speech: 'Private speech stays on this phone.',
   found: 'Found {label}, {position}.',
   found_short: 'Found {label}.',
   i_see: 'I see {labels}.',
@@ -56,6 +57,7 @@ const en = {
 export type StringKey = keyof typeof en;
 
 const hi: Record<StringKey, string> = {
+  local_speech: 'प्राइवेट आवाज़ पहचान इसी फ़ोन पर होती है।',
   found: '{label} मिला, {position}।',
   found_short: '{label} मिला।',
   i_see: 'मुझे {labels} दिख रहे हैं।',
@@ -105,6 +107,7 @@ const hi: Record<StringKey, string> = {
 };
 
 const es: Record<StringKey, string> = {
+  local_speech: 'El reconocimiento de voz privado se queda en este teléfono.',
   found: 'Encontré {label}, {position}.',
   found_short: 'Encontré {label}.',
   i_see: 'Veo {labels}.',

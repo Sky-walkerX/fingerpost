@@ -50,7 +50,10 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
   const base = () => ({ id: ulid(), ts: d.now?.() ?? Date.now() });
   const send = (message: ServerMessage) => {
     if (disposed) return;
-    if (message.type === 'layout') keywords = message.elements.filter((element) => element.role !== 'text').map(({ label }) => label);
+    if (message.type === 'layout') {
+      if (pipeline.requiresLocalSpeech) { keywords = []; closeRelay(); }
+      else keywords = message.elements.filter((element) => element.role !== 'text').map(({ label }) => label);
+    }
     d.send(message);
   };
   const usage = (u: Parameters<QuotaPort['recordUsage']>[0]): Promise<void> | void => {
@@ -114,6 +117,11 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           break;
         case 'audio': {
           if (!payload || audioEnded || awaitingEnd) break;
+          if (pipeline.requiresLocalSpeech) {
+            awaitingEnd = true;
+            send({ ...base(), type: 'mode', mode: 'private', reason: t(pipeline.speechLocale, 'local_speech') });
+            break;
+          }
           audioBytes += payload.length;
           if (!relay) {
             // ASR is billed too: a paused cloud refuses the utterance up front.

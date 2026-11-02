@@ -8,3 +8,5 @@ Source regression tests cover localized movement, framing/recovery keys and keyp
 
 
 Day 6 continuation: basic-mode recognition uses only the Android on-device service on API31+, and older/missing services are unavailable safely. Basic-mode TTS also selects non-network voices; local English is the permitted missing-Hindi/Spanish fallback. With no local output voice it displays a localized instruction to install one rather than sending recognized labels to network TTS. Actual language packs, audibility and a native listen-through remain unverified. [Android on-device API reference](https://developer.android.com/reference/android/speech/SpeechRecognizer#createOnDeviceSpeechRecognizer(android.content.Context)).
+
+The Day 1–7 coding audit extends local-only speech to private sessions and sessions that have seen a financial/identity layout. It covers goals, task answers, confirmation and explore commands; it never sends their microphone audio or keyword labels to Meta. PIN entry cancels the local recognizer too. Physical recognition/language/permission acceptance remains open.

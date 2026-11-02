@@ -4,6 +4,8 @@ import { SessionPipeline } from '../src/session/pipeline.ts';
 import { MOCK_LAYOUT, mockModels } from '../src/models/mock/mock-models.ts';
 import { createRouter } from '../src/models/router.ts';
 import { rulesPlanner } from '../src/agent/planner.ts';
+import { MemoryService } from '../src/memory/service.ts';
+import { InMemoryStore } from '../src/memory/store.ts';
 
 const frame: Keyframe = { type: 'keyframe', id: 'k', ts: 1, kind: 'screen', purpose: 'locate', imageSize: { w: 1000, h: 500 }, ocrTokens: [] };
 const jpeg = new Uint8Array([0xff, 0xd8]);
@@ -72,4 +74,20 @@ test('private sessions without a router cannot bypass refusal through the defaul
   const p = new SessionPipeline({ models: { ...mockModels(), parseScreen: parse }, send: m => sent.push(m) });
   p.setPrivacy('private'); p.onGoal('start'); await p.onKeyframe(frame, jpeg);
   expect(parse).not.toHaveBeenCalled(); expect(sent.at(-1)).toMatchObject({ type: 'error', code: 'model_unavailable' });
+});
+
+test('memory cannot clear sensitive routing before a fresh safe model classification', async () => {
+  const meta = mockModels({ ...MOCK_LAYOUT, sensitivity: 'identity' });
+  const glimmer = mockModels({ ...MOCK_LAYOUT, sensitivity: 'identity' });
+  const parseMeta = vi.spyOn(meta, 'parseScreen'), parsePrivate = vi.spyOn(glimmer, 'parseScreen');
+  const memory = new MemoryService(new InMemoryStore(), { salt: 'synthetic-salt' });
+  const lookup = vi.spyOn(memory, 'lookup').mockResolvedValue(null);
+  const p = new SessionPipeline({ models: meta, route: createRouter({ meta, glimmer }), memory, send: () => {} });
+  p.onGoal('start'); await p.onKeyframe(frame, jpeg);
+  lookup.mockResolvedValue({ ...MOCK_LAYOUT, id: 'memory', ts: 1, type: 'layout', fingerprint: 'sh64:0123456789abcdef', source: 'memory' });
+  lookup.mockClear();
+  p.onGoal('start'); await p.onKeyframe({ ...frame, id: 'next', ocrTokens: [{ text: 'Start', box: { u: 0, v: 0, w: 1, h: 1 } }] }, jpeg);
+  expect(lookup).not.toHaveBeenCalled(); expect(parsePrivate).toHaveBeenCalledTimes(1);
+  p.onGoal('start'); await p.onKeyframe({ ...frame, id: 'third' }, jpeg);
+  expect(parseMeta).toHaveBeenCalledTimes(1); expect(parsePrivate).toHaveBeenCalledTimes(2);
 });
