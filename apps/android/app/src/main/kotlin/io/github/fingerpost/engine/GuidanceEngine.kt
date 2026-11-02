@@ -110,7 +110,7 @@ class GuidanceEngine(
     /** guidance-spec §10: layout and digit-under-finger, earphones only. Digits never reach logs or status. */
     private val pinHelp = PinMode(context, onEarphonesLost = {
         post { say(Strings.get(Key.EARPHONES_DISCONNECTED, machine.locale), SpeechPriority.SAFETY) }
-    })
+    }, onVoiceUnavailable = { warning -> post { say(warning, SpeechPriority.STATE) } })
     private val digitUnder = DigitUnderFinger()
     private var layoutAnnounced = false
     private val sensorManager = context.getSystemService(SensorManager::class.java)
@@ -157,6 +157,7 @@ class GuidanceEngine(
 
     init {
         speaker.setLocale(settings.locale)
+        pinHelp.setLocale(settings.locale)
         machine.locale = guidanceLocale(settings.locale)
         if (!openCvReady) {
             mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale))
@@ -190,6 +191,7 @@ class GuidanceEngine(
     fun updateSettings(newSettings: Settings) {
         settings = newSettings
         speaker.setLocale(newSettings.locale)
+        pinHelp.setLocale(newSettings.locale)
         machine.locale = guidanceLocale(newSettings.locale)
         if (!newSettings.tone) tone.stop()
     }
@@ -559,7 +561,7 @@ class GuidanceEngine(
     /** PIN mode: announce the keypad layout once, then the digit under the finger's pad. Local only. */
     private fun pinHand(samples: List<FingerSample>) {
         val tokens = router.latestTokens ?: return
-        if (!layoutAnnounced) classifyKeypad(tokens)?.let { if (pinHelp.speak(it.spoken())) layoutAnnounced = true }
+        if (!layoutAnnounced) classifyKeypad(tokens)?.let { if (pinHelp.speak(it.spoken(machine.locale))) layoutAnnounced = true }
         val s = samples.firstOrNull { it.presence >= 0.6f }
         // guidance-spec §3 pad point: a quarter of the tip–DIP segment back from the tip.
         val pad = s?.let { Vec2((it.tipX - 0.25f * (it.tipX - it.dipX)).toDouble() / it.frameW,

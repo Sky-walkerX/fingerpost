@@ -22,11 +22,11 @@ fun classifyKeypad(tokens: List<OcrToken>): KeypadLayout? {
 }
 
 /** What the user hears on entry (guidance-spec §10). */
-fun KeypadLayout.spoken(): String = when (this) {
-    KeypadLayout.PHONE -> "Phone layout. 5 is in the centre."
-    KeypadLayout.CALCULATOR -> "Calculator layout. 5 is in the centre."
-    KeypadLayout.SCRAMBLED -> "The keys are scrambled. Slide your finger and I'll say each digit."
-}
+fun KeypadLayout.spoken(locale: java.util.Locale = Strings.EN): String = Strings.get(when (this) {
+    KeypadLayout.PHONE -> Key.KEYPAD_PHONE
+    KeypadLayout.CALCULATOR -> Key.KEYPAD_CALCULATOR
+    KeypadLayout.SCRAMBLED -> Key.KEYPAD_SCRAMBLED
+}, locale)
 
 /**
  * guidance-spec §10: the digit under the finger's pad, announced only when it changes and has been stable

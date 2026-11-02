@@ -15,10 +15,14 @@ import java.util.Locale
  * TextToSpeech, so digits never pass through the shared speech queue. Nothing here logs, stores or publishes
  * what it speaks. If the earphones go away mid-entry, speech stops at once and [onEarphonesLost] runs.
  */
-class PinMode(context: Context, private val onEarphonesLost: () -> Unit) {
+class PinMode(context: Context, private val onEarphonesLost: () -> Unit,
+    private val onVoiceUnavailable: (String) -> Unit = {}) {
     private val audio = context.getSystemService(AudioManager::class.java)
     private val main = Handler(Looper.getMainLooper())
     private var ready = false
+    private var initialized = false
+    private var locale = Locale.forLanguageTag("en-IN")
+    private val warnedLanguages = mutableSetOf<String>()
     private var closed = false
     private var active = false
     private val tts = TextToSpeech(context.applicationContext) { status -> main.post { initialized(status) } }
@@ -36,8 +40,32 @@ class PinMode(context: Context, private val onEarphonesLost: () -> Unit) {
         if (closed || status != TextToSpeech.SUCCESS) return
         tts.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-        tts.setLanguage(Locale.forLanguageTag("en-IN"))
-        ready = true
+        initialized = true
+        applyLanguage()
+    }
+
+    fun setLocale(tag: String) {
+        if (closed) return
+        locale = when (Locale.forLanguageTag(tag).language) {
+            "hi" -> Locale.forLanguageTag("hi-IN")
+            "es" -> Locale.forLanguageTag("es-ES")
+            else -> Locale.forLanguageTag("en-IN")
+        }
+        if (initialized) { tts.stop(); applyLanguage() }
+    }
+
+    private fun applyLanguage() {
+        val result = tts.setLanguage(locale)
+        ready = result >= TextToSpeech.LANG_AVAILABLE
+        if (!ready && locale.language in setOf("hi", "es")) {
+            ready = tts.setLanguage(Locale.forLanguageTag("en-IN")) >= TextToSpeech.LANG_AVAILABLE
+            if (warnedLanguages.add(locale.language)) {
+                val key = if (locale.language == "hi") io.github.fingerpost.guidance.Key.HINDI_VOICE_MISSING
+                    else io.github.fingerpost.guidance.Key.SPANISH_VOICE_MISSING
+                // Only this non-sensitive warning goes to the shared speaker; digits stay in speak().
+                onVoiceUnavailable(io.github.fingerpost.guidance.Strings.get(key, "en"))
+            }
+        }
     }
 
     /** Wired, USB, Bluetooth A2DP or BLE audio output present (guidance-spec §10). */

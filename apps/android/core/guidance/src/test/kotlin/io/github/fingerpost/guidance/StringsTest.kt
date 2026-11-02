@@ -5,6 +5,14 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 class StringsTest {
+    @Test fun keypadAnnouncementsUseTheChosenVoiceLanguage() {
+        for (locale in listOf(Strings.EN, Strings.HI, Strings.ES)) {
+            assertEquals(Strings.get(Key.KEYPAD_PHONE, locale), KeypadLayout.PHONE.spoken(locale))
+            assertEquals(Strings.get(Key.KEYPAD_CALCULATOR, locale), KeypadLayout.CALCULATOR.spoken(locale))
+            assertEquals(Strings.get(Key.KEYPAD_SCRAMBLED, locale), KeypadLayout.SCRAMBLED.spoken(locale))
+        }
+    }
+
     @Test fun framingAndRecoveryMessagesExistForEveryLanguage() {
         for (locale in listOf(Strings.EN, Strings.HI, Strings.ES)) {
             for (cue in FramingCue.entries) {
