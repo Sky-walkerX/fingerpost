@@ -15,8 +15,10 @@ android {
         applicationId = "io.github.fingerpost"
         minSdk = 29          // Android 10, required by the Meta Wearables DAT SDK later
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = providers.gradleProperty("fingerpost.versionCode").orNull?.let {
+            requireNotNull(it.toIntOrNull()?.takeIf { code -> code > 0 }) { "fingerpost.versionCode must be positive" }
+        } ?: 1
+        versionName = providers.gradleProperty("fingerpost.versionName").orNull ?: "0.1.0"
         testInstrumentationRunner = "io.github.fingerpost.DeviceSafetyRunner"
         // ws://<laptop LAN IP>:8080 for local dev; the Cloud Run wss:// URL for releases. Set fingerpost.gatewayUrl in ~/.gradle/gradle.properties.
         buildConfigField("String", "GATEWAY_URL", "\"${providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"}\"")
@@ -96,4 +98,18 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
+}
+
+// Release tasks must never silently produce an unsigned APK or point to the emulator.
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.project == project && it.name.contains("Release", ignoreCase = true) }) {
+        require(listOf("RELEASE_STORE_FILE", "RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD")
+            .all { !providers.environmentVariable(it).orNull.isNullOrBlank() }) { "Release signing configuration is required" }
+        val gateway = java.net.URI(providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "")
+        require(gateway.scheme == "wss" && !gateway.host.isNullOrBlank() && gateway.rawUserInfo == null &&
+            gateway.rawQuery == null && gateway.rawFragment == null && gateway.path.isNullOrEmpty()) {
+            "Release requires fingerpost.gatewayUrl as a secure wss base URL without a path"
+        }
+        require(file("google-services.json").isFile) { "Release requires Firebase google-services.json" }
+    }
 }
