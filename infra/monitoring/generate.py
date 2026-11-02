@@ -22,7 +22,7 @@ def policy(project, channel, metric, title, threshold):
         "documentation": {
             "mimeType": "text/markdown",
             "content": (
-                "Disabled preparation only. Metric emission is not implemented. "
+                "Disabled preparation only. Verify the opt-in single-writer exporter, real metric series and notification delivery before activation. "
                 "Review docs/monitoring.md before activation. Use docs/runbook.md for response; "
                 "record numeric impact only. Missing telemetry is unknown, never healthy zero."
             ),

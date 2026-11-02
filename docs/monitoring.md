@@ -4,12 +4,12 @@ B6-3 runtime source and local checks are implemented; live acceptance remains wi
 
 ## What exists today
 
-- `services/gateway/src/server.ts` wires the exporter only with `MONITORING_ENABLED=true`, authenticated live mode, a valid explicit `FIREBASE_PROJECT_ID` and `MONITORING_SINGLE_WRITER=true`. It uses application-default credentials and a fresh Firestore spend query, exports every 60 seconds, and stops on application close. HTTP/token/ledger work is bounded by an export timeout; export failures log a content-free warning.
+- `services/gateway/src/server.ts` wires the exporter only with `MONITORING_ENABLED=true`, authenticated live mode, a valid explicit `FIREBASE_PROJECT_ID` and `MONITORING_SINGLE_WRITER=true`. It uses application-default credentials and a fresh Firestore spend query, exports every 60 seconds, and stops on application close. Exports return within five seconds; uncancellable token/ledger work retains a latch until it settles, so repeated ticks cannot accumulate pending operations. Export failures log a content-free warning.
 - `services/gateway/src/app.ts` enables Fastify HTTP request logging. A WebSocket HTTP upgrade is not a completed guided task; HTTP error rates cannot stand in for task error rates. Debug WebSocket logs include session IDs and are unsuitable as metric labels.
 - `services/gateway/src/parse/spark-parse.ts` returns `latencyMs`; the Glimmer parse adapter also returns the parse result shape. The session observer now measures monotonic routed parse durations, including failures and retry/fallback time, independently of provider-reported `latencyMs`. Debug endpoints, explicit simulator sessions and mock mode are excluded.
 - `services/gateway/src/quota/service.ts` records billed usage and receives a global daily microdollar total from `QuotaStore.addSpend`. `quota/firestore-stores.ts` persists it in the UTC-day sharded ledger. The exporter reads the current UTC-day ledger directly; unknown, malformed, overflowing or failed reads are omitted rather than cached or represented as zero. The ledger's fail-closed behavior stays authoritative; an alert does not enforce the cap.
 
-Cloud Run request counts, load-test reports, stored ledger records and returned model timings do not establish that the proposed metrics below exist. No deployed measurements or notification delivery have been verified.
+Cloud Run request counts, load-test reports, stored ledger records and returned model timings do not establish that the configured metrics below exist in production. No deployed measurements or notification delivery have been verified.
 
 ## Implemented single-writer contract
 

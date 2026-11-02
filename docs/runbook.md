@@ -82,3 +82,5 @@ These are preparation steps, not evidence that production alerts are configured.
 - Quota changes: review the task/spend limits and `DAILY_CAP_USD`, change the intended configuration, then test the boundary with synthetic identities. Increasing a cap needs the budget owner's authorization.
 - Alerts to configure: error rate above 5%, parse p95 above 5 seconds and spend above 80% of the daily cap. Use content-free structured counters; exclude health checks from task error rates. Record each alert's window, notification destination and a delivered test notification before marking B6-3 complete. Missing latency samples must not appear as healthy zero latency.
 - Incident record: UTC time, revision, affected surface, numeric impact, pause/rollback action, verification and owner. Exclude image/audio/OCR/transcripts, email addresses and credentials.
+
+Production telemetry source is now wired but remains opt-in. Follow [monitoring setup](monitoring.md): one active serving writer/revision, metric-writer IAM, explicit project and fresh series are prerequisites. Defaults keep monitoring disabled; generated policies remain disabled until live notification acceptance.
