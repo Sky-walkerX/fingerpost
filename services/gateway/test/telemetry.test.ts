@@ -55,14 +55,15 @@ function setup(overrides: Partial<ConstructorParameters<typeof MonitoringExporte
 test('REST export has only fixed numeric gauges and fresh ledger data; no labels or content', async () => {
   const { collector, fetch, readSpend, exporter } = setup();
   collector.recordTask('error'); collector.recordTask('success'); collector.recordParse(5001);
-  expect(await exporter.exportOnce()).toEqual({ status: 'exported', series: 3 });
+  expect(await exporter.exportOnce()).toEqual({ status: 'exported', series: 9 });
   expect(readSpend).toHaveBeenCalledWith('2026-11-02', expect.any(AbortSignal));
   const [url, options] = fetch.mock.calls[0]!;
   expect(url).toBe('https://monitoring.googleapis.com/v3/projects/synthetic-project/timeSeries');
   expect(options?.headers).toEqual({ authorization: 'Bearer synthetic-token', 'content-type': 'application/json' });
   const body = JSON.parse(String(options?.body));
   expect(body.timeSeries.map((s: { points: { value: unknown }[] }) => s.points[0]?.value))
-    .toEqual([{ doubleValue: 0.5 }, { doubleValue: 5.001 }, { doubleValue: 9_600_001 }]);
+    .toEqual([{ doubleValue: 0.5 }, { doubleValue: 5.001 }, { doubleValue: 9_600_001 },
+      ...[1, 2, 1, 0, 0, 1].map(doubleValue => ({ doubleValue }))]);
   for (const series of body.timeSeries) {
     expect(series.metric).toEqual({ type: expect.stringMatching(/^custom.googleapis.com\/fingerpost\//) });
     expect(series.resource).toEqual({ type: 'global', labels: { project_id: 'synthetic-project' } });
@@ -87,36 +88,37 @@ test('empty sample windows omit gauges; ledger errors do not reuse old spend or 
   let now = T0;
   const state = setup({ now: () => now,
     readSpend: async () => { if (failed) throw new Error('synthetic private content'); return 120; } });
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 1 });
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 7 });
   failed = true; now += 60_000;
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'no-data' });
-  expect(state.fetch).toHaveBeenCalledTimes(1);
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 6 });
+  expect(state.fetch).toHaveBeenCalledTimes(2);
+  expect(String(state.fetch.mock.calls[1]![1]!.body)).not.toContain('daily_spend_micros');
 });
 
 test('UTC rollover while reading spend omits the previous day total', async () => {
   let now = Date.UTC(2026, 10, 2, 23, 59, 59);
   const state = setup({ now: () => now,
     readSpend: async () => { now += 2000; return 100; } });
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'no-data' });
-  expect(state.fetch).not.toHaveBeenCalled();
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 6 });
+  expect(String(state.fetch.mock.calls[0]![1]!.body)).not.toContain('daily_spend_micros');
 });
 
 test('credential refresh crossing UTC midnight cannot publish the previous day spend', async () => {
   let now = Date.UTC(2026, 10, 2, 23, 59, 59);
   const state = setup({ now: () => now,
     getAccessToken: async () => { now += 2000; return 'synthetic-token'; } });
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'no-data' });
-  expect(state.fetch).not.toHaveBeenCalled();
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 6 });
+  expect(String(state.fetch.mock.calls[0]![1]!.body)).not.toContain('daily_spend_micros');
 });
 
 test('invalid ledger values are unknown; a verified UTC day reset publishes real zero', async () => {
   for (const value of [-1, NaN, Infinity, 0.5, Number.MAX_SAFE_INTEGER + 1]) {
     const state = setup({ readSpend: async () => value });
-    expect(await state.exporter.exportOnce()).toEqual({ status: 'no-data' });
-    expect(state.fetch).not.toHaveBeenCalled();
+    expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 6 });
+    expect(String(state.fetch.mock.calls[0]![1]!.body)).not.toContain('daily_spend_micros');
   }
   const state = setup({ readSpend: async () => 0 });
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 1 });
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 7 });
   const body = JSON.parse(String(state.fetch.mock.calls[0]![1]!.body));
   expect(body.timeSeries[0].points[0].value).toEqual({ doubleValue: 0 });
 });
@@ -127,8 +129,8 @@ test('concurrent exports share one request and repeated timestamps never write t
   const first = state.exporter.exportOnce();
   const second = state.exporter.exportOnce();
   release(100);
-  expect(await first).toEqual({ status: 'exported', series: 1 });
-  expect(await second).toEqual({ status: 'exported', series: 1 });
+  expect(await first).toEqual({ status: 'exported', series: 7 });
+  expect(await second).toEqual({ status: 'exported', series: 7 });
   expect(state.fetch).toHaveBeenCalledTimes(1);
   expect(await state.exporter.exportOnce()).toEqual({ status: 'skipped' });
 });
@@ -205,7 +207,7 @@ test('late ledger settlement releases the underlying latch without posting abort
   expect(state.fetch).not.toHaveBeenCalled();
   expect(state.getAccessToken).not.toHaveBeenCalled();
   now += 60_000;
-  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 1 });
+  expect(await state.exporter.exportOnce()).toEqual({ status: 'exported', series: 7 });
   expect(readSpend).toHaveBeenCalledTimes(2);
   expect(state.fetch).toHaveBeenCalledTimes(1);
 });

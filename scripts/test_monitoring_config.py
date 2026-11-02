@@ -31,7 +31,7 @@ class MonitoringConfigTest(unittest.TestCase):
     def test_policies_are_disabled_and_preserve_strict_thresholds(self):
         result = self.run_script(cap="12.125")
         self.assertEqual(result.returncode, 0, result.stderr)
-        policies = [json.loads(path.read_text()) for path in sorted(self.output.glob("*.json"))]
+        policies = [json.loads((self.output / name).read_text()) for name in ["daily-spend.json", "parse-latency.json", "task-errors.json"]]
         self.assertEqual(len(policies), 3)
         thresholds = {}
         for policy in policies:
@@ -49,6 +49,24 @@ class MonitoringConfigTest(unittest.TestCase):
         self.assertEqual(thresholds, {"task_error_ratio": 0.05, "parse_p95_seconds": 5,
                                       "daily_spend_micros": 9700000})
         self.assertIn("disabled", result.stdout)
+
+    def test_health_policies_and_dashboard_are_prepared_disabled(self):
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        heartbeat = json.loads((self.output / "heartbeat.json").read_text())
+        self.assertIs(heartbeat["enabled"], False)
+        absence = heartbeat["conditions"][0]["conditionAbsent"]
+        self.assertEqual(absence["duration"], "180s")
+        self.assertIn("export_heartbeat", absence["filter"])
+        overflow = json.loads((self.output / "overflow.json").read_text())
+        self.assertIs(overflow["enabled"], False)
+        self.assertEqual(len(overflow["conditions"]), 2)
+        ledger = json.loads((self.output / "ledger.json").read_text())
+        self.assertEqual(ledger["conditions"][0]["conditionThreshold"]["comparison"], "COMPARISON_LT")
+        dashboard = json.loads((self.output / "dashboard.json").read_text())
+        rendered = json.dumps(dashboard)
+        for name in ["task_samples", "parse_samples", "task_overflow", "spend_read_ok", "export_heartbeat"]:
+            self.assertIn(name, rendered)
 
     def test_invalid_inputs_leave_no_output(self):
         for field, values in {

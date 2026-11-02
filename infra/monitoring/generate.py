@@ -74,6 +74,26 @@ def main():
         "daily-spend.json": policy(args.project, args.notification_channel, "daily_spend_micros",
                                    "daily spend above 80% of cap", float(micros * Decimal("0.8"))),
     }
+    heartbeat = policy(args.project, args.notification_channel, "export_heartbeat", "monitoring heartbeat missing", 0)
+    threshold = heartbeat["conditions"][0].pop("conditionThreshold")
+    heartbeat["conditions"][0]["conditionAbsent"] = {
+        "filter": threshold["filter"], "duration": "180s", "trigger": {"count": 1},
+    }
+    overflow = policy(args.project, args.notification_channel, "task_overflow", "telemetry sample overflow", 0)
+    other = policy(args.project, args.notification_channel, "parse_overflow", "parse sample overflow", 0)
+    overflow["conditions"].extend(other["conditions"])
+    ledger = policy(args.project, args.notification_channel, "spend_read_ok", "spend ledger unreadable", 1)
+    ledger["conditions"][0]["conditionThreshold"]["comparison"] = "COMPARISON_LT"
+    policies.update({"heartbeat.json": heartbeat, "overflow.json": overflow, "ledger.json": ledger})
+    metrics = ["export_heartbeat", "task_samples", "parse_samples", "task_overflow", "parse_overflow", "spend_read_ok",
+               "task_error_ratio", "parse_p95_seconds", "daily_spend_micros"]
+    dashboard = {"displayName": "Fingerpost operational health (draft)", "gridLayout": {"columns": "3", "widgets": [
+        {"title": metric, "xyChart": {"chartOptions": {"mode": "COLOR"}, "dataSets": [{"plotType": "LINE",
+            "timeSeriesQuery": {"timeSeriesFilter": {
+                "filter": f'metric.type = "{PREFIX}{metric}" AND resource.type = "global" AND resource.labels.project_id = "{args.project}"',
+                "aggregation": {"alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_MAX"}}}}]}}
+        for metric in metrics]}}
+    policies["dashboard.json"] = dashboard
     staging = None
     try:
         staging = Path(tempfile.mkdtemp(prefix=".monitoring-", dir=output.parent))
@@ -88,7 +108,7 @@ def main():
     finally:
         if staging is not None:
             shutil.rmtree(staging)
-    print(f"Wrote 3 disabled policy drafts to {output}; telemetry and live acceptance remain blocked.")
+    print(f"Wrote 6 disabled policy drafts and a dashboard draft to {output}; telemetry and live acceptance remain blocked.")
 
 
 if __name__ == "__main__":

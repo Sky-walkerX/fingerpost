@@ -535,7 +535,7 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - `IconGoal` (a goal word in the icon lexicon: `wifi, power, settings, back arrow, home, volume`).
 
 - [ ] **Write the tests:** `textGoalMatchesOcrToken`, `ambiguousListsBoth`, `iconGoalSaysCloudNeeded`, `ignoresDigitsInPinGate`.
-- [ ] **Wire it in.** Offline mode starts on `mode{offline}`, on no network, or on kill-switch. It uses `SpeechRecognizer` with `EXTRA_PREFER_OFFLINE`, an OCR box as the target polygon, and the same GuidanceEngine. It says "Basic mode: text buttons only."
+- [ ] **Wire it in.** Offline mode starts on `mode{offline}`, on no network, or on kill-switch. It uses on-device `SpeechRecognizer` (prefer offline), an OCR box as the target polygon, and the same GuidanceEngine. It says "Basic mode: text buttons only."
 - [ ] **Commit:** `feat(android): offline basic mode`
 
 #### A6-2: low-vision UI and accessibility audit
@@ -561,6 +561,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [x] **Commit:** `feat(gateway): waitlist and config endpoints`
 
 #### B6-3: threat model, alerts, runbook
+
+- [x] **User-requested coding completion:** bounded IAM/ADC Pub/Sub pull job disables `config/runtime.cloudEnabled` for the allowlisted monthly budget; six health gauges, disabled absence/overflow/ledger policies and numeric dashboard drafts are locally verified. Cloud provisioning/activation and notification delivery remain open.
 - [x] **`docs/threat-model.md`:** STRIDE-lite over the auth, session, memory, donate and waitlist surfaces. Each row has a mitigation and the test that covers it.
 - [ ] **🔑 Alerts:** error rate >5%, p95 parse >5 s, spend >80% of cap.
 - [x] **`docs/runbook.md`:** kill switch, roll back a revision, rotate secrets, raise quota.
@@ -637,4 +639,4 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - auth and quota;
 - the 98% recall measurement.
 
-Local source completion note (2026-11-02): user assigns live gates to teammates. Checked boxes above record implemented/local-verified TS or documentation steps; every deployment, signed APK, real model, Android build/device and footage acceptance remains open. Monitoring runtime source is now wired but defaults off. See docs/evals/local-code-handoff-2026-11-02.md for the final handoff.
+Historical local source completion note (2026-11-02, before the later Day 4/6 build verification): user assigns live gates to teammates. Checked boxes above record implemented/local-verified TS or documentation steps; every deployment, signed APK, real model, Android build/device and footage acceptance remains open. Monitoring runtime source is now wired but defaults off. See docs/evals/local-code-handoff-2026-11-02.md for the final handoff.

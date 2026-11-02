@@ -84,3 +84,12 @@ These are preparation steps, not evidence that production alerts are configured.
 - Incident record: UTC time, revision, affected surface, numeric impact, pause/rollback action, verification and owner. Exclude image/audio/OCR/transcripts, email addresses and credentials.
 
 Production telemetry source is now wired but remains opt-in. Follow [monitoring setup](monitoring.md): one active serving writer/revision, metric-writer IAM, explicit project and fresh series are prerequisites. Defaults keep monitoring disabled; generated policies remain disabled until live notification acceptance.
+
+
+## Budget job and monitoring freshness
+
+- The standalone [budget-stop job](budget-job.md) consumes the approved subscription with ADC and only disables `config/runtime.cloudEnabled`. It never re-enables it. Inspect its exit result and numeric counts; a persistence error must leave the delivery unacknowledged. Validate the budget ID, account, currency and monthly timezone before activation. Budget notifications are delayed; the application ledger remains the fast cap.
+- Recovery: inspect the real spend and active stop-budget with the owner, fix failures/IAM or message configuration, and verify a successful retry. Do not clear the flag or raise the budget/cap merely to clear an alert. An active breach will disable cloud again on the next execution.
+- Export heartbeat missing for 180 seconds: check the enabled single-writer gateway, credentials, metric-writer IAM, network/Monitoring status and hung exporter/ledger calls. First prove the series has been observed. Idle traffic should still publish heartbeat=1 and sample counts=0, while latency/error aggregates remain absent.
+- Sample overflow: treat the affected aggregate as unknown, inspect load/sample capacity and the single-writer assumption. `task_overflow`/`parse_overflow` are 0/1; counts may be capped while overflow is true. Do not invent a healthy percentile or average percentiles from several writers.
+- `spend_read_ok=0`: reconcile UTC-day ledger/permissions before trusting spend alerts. `daily_spend_micros` is omitted when unknown. Import the reviewed disabled policies and nine-metric dashboard from `infra/monitoring/generate.py`, then prove actual notification delivery/recovery in the test project before activation.

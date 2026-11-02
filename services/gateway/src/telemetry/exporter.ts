@@ -95,10 +95,6 @@ export class MonitoringExporter {
       if (Number.isSafeInteger(value) && value >= 0 && day(this.now()) === spendDay) spend = value;
     } catch { /* Unknown spend is omitted; no previously read value is reused. */ }
     signal.throwIfAborted();
-    const beforeToken = this.options.collector.snapshot(this.now());
-    if (spend === undefined && beforeToken.taskErrorRatio === undefined && beforeToken.parseP95Seconds === undefined) {
-      return { status: 'no-data' };
-    }
     const token = await this.options.getAccessToken();
     signal.throwIfAborted();
     if (!token) throw new Error('Telemetry credentials unavailable');
@@ -111,6 +107,12 @@ export class MonitoringExporter {
       ['task_error_ratio', snapshot.taskErrorRatio, '1'],
       ['parse_p95_seconds', snapshot.parseP95Seconds, 's'],
       ['daily_spend_micros', spend, '1'],
+      ['export_heartbeat', 1, '1'],
+      ['task_samples', snapshot.taskSamples, '1'],
+      ['parse_samples', snapshot.parseSamples, '1'],
+      ['task_overflow', Number(snapshot.taskOverflow), '1'],
+      ['parse_overflow', Number(snapshot.parseOverflow), '1'],
+      ['spend_read_ok', Number(spend !== undefined), '1'],
     ];
     const timeSeries = values.filter(([, value]) => value !== undefined).map(([metric, value, unit]) => ({
       metric: { type: PREFIX + metric },
