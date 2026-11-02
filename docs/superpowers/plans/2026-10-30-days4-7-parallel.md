@@ -526,6 +526,8 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 
 ### Lane A
 #### A6-1: offline basic mode (cut if the Day 5 exit was missed)
+
+- [x] **User-requested coding hardening:** on-device-only ASR with stale-callback/cleanup guards and offline-only TTS. No generic/cloud speech fallback; JVM/build/lint pass. Real language-pack and no-network acceptance remains open.
 **Files:** Create `core/guidance/.../OfflineResolver.kt` and `app/.../offline/{OfflineAsr,OfflineSession}.kt`.
 
 **Interface:** `OfflineResolver.resolve(goal: String, tokens: List<OcrToken>): OfflineResult`, where `OfflineResult` is one of:
@@ -534,11 +536,13 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - `None`;
 - `IconGoal` (a goal word in the icon lexicon: `wifi, power, settings, back arrow, home, volume`).
 
-- [ ] **Write the tests:** `textGoalMatchesOcrToken`, `ambiguousListsBoth`, `iconGoalSaysCloudNeeded`, `ignoresDigitsInPinGate`.
-- [ ] **Wire it in.** Offline mode starts on `mode{offline}`, on no network, or on kill-switch. It uses on-device `SpeechRecognizer` (prefer offline), an OCR box as the target polygon, and the same GuidanceEngine. It says "Basic mode: text buttons only."
-- [ ] **Commit:** `feat(android): offline basic mode`
+- [x] **Write the tests:** `textGoalMatchesOcrToken`, `ambiguousListsBoth`, `iconGoalSaysCloudNeeded`, `ignoresDigitsInPinGate`.
+- [x] **Wire it in (implementation):** Offline mode starts on `mode{offline}`, on no network, or on kill-switch. It uses the on-device-only `SpeechRecognizer` (API31+, unavailable safely on older systems), with `EXTRA_PREFER_OFFLINE` as an additional hint, an OCR box as the target polygon, and the same GuidanceEngine. It says "Basic mode: text buttons only."
+- [x] **Commit:** `feat(android): offline basic mode` (existing implementation; local-only speech hardening in the Day 6 continuation).
+- [ ] **Device acceptance:** installed/missing EN/HI/ES models and voices, microphone permission, network loss/recovery, real target guidance and no cloud speech/upload while in basic/PIN mode. JVM fakes do not establish this gate.
 
 #### A6-2: low-vision UI and accessibility audit
+- [x] **Coding verified:** target outline/fingertip rings, dark UI and localized accessible controls compile; debug APK/test APK and lint pass. Physical audit and 200% font result remain unrun.
 - [ ] **Low-vision UI:** the preview shows a 6 dp target outline and fingertip ring, high contrast, a dark default, and text at 200% scale without clipping.
 - [ ] **Audit:** Accessibility Scanner plus a manual TalkBack pass over every screen. Results go in `docs/evals/a11y-day6.md`.
 - [ ] **Commit:** `feat(android): low-vision preview and accessibility fixes`

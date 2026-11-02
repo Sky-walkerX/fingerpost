@@ -18,3 +18,5 @@ Before release, verify the deployed revision has auth required, software attesta
 
 
 Day 6 source additions: the budget-stop job has no public HTTP surface. Its dedicated service account consumes only the approved subscription via ADC; topic publishing must be restricted to the configured Cloud Billing publisher. Budget/account/schema/currency/calendar checks reject unrelated or stale notifications; only disablement is written, before acknowledgement. Persistence failure leaves a delivery for retry. Native SDK/process deadlines and bounded Pub/Sub bodies/batches limit stalled or oversized input. Regression coverage: budget-job.test.ts and budget-pubsub.test.ts. Production IAM, publisher restrictions and current billing period require operator review.
+
+Offline ASR uses only the platform on-device service; unavailable/old platforms fail safely. Offline TTS selects only non-network voices. Cancellation generations reject late transcripts. Coverage: OfflineAsrTest and TtsSpeakerTest; actual device/network behavior remains a required acceptance check.

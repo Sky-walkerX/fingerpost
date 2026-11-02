@@ -14,6 +14,7 @@ import java.util.Locale
 internal interface TtsEngine {
     fun setAudioAttributes(attributes: AudioAttributes): Int
     fun setSpeechRate(rate: Float): Int
+    fun useOfflineVoice(locale: Locale): Boolean
     fun setLanguage(loc: Locale): Int
     fun setOnUtteranceProgressListener(listener: UtteranceProgressListener)
     fun speak(text: CharSequence, queueMode: Int, params: Bundle?, utteranceId: String): Int
@@ -31,6 +32,8 @@ class TtsSpeaker internal constructor(
     constructor(context: Context, onDone: (Utterance) -> Unit, onError: (Utterance?) -> Unit = {}) :
         this(context, onDone, onError, null)
 
+    private var offlineOnly = false
+    private var offlineVoiceReady = false
     private var rate = 1.0f
     private var ready = false
     private var closed = false
@@ -58,6 +61,11 @@ class TtsSpeaker internal constructor(
             tts = object : TtsEngine {
                 override fun setAudioAttributes(attributes: AudioAttributes): Int = realTts.setAudioAttributes(attributes)
                 override fun setSpeechRate(rate: Float): Int = realTts.setSpeechRate(rate)
+                override fun useOfflineVoice(locale: Locale): Boolean {
+                    val voice = realTts.voices?.filter { !it.isNetworkConnectionRequired && it.locale.language == locale.language }
+                        ?.maxByOrNull { if (it.locale == locale) 1 else 0 } ?: return false
+                    return realTts.setVoice(voice) == TextToSpeech.SUCCESS
+                }
                 override fun setLanguage(loc: Locale): Int = realTts.setLanguage(loc)
                 override fun setOnUtteranceProgressListener(listener: UtteranceProgressListener) {
                     realTts.setOnUtteranceProgressListener(listener)
@@ -98,6 +106,14 @@ class TtsSpeaker internal constructor(
         pending?.let { pending = null; speak(it, false) }
     }
 
+    @Synchronized fun setOfflineOnly(value: Boolean) {
+        if (closed) return
+        stop()
+        offlineOnly = value
+        offlineVoiceReady = false
+        if (ready && !closed) applyLanguage(targetLocale)
+    }
+
     @Synchronized fun setRate(value: Float) {
         require(value.isFinite() && value > 0f) { "Invalid speech rate" }
         rate = value
@@ -122,6 +138,18 @@ class TtsSpeaker internal constructor(
     }
 
     private fun applyLanguage(loc: Locale): Int {
+        if (offlineOnly) {
+            offlineVoiceReady = runCatching { tts.useOfflineVoice(loc) }.getOrDefault(false)
+            if (!offlineVoiceReady && loc.language in setOf("hi", "es")) {
+                offlineVoiceReady = runCatching { tts.useOfflineVoice(Locale.forLanguageTag("en-IN")) }.getOrDefault(false)
+                if (offlineVoiceReady && warnedLanguages.add(loc.language)) {
+                    val warning = if (loc.language == "hi") "Hindi voice not installed; using English."
+                        else "Spanish voice not installed; using English."
+                    speak(Utterance(warning, Priority.STATE, System.currentTimeMillis()), false)
+                }
+            }
+            return if (offlineVoiceReady) TextToSpeech.LANG_AVAILABLE else TextToSpeech.LANG_NOT_SUPPORTED
+        }
         val result = tts.setLanguage(loc)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
             val lang = loc.language.lowercase()
@@ -139,6 +167,7 @@ class TtsSpeaker internal constructor(
         if (closed) return
         if (failed) { onError(u); return }
         if (!ready) { pending = u; return }
+        if (offlineOnly && !offlineVoiceReady) { onError(u); return }
         currentId = null
         if (interrupt) tts.stop()
         val id = "fp-${++seq}"

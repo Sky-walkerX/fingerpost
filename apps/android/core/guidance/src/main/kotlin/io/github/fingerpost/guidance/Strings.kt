@@ -88,6 +88,7 @@ enum class Key {
     ICON_NEEDS_CLOUD,
     OFFLINE_DWELL_DONE,
     OFFLINE_ASR_UNAVAILABLE,
+    OFFLINE_TTS_UNAVAILABLE,
     UPDATE_AVAILABLE,
     SPEECH_UNAVAILABLE,
     CAMERA_RECOVERY,
@@ -115,6 +116,7 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.OFFLINE_TTS_UNAVAILABLE to "Offline speech output is unavailable. Install an offline voice in Android settings.",
         Key.MOVE_FINGER to "Move your finger",
         Key.CHEST_FRAME to "Stand about an arm's length from the screen and point your chest-mounted camera at it.",
         Key.CHEST_CLOSER to "Step closer.",
@@ -188,7 +190,7 @@ object Strings {
         Key.BASIC_MODE to "Basic mode: text buttons only.",
         Key.ICON_NEEDS_CLOUD to "Icons need the cloud. In basic mode I can only find buttons with words on them.",
         Key.OFFLINE_DWELL_DONE to "I think that pressed it.",
-        Key.OFFLINE_ASR_UNAVAILABLE to "Offline speech isn't set up on this phone. Turn on offline speech recognition in Android settings.",
+        Key.OFFLINE_ASR_UNAVAILABLE to "Offline speech recognition is unavailable on this phone. Check microphone permission and offline language models in Android settings.",
         Key.UPDATE_AVAILABLE to "An update is available",
         Key.SPEECH_UNAVAILABLE to "Speech unavailable. Reopen Fingerpost.",
         Key.CAMERA_RECOVERY to "Camera tracking couldn't start. Reopen Fingerpost.",
@@ -206,6 +208,7 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.OFFLINE_TTS_UNAVAILABLE to "ऑफ़लाइन आवाज़ उपलब्ध नहीं है। Android सेटिंग में ऑफ़लाइन आवाज़ इंस्टॉल करें।",
         Key.MOVE_FINGER to "अपनी उंगली ले जाएँ",
         Key.CHEST_FRAME to "स्क्रीन से लगभग एक हाथ की दूरी पर खड़े हों और सीने पर लगे कैमरे को उसकी ओर करें।",
         Key.CHEST_CLOSER to "थोड़ा पास जाएँ।",
@@ -279,7 +282,7 @@ object Strings {
         Key.BASIC_MODE to "बेसिक मोड: सिर्फ़ शब्दों वाले बटन।",
         Key.ICON_NEEDS_CLOUD to "आइकन के लिए क्लाउड चाहिए। बेसिक मोड में मैं सिर्फ़ शब्दों वाले बटन ढूंढ सकता हूँ।",
         Key.OFFLINE_DWELL_DONE to "मुझे लगता है यह दब गया।",
-        Key.OFFLINE_ASR_UNAVAILABLE to "इस फ़ोन पर ऑफ़लाइन आवाज़ पहचान चालू नहीं है। Android सेटिंग्स में इसे चालू करें।",
+        Key.OFFLINE_ASR_UNAVAILABLE to "इस फ़ोन पर ऑफ़लाइन आवाज़ पहचान उपलब्ध नहीं है। Android सेटिंग में माइक्रोफ़ोन की अनुमति और ऑफ़लाइन भाषा मॉडल जाँचें।",
         Key.UPDATE_AVAILABLE to "एक अपडेट उपलब्ध है",
         Key.SPEECH_UNAVAILABLE to "आवाज़ उपलब्ध नहीं है। Fingerpost फिर से खोलें।",
         Key.CAMERA_RECOVERY to "कैमरा ट्रैकिंग शुरू नहीं हो सकी। Fingerpost फिर से खोलें।",
@@ -297,6 +300,7 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.OFFLINE_TTS_UNAVAILABLE to "La voz sin conexión no está disponible. Instala una voz sin conexión en los ajustes de Android.",
         Key.MOVE_FINGER to "Mueve el dedo",
         Key.CHEST_FRAME to "Ponte a un brazo de distancia de la pantalla y apunta la cámara del pecho hacia ella.",
         Key.CHEST_CLOSER to "Da un paso hacia la pantalla.",
@@ -370,7 +374,7 @@ object Strings {
         Key.BASIC_MODE to "Modo básico: solo botones con texto.",
         Key.ICON_NEEDS_CLOUD to "Los iconos necesitan la nube. En modo básico solo encuentro botones con palabras.",
         Key.OFFLINE_DWELL_DONE to "Creo que se pulsó.",
-        Key.OFFLINE_ASR_UNAVAILABLE to "El reconocimiento de voz sin conexión no está activado. Actívalo en los ajustes de Android.",
+        Key.OFFLINE_ASR_UNAVAILABLE to "El reconocimiento de voz sin conexión no está disponible en este teléfono. Revisa el permiso del micrófono y los modelos de idioma sin conexión en los ajustes de Android.",
         Key.UPDATE_AVAILABLE to "Hay una actualización disponible",
         Key.SPEECH_UNAVAILABLE to "La voz no está disponible. Vuelve a abrir Fingerpost.",
         Key.CAMERA_RECOVERY to "No se pudo iniciar el seguimiento de la cámara. Vuelve a abrir Fingerpost.",

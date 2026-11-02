@@ -151,7 +151,7 @@ class GuidanceEngine(
     } }, onError = { failed -> post {
         updateNotice.clear()
         if (failed == null || speech.onDone(failed))
-            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.SPEECH_UNAVAILABLE, machine.locale))
+            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(if (offline) Key.OFFLINE_TTS_UNAVAILABLE else Key.SPEECH_UNAVAILABLE, machine.locale))
     } })
     private val router = FrameRouter(hands, guard, onFrame = { post { vision(it) } }, onKeyframe = { post { encoded(it) } },
         onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale)) } })
@@ -487,6 +487,7 @@ class GuidanceEngine(
         val wasActive = wantsStart || machine.state != GState.IDLE
         reset()
         offline = true; ready = false; onlineWhenIdle = false; offlineAsrMissing = false
+        speaker.setOfflineOnly(true)
         mutableStatus.value = mutableStatus.value.copy(cloudOff = true, basicMode = true)
         val notice = Strings.get(Key.BASIC_MODE, machine.locale)
         say(reason?.trim()?.takeIf { it.isNotEmpty() }?.let { "$it $notice" } ?: notice, SpeechPriority.STATE)
@@ -494,7 +495,9 @@ class GuidanceEngine(
     }
 
     private fun leaveOffline() {
+        speaker.stop(); speech.clear(); updateNotice.clear()
         offline = false; onlineWhenIdle = false
+        speaker.setOfflineOnly(false)
         offlineAsr.stop()
         mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready, basicMode = false)
         // A dropped socket counts again only from now on.

@@ -48,6 +48,8 @@ pnpm --filter @fingerpost/evals eval --set mock-panel --mode mock --out ../docs/
 
 The [30-minute soak procedure](evals/scripts/soak.md) is ready for teammates; no soak result is implied. SDK-dependent Android builds and physical acceptance can run on a teammate's machine or CI.
 
+The [Day 6 coding checkpoint](docs/evals/day6-coding-completion.md) records the current local results and remaining acceptance. Android JVM tests, debug builds and lint pass. Cloud deployment, signed release installation, physical accessibility/safety, tester sessions and footage remain open.
+
 ## Project layout
 
 | Path | Purpose |
