@@ -1,5 +1,7 @@
 package io.github.fingerpost.settings
 
+import io.github.fingerpost.R
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -43,6 +46,7 @@ fun SettingsScreen(
     /** A5-2: empties the on-device layout cache. */
     onClearSavedScreens: () -> Unit = {},
 ) {
+    val context = LocalContext.current
     var screensCleared by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -64,18 +68,18 @@ fun SettingsScreen(
                 Button(
                     onClick = onBack,
                     modifier = Modifier.clearAndSetSemantics {
-                        contentDescription = "Back"
+                        contentDescription = context.getString(R.string.back)
                         role = Role.Button
-                        onClick(label = "Navigate back") {
+                        onClick(label = context.getString(R.string.navigate_back)) {
                             onBack()
                             true
                         }
                     }
                 ) {
-                    Text("Back")
+                    Text(context.getString(R.string.back))
                 }
                 Text(
-                    text = "Settings",
+                    text = context.getString(R.string.settings),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.semantics { heading() }
                 )
@@ -84,19 +88,19 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SettingToggle(
-                label = "Speech",
+                label = context.getString(R.string.speech),
                 checked = settings.speech,
                 onCheckedChange = { onUpdate(settings.copy(speech = it)) }
             )
 
             SettingToggle(
-                label = "Tone",
+                label = context.getString(R.string.tone),
                 checked = settings.tone,
                 onCheckedChange = { onUpdate(settings.copy(tone = it)) }
             )
 
             SettingToggle(
-                label = "Haptics",
+                label = context.getString(R.string.haptics),
                 checked = settings.haptics,
                 onCheckedChange = { onUpdate(settings.copy(haptics = it)) }
             )
@@ -106,9 +110,9 @@ fun SettingsScreen(
             val rates = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
             val currentRateIdx = rates.indexOf(settings.speechRate).takeIf { it >= 0 } ?: 1
             val nextRate = rates[(currentRateIdx + 1) % rates.size]
-            val rateState = "${settings.speechRate}x"
+            val rateState = context.getString(R.string.rate_value, settings.speechRate.toString())
             SettingOption(
-                label = "Speech rate",
+                label = context.getString(R.string.speech_rate),
                 state = rateState,
                 onClick = { onUpdate(settings.copy(speechRate = nextRate)) }
             )
@@ -119,38 +123,38 @@ fun SettingsScreen(
                 Verbosity.DETAILED -> Verbosity.NORMAL
             }
             val verbosityState = when (settings.verbosity) {
-                Verbosity.NORMAL -> "Normal"
-                Verbosity.CONCISE -> "Concise"
-                Verbosity.DETAILED -> "Detailed"
+                Verbosity.NORMAL -> context.getString(R.string.normal)
+                Verbosity.CONCISE -> context.getString(R.string.concise)
+                Verbosity.DETAILED -> context.getString(R.string.detailed)
             }
             SettingOption(
-                label = "Verbosity",
+                label = context.getString(R.string.verbosity),
                 state = verbosityState,
                 onClick = { onUpdate(settings.copy(verbosity = nextVerbosity)) }
             )
 
             val nextHand = if (settings.handedness == Hand.RIGHT) Hand.LEFT else Hand.RIGHT
-            val handState = if (settings.handedness == Hand.RIGHT) "Right" else "Left"
+            val handState = if (settings.handedness == Hand.RIGHT) context.getString(R.string.right) else context.getString(R.string.left)
             SettingOption(
-                label = "Handedness",
+                label = context.getString(R.string.handedness),
                 state = handState,
                 onClick = { onUpdate(settings.copy(handedness = nextHand)) }
             )
 
             val nextHold = if (settings.holdMode == HoldMode.HANDHELD) HoldMode.CHEST_MOUNT else HoldMode.HANDHELD
-            val holdState = if (settings.holdMode == HoldMode.HANDHELD) "Handheld" else "Chest mount"
+            val holdState = if (settings.holdMode == HoldMode.HANDHELD) context.getString(R.string.handheld) else context.getString(R.string.chest_mount)
             SettingOption(
-                label = "Hold mode",
+                label = context.getString(R.string.hold_mode),
                 state = holdState,
                 onClick = { onUpdate(settings.copy(holdMode = nextHold)) }
             )
 
-            val locales = listOf("en" to "English", "hi" to "Hindi", "es" to "Spanish")
+            val locales = listOf("en" to context.getString(R.string.english), "hi" to context.getString(R.string.hindi), "es" to context.getString(R.string.spanish))
             val currentLocIdx = locales.indexOfFirst { it.first == settings.locale.lowercase() }.takeIf { it >= 0 } ?: 0
             val nextLoc = locales[(currentLocIdx + 1) % locales.size]
             val locState = locales[currentLocIdx].second
             SettingOption(
-                label = "Language",
+                label = context.getString(R.string.language),
                 state = locState,
                 onClick = { onUpdate(settings.copy(locale = nextLoc.first)) }
             )
@@ -158,13 +162,13 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SettingToggle(
-                label = "Private mode",
+                label = context.getString(R.string.private_mode),
                 checked = settings.privateMode,
                 onCheckedChange = { onUpdate(settings.copy(privateMode = it)) }
             )
 
             SettingToggle(
-                label = "Volume keys",
+                label = context.getString(R.string.volume_keys),
                 checked = settings.volumeKeys,
                 onCheckedChange = { onUpdate(settings.copy(volumeKeys = it)) }
             )
@@ -172,8 +176,8 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SettingAction(
-                label = "Clear saved screens",
-                state = if (screensCleared) "Cleared" else "Screens you used are remembered on this phone",
+                label = context.getString(R.string.clear_saved),
+                state = if (screensCleared) context.getString(R.string.cleared) else context.getString(R.string.saved_explanation),
                 onClick = { onClearSavedScreens(); screensCleared = true }
             )
         }
@@ -186,7 +190,8 @@ private fun SettingToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val state = if (checked) "on" else "off"
+    val context = LocalContext.current
+    val state = if (checked) context.getString(R.string.state_on) else context.getString(R.string.state_off)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -200,7 +205,7 @@ private fun SettingToggle(
                 contentDescription = label
                 stateDescription = state
                 role = Role.Switch
-                onClick(label = if (checked) "Turn off" else "Turn on") {
+                onClick(label = if (checked) context.getString(R.string.turn_off) else context.getString(R.string.turn_on)) {
                     onCheckedChange(!checked)
                     true
                 }
@@ -218,7 +223,7 @@ private fun SettingToggle(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = if (checked) "On" else "Off",
+                text = if (checked) context.getString(R.string.state_on) else context.getString(R.string.state_off),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -237,6 +242,7 @@ private fun SettingAction(
     state: String,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -267,6 +273,7 @@ private fun SettingOption(
     state: String,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +283,7 @@ private fun SettingOption(
                 contentDescription = label
                 stateDescription = state
                 role = Role.Button
-                onClick(label = "Change $label") {
+                onClick(label = context.getString(R.string.change_option, label)) {
                     onClick()
                     true
                 }

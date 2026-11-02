@@ -101,24 +101,24 @@ fun SessionScreen(
         else -> status.message
     }
     val label = when {
-        status.basicMode -> "Basic mode"
-        status.cloudOff -> "Cloud off"
-        !status.connected -> "Connecting"
+        status.basicMode -> context.getString(R.string.basic_mode)
+        status.cloudOff -> context.getString(R.string.cloud_off)
+        !status.connected -> context.getString(R.string.connecting)
         else -> when (status.state) {
-            GState.IDLE -> "Ready"
-            GState.LISTENING -> "Listening"
-            GState.FRAMING -> "Frame the screen"
-            GState.LOCATING -> "Finding the button"
-            GState.GUIDING -> "Guiding"
-            GState.ON_TARGET -> "On target"
-            GState.VERIFYING -> "Checking the press"
-            GState.ASK -> "Waiting for your answer"
-            GState.CONFIRM -> "Confirm the amount"
-            GState.AWAIT_NEXT -> "Next step"
-            GState.PIN_MODE -> "PIN entry"
-            GState.DONE -> "Done"
-            GState.EXPLORING -> "Reading the screen"
-            GState.TOUCH_EXPLORE -> "Touch explore"
+            GState.IDLE -> context.getString(R.string.ready)
+            GState.LISTENING -> context.getString(R.string.listening)
+            GState.FRAMING -> context.getString(R.string.frame_screen)
+            GState.LOCATING -> context.getString(R.string.finding)
+            GState.GUIDING -> context.getString(R.string.guiding)
+            GState.ON_TARGET -> context.getString(R.string.on_target)
+            GState.VERIFYING -> context.getString(R.string.checking_press)
+            GState.ASK -> context.getString(R.string.waiting_answer)
+            GState.CONFIRM -> context.getString(R.string.confirm_amount)
+            GState.AWAIT_NEXT -> context.getString(R.string.next_step)
+            GState.PIN_MODE -> context.getString(R.string.pin_entry)
+            GState.DONE -> context.getString(R.string.done)
+            GState.EXPLORING -> context.getString(R.string.reading_screen)
+            GState.TOUCH_EXPLORE -> context.getString(R.string.touch_explore)
         }
     }
     LaunchedEffect(current, status.state, availableUpdate, settings.speech) {
@@ -191,12 +191,12 @@ fun SessionScreen(
                 .fillMaxWidth()
                 .padding(16.dp)
                 .clearAndSetSemantics {
-                    contentDescription = "Settings"
+                    contentDescription = context.getString(R.string.settings)
                     role = Role.Button
-                    onClick(label = "Open settings") { onOpenSettings(); true }
+                    onClick(label = context.getString(R.string.open_settings)) { onOpenSettings(); true }
                 }
         ) {
-            Text("Settings")
+            Text(context.getString(R.string.settings))
         }
     }
 }

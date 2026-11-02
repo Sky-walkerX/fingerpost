@@ -1,0 +1,7 @@
+# Android language behavior
+
+Guidance speech, framing, movement, uncertainty/recovery messages, keypad layout announcements and private PIN-help voices follow the language selected in Fingerpost settings (English, Hindi or Spanish). Changing that setting updates both guidance and PIN voice engines. Missing Hindi/Spanish voices use the specified English warning and English voice fallback. PIN digits remain in the private, active, ready, earphone-checked `PinMode.speak` path; only non-sensitive missing-voice warnings enter the shared speaker queue.
+
+Settings labels/options, session states, action descriptions, permission errors and tutorial controls use Android resources in `values`, `values-hi` and `values-es`. They follow the Android system/app resource locale; the Fingerpost Language option controls guidance speech and does not change Android locale. Other system locales fall back to English. Debug-only tracking labels and numeric timing telemetry remain developer diagnostics.
+
+Source regression tests cover localized movement, framing/recovery keys and keypad announcements. They are authored but unrun in this continuation. Resource XML parsing, resource-name uniqueness/completeness and whitespace checks pass. Android compilation, font scaling, TalkBack, earphone route changes, installed/missing voices and native-language listen-through remain teammate/device acceptance work; no live results are claimed.
