@@ -42,7 +42,7 @@ class GuidanceEngine(
 ) {
     data class Status(val state: GState = GState.IDLE, val connected: Boolean = false, val cloudOff: Boolean = false,
         val message: String? = null, val quad: List<Vec2>? = null, val frameWidth: Int = 1, val frameHeight: Int = 1,
-        val tracking: Boolean = false, val basicMode: Boolean = false)
+        val tracking: Boolean = false, val basicMode: Boolean = false, val targetOutline: List<Vec2> = emptyList())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableStatus = MutableStateFlow(Status())
     val status = mutableStatus.asStateFlow()
@@ -333,7 +333,11 @@ class GuidanceEngine(
         latest = frame
         metering.update(frame.quad, frame.stable, time())?.let { onMeteringPoint(it, frame.width, frame.height) }
         mutableStatus.value = mutableStatus.value.copy(quad = frame.quad, frameWidth = frame.width, frameHeight = frame.height,
-            tracking = frame.tracking == TrackState.TRACKING)
+            tracking = frame.tracking == TrackState.TRACKING,
+            targetOutline = if (!guard.pinMode && machine.state in setOf(GState.GUIDING, GState.ON_TARGET)) {
+                frame.quad?.let { quad -> Homography.fromPoints(Homography.UNIT_SQUARE, quad) }
+                    ?.let { transform -> polygon.mapNotNull(transform::map) }?.takeIf { it.size == polygon.size }.orEmpty()
+            } else emptyList())
         if (guard.pinMode) return
         if (frame.anchorApplied) {
             awaitingAnchor = false
@@ -708,6 +712,12 @@ class GuidanceEngine(
                 dispatch(GEvent.Start(time()))
             } else dispatch(GEvent.ResumeAfterPin(time()))
         }
+    }
+
+    fun announceUpdateIfIdle(): Boolean {
+        if (machine.state != GState.IDLE || speech.current != null || !settings.speech) return false
+        say("An update is available", SpeechPriority.STATE)
+        return true
     }
 
     fun close() {

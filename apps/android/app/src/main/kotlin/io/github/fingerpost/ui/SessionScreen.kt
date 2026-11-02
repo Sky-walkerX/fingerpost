@@ -43,6 +43,8 @@ fun SessionScreen(
     trackingOptions: TrackingOptions = TrackingOptions(),
     simRunId: String? = null,
     settings: Settings = Settings(),
+    availableUpdate: String? = null,
+    onUpdateAnnounced: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -119,6 +121,12 @@ fun SessionScreen(
             GState.TOUCH_EXPLORE -> "Touch explore"
         }
     }
+    LaunchedEffect(current, status.state, availableUpdate, settings.speech) {
+        if (availableUpdate != null && settings.speech && current != null) {
+            while (!current.announceUpdateIfIdle()) kotlinx.coroutines.delay(1000)
+            onUpdateAnnounced(availableUpdate)
+        }
+    }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
     val toggle = { current?.toggle(); onToggle() }
     LaunchedEffect(settings) {
@@ -145,11 +153,24 @@ fun SessionScreen(
                     path.close()
                     drawPath(path, if (status.tracking) Color.Green else Color.Yellow, style = Stroke(3.dp.toPx()))
                 }
+                if (status.state in setOf(GState.GUIDING, GState.ON_TARGET) && status.targetOutline.size >= 3) {
+                    val transform = FrameTransform.fillCenter(status.frameWidth, status.frameHeight,
+                        size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
+                    val outline = Path()
+                    status.targetOutline.forEachIndexed { i, p ->
+                        val point = transform.map((p.x * status.frameWidth).toFloat(), (p.y * status.frameHeight).toFloat())
+                        if (i == 0) outline.moveTo(point.x, point.y) else outline.lineTo(point.x, point.y)
+                    }
+                    outline.close()
+                    drawPath(outline, Color.Black, style = Stroke(10.dp.toPx()))
+                    drawPath(outline, Color.Yellow, style = Stroke(6.dp.toPx()))
+                }
                 for (sample in samples) {
                     val transform = FrameTransform.fillCenter(sample.frameW, sample.frameH,
                         size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
                     val point = transform.map(sample.tipX, sample.tipY)
-                    drawCircle(Color.Yellow, 7.dp.toPx(), Offset(point.x, point.y))
+                    drawCircle(Color.Black, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(10.dp.toPx()))
+                    drawCircle(Color.Yellow, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(6.dp.toPx()))
                 }
             }
             Column(Modifier.safeDrawingPadding().padding(16.dp).background(Color.Black).clearAndSetSemantics {}) {
@@ -166,7 +187,8 @@ fun SessionScreen(
             onClick = onOpenSettings,
             modifier = Modifier
                 .safeDrawingPadding()
-                .align(Alignment.TopEnd)
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
                 .padding(16.dp)
                 .clearAndSetSemantics {
                     contentDescription = "Settings"

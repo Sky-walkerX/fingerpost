@@ -13,6 +13,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -97,6 +99,15 @@ class MainActivity : ComponentActivity() {
                     val settings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
                     var showSettings by rememberSaveable { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
+                    val updateCheck = remember { io.github.fingerpost.updates.UpdateCheck(this@MainActivity) }
+                    var checkedUpdates by rememberSaveable { mutableStateOf(false) }
+                    var availableUpdate by rememberSaveable { mutableStateOf<String?>(null) }
+                    LaunchedEffect(Unit) {
+                        if (!checkedUpdates) {
+                            availableUpdate = updateCheck.latestUnannounced()
+                            checkedUpdates = true
+                        }
+                    }
 
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         if (showSettings) {
@@ -112,11 +123,13 @@ class MainActivity : ComponentActivity() {
                                 trackingOptions = trackingOptions,
                                 simRunId = simRunId,
                                 settings = settings,
+                                availableUpdate = availableUpdate,
+                                onUpdateAnnounced = { tag -> updateCheck.announced(tag); availableUpdate = null },
                                 onOpenSettings = { showSettings = true }
                             )
                         } else {
                             Column(
-                                modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+                                modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
                                 verticalArrangement = Arrangement.spacedBy(24.dp, androidx.compose.ui.Alignment.CenterVertically),
                             ) {
                                 Text(cameraNeeded, style = MaterialTheme.typography.bodyLarge)
