@@ -86,7 +86,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
 | A5-1 | Explore summary + touch-explore | A | B5-0 | doing | Codex |
 | A5-2 | On-device layout cache | A | – | doing | Codex |
-| A5-3 | Tuning, Crashlytics, update check | A | C4-3 | todo | |
+| A5-3 | Tuning, Crashlytics, update check | A | C4-3 | doing | Codex |
 | A5-4 | (stretch) Mock glasses source | A | – | todo | |
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
 | B5-2 | Kiosk memory | B | – | done | Codex |
@@ -97,7 +97,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C5-3 | README v1 + soak steps | C | – | done | Codex |
 | C5-4 | (cut first) Donation pipeline | C+B | – | doing | Codex |
 | A6-1 | Offline basic mode | A | – | doing | Codex |
-| A6-2 | Low-vision UI + a11y audit | A | – | todo | |
+| A6-2 | Low-vision UI + a11y audit | A | – | doing | Codex |
 | A6-3 | Phrasing polish | A+C | A4-4 | todo | |
 | B6-1 | Signed APK release workflow | B | – | doing | Codex |
 | B6-2 | Waitlist + config endpoints | B | – | doing | Codex |
@@ -481,3 +481,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: Final local continuation checks pass: 616 TS cases (59 protocol/53 web/447 gateway/57 evals), recursive typecheck/build and 36 Python cases. Android SDK/device checks skipped per user. [Checkpoint and remaining work](evals/local-completion-2026-11-02.md); no beta completion, deployed alert, footage or live safety result claimed.
 
 - 2026-11-02 continuation: C6-1 release QR generated locally with macOS Core Image and independently decoded to the GitHub latest-release URL. No external QR service or new dependency. B6-1 release preflight now rejects missing signing/Firebase inputs, non-version tags, invalid version codes and insecure/ambiguous gateway URLs (4 Python tests pass); workflow passes explicit version/gateway properties and verifies APK signature. Android compile, signing execution and clean-phone installation remain teammate gates.
+- 2026-11-02 continuation: A5-3 update-check source and A6-2 low-vision source prepared; Crashlytics/tuning remain unfinished, Android tests/compile/device checks explicitly unrun. B6-3 disabled policy renderer passes synthetic validation; actual task/parse/spend metric export, active policies and delivered notifications remain blocked/unimplemented. D7 known-issues page and 72-case bug-bash sheet prepared with every case NOT_RUN; no release readiness inferred.
