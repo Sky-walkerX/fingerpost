@@ -51,15 +51,18 @@ jobs:
           echo "\`$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
       - name: Build signed release APK
         env:
+          RELEASE_GATEWAY_URL: ${{ steps.release.outputs.gateway }}
+          RELEASE_VERSION_NAME: ${{ steps.release.outputs.version }}
+          RELEASE_VERSION_CODE: ${{ steps.release.outputs.code }}
           RELEASE_STORE_FILE: ${{ runner.temp }}/release.jks
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: >-
           ./gradlew :app:assembleRelease --console=plain
-          -Pfingerpost.gatewayUrl="${{ steps.release.outputs.gateway }}"
-          -Pfingerpost.versionName="${{ steps.release.outputs.version }}"
-          -Pfingerpost.versionCode="${{ steps.release.outputs.code }}"
+          -Pfingerpost.gatewayUrl="${RELEASE_GATEWAY_URL}"
+          -Pfingerpost.versionName="${RELEASE_VERSION_NAME}"
+          -Pfingerpost.versionCode="${RELEASE_VERSION_CODE}"
       - name: Verify APK signature
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
