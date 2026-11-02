@@ -94,7 +94,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B5-4 | 50-session load test | B | C4-2 | done | Codex |
 | C5-1 | Tester session #2 | C | – | todo | |
 | C5-2 | Privacy, data-safety, install pages | C | – | done | Codex |
-| C5-3 | README v1 + soak steps | C | – | todo | |
+| C5-3 | README v1 + soak steps | C | – | done | Codex |
 | C5-4 | (cut first) Donation pipeline | C+B | – | doing | Codex |
 | A6-1 | Offline basic mode | A | – | doing | Codex |
 | A6-2 | Low-vision UI + a11y audit | A | – | todo | |
@@ -472,3 +472,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: B4-4 gateway speech in en/hi/es via src/i18n/strings.ts t(): targets, asks, verify, errors, offline/private notices, agent lines; positions/lists match the phone; Spark planner gets reply_language. 447 gateway tests pass. Native listen-through is A6-3.
 - 2026-11-02: C5-2 /privacy/, /data-safety/, /install/ (TalkBack-first, 8 numbered steps) + site nav; axe 0 violations in jsdom and real Chromium (contrast included, 390 px and 1280 px); palette ≥4.5:1. 51 web tests. Needs a human contact email for waitlist removals.
 - 2026-11-02: B6-1 release.yml (tag v* → signed :app:assembleRelease, fingerpost-<tag>.apk + .sha256, GitHub Release, cert SHA-256 in job summary, keystore deleted always()); release signingConfig from 4 env vars, unsigned without them; docs/runbook.md Releasing. Doing until v1.0.0-rc1 installs on a clean phone.
+
+- 2026-11-02: Pulled origin/main at 9ce4a15 (66 incoming commits). Earlier work is preserved on codex/local-completion-2026-11-02 and its stash rather than overwriting teammates’ implementations. C5-3 README now describes current source and mock commands; 30-minute soak procedure prepared, device execution still pending.
