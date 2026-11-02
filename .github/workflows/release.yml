@@ -23,7 +23,7 @@ jobs:
         run: >-
           python3 ../../scripts/release-readiness.py
           --revision "$GITHUB_SHA" --tag "$GITHUB_REF_NAME" --write-report
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
