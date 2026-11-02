@@ -5,6 +5,19 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 class StringsTest {
+    @Test fun framingAndRecoveryMessagesExistForEveryLanguage() {
+        for (locale in listOf(Strings.EN, Strings.HI, Strings.ES)) {
+            for (cue in FramingCue.entries) {
+                assertEquals(cue == FramingCue.GOOD, Strings.framing(cue, locale).isEmpty())
+            }
+            assertTrue(Strings.get(Key.SPEECH_UNAVAILABLE, locale).isNotBlank())
+            assertTrue(Strings.get(Key.CAMERA_RECOVERY, locale).isNotBlank())
+        }
+        assertEquals("Move closer.", Strings.framing(FramingCue.MOVE_CLOSER, Strings.EN))
+        assertEquals("थोड़ा पास आएं।", Strings.framing(FramingCue.MOVE_CLOSER, Strings.HI))
+        assertEquals("Acércate.", Strings.framing(FramingCue.MOVE_CLOSER, Strings.ES))
+    }
+
     @Test fun updateNoticeUsesTheSelectedLanguage() {
         assertEquals("An update is available", Strings.get(Key.UPDATE_AVAILABLE, "en"))
         assertEquals("एक अपडेट उपलब्ध है", Strings.get(Key.UPDATE_AVAILABLE, "hi-IN"))

@@ -1,21 +1,20 @@
 package io.github.fingerpost.guidance
 
-/** Day 2 ships English; Day 4 adds "hi" and "es" tables with the same keys. */
 object Phrases {
-    private val dirEn = mapOf(Dir.UP to "up", Dir.DOWN to "down", Dir.LEFT to "left", Dir.RIGHT to "right", Dir.FORWARD to "forward", Dir.BACK to "back")
-
     fun render(cue: GuideCue, locale: String = "en"): String? {
-        require(locale == "en") { "Unsupported guidance locale" }
+        val language = java.util.Locale.forLanguageTag(locale).language
+        require(language in setOf("en", "hi", "es")) { "Unsupported guidance locale" }
+        val loc = java.util.Locale.forLanguageTag(language)
         val direction = if (cue.dirs.isEmpty()) null else {
             val qualifier = when (cue.magnitude) {
-                MagnitudeWord.A_LOT -> " a lot"
-                MagnitudeWord.A_LITTLE -> " a little"
+                MagnitudeWord.A_LOT -> " " + Strings.get(Key.A_LOT, loc)
+                MagnitudeWord.A_LITTLE -> " " + Strings.get(Key.A_LITTLE, loc)
                 MagnitudeWord.NONE, null -> ""
             }
-            (cue.dirs.joinToString(" and ") { dirEn.getValue(it) } + qualifier + ".")
+            (cue.dirs.joinToString(" ${Strings.get(Key.AND, loc)} ") { Strings.direction(it, loc) } + qualifier + ".")
                 .replaceFirstChar { it.uppercaseChar() }
         }
-        return listOfNotNull(if (cue.slowDown) "Slow down." else null, direction)
+        return listOfNotNull(if (cue.slowDown) Strings.get(Key.SLOW_DOWN, loc) else null, direction)
             .joinToString(" ").ifEmpty { null }
     }
 }

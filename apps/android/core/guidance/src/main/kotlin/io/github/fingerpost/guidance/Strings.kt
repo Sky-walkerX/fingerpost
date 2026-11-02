@@ -88,6 +88,19 @@ enum class Key {
     OFFLINE_DWELL_DONE,
     OFFLINE_ASR_UNAVAILABLE,
     UPDATE_AVAILABLE,
+    SPEECH_UNAVAILABLE,
+    CAMERA_RECOVERY,
+    FRAME_NO_SCREEN,
+    FRAME_CUT_LEFT,
+    FRAME_CUT_RIGHT,
+    FRAME_CUT_TOP,
+    FRAME_CUT_BOTTOM,
+    FRAME_MOVE_CLOSER,
+    FRAME_MOVE_BACK,
+    FRAME_MOVE_LEFT,
+    FRAME_MOVE_RIGHT,
+    FRAME_MOVE_UP,
+    FRAME_MOVE_DOWN,
 }
 
 typealias StringKey = Key
@@ -172,6 +185,19 @@ object Strings {
         Key.OFFLINE_DWELL_DONE to "I think that pressed it.",
         Key.OFFLINE_ASR_UNAVAILABLE to "Offline speech isn't set up on this phone. Turn on offline speech recognition in Android settings.",
         Key.UPDATE_AVAILABLE to "An update is available",
+        Key.SPEECH_UNAVAILABLE to "Speech unavailable. Reopen Fingerpost.",
+        Key.CAMERA_RECOVERY to "Camera tracking couldn't start. Reopen Fingerpost.",
+        Key.FRAME_NO_SCREEN to "I can't see a screen. Point the phone at it.",
+        Key.FRAME_CUT_LEFT to "The screen's left edge is cut off. Move the phone left.",
+        Key.FRAME_CUT_RIGHT to "The screen's right edge is cut off. Move the phone right.",
+        Key.FRAME_CUT_TOP to "The screen's top edge is cut off. Move the phone up.",
+        Key.FRAME_CUT_BOTTOM to "The screen's bottom edge is cut off. Move the phone down.",
+        Key.FRAME_MOVE_CLOSER to "Move closer.",
+        Key.FRAME_MOVE_BACK to "Move back a little.",
+        Key.FRAME_MOVE_LEFT to "Move the phone left.",
+        Key.FRAME_MOVE_RIGHT to "Move the phone right.",
+        Key.FRAME_MOVE_UP to "Move the phone up.",
+        Key.FRAME_MOVE_DOWN to "Move the phone down.",
     )
 
     private val hi: Map<Key, String> = mapOf(
@@ -246,6 +272,19 @@ object Strings {
         Key.OFFLINE_DWELL_DONE to "मुझे लगता है यह दब गया।",
         Key.OFFLINE_ASR_UNAVAILABLE to "इस फ़ोन पर ऑफ़लाइन आवाज़ पहचान चालू नहीं है। Android सेटिंग्स में इसे चालू करें।",
         Key.UPDATE_AVAILABLE to "एक अपडेट उपलब्ध है",
+        Key.SPEECH_UNAVAILABLE to "आवाज़ उपलब्ध नहीं है। Fingerpost फिर से खोलें।",
+        Key.CAMERA_RECOVERY to "कैमरा ट्रैकिंग शुरू नहीं हो सकी। Fingerpost फिर से खोलें।",
+        Key.FRAME_NO_SCREEN to "स्क्रीन नहीं दिख रही है। फ़ोन को उसकी ओर करें।",
+        Key.FRAME_CUT_LEFT to "स्क्रीन का बायां किनारा कट रहा है। फ़ोन को बाईं ओर करें।",
+        Key.FRAME_CUT_RIGHT to "स्क्रीन का दायां किनारा कट रहा है। फ़ोन को दाईं ओर करें।",
+        Key.FRAME_CUT_TOP to "स्क्रीन का ऊपर का किनारा कट रहा है। फ़ोन को ऊपर करें।",
+        Key.FRAME_CUT_BOTTOM to "स्क्रीन का नीचे का किनारा कट रहा है। फ़ोन को नीचे करें।",
+        Key.FRAME_MOVE_CLOSER to "थोड़ा पास आएं।",
+        Key.FRAME_MOVE_BACK to "थोड़ा पीछे जाएं।",
+        Key.FRAME_MOVE_LEFT to "फ़ोन को बाईं ओर करें।",
+        Key.FRAME_MOVE_RIGHT to "फ़ोन को दाईं ओर करें।",
+        Key.FRAME_MOVE_UP to "फ़ोन को ऊपर करें।",
+        Key.FRAME_MOVE_DOWN to "फ़ोन को नीचे करें।",
     )
 
     private val es: Map<Key, String> = mapOf(
@@ -320,6 +359,19 @@ object Strings {
         Key.OFFLINE_DWELL_DONE to "Creo que se pulsó.",
         Key.OFFLINE_ASR_UNAVAILABLE to "El reconocimiento de voz sin conexión no está activado. Actívalo en los ajustes de Android.",
         Key.UPDATE_AVAILABLE to "Hay una actualización disponible",
+        Key.SPEECH_UNAVAILABLE to "La voz no está disponible. Vuelve a abrir Fingerpost.",
+        Key.CAMERA_RECOVERY to "No se pudo iniciar el seguimiento de la cámara. Vuelve a abrir Fingerpost.",
+        Key.FRAME_NO_SCREEN to "No veo una pantalla. Apunta el teléfono hacia ella.",
+        Key.FRAME_CUT_LEFT to "El borde izquierdo de la pantalla queda fuera. Mueve el teléfono a la izquierda.",
+        Key.FRAME_CUT_RIGHT to "El borde derecho de la pantalla queda fuera. Mueve el teléfono a la derecha.",
+        Key.FRAME_CUT_TOP to "El borde superior de la pantalla queda fuera. Mueve el teléfono hacia arriba.",
+        Key.FRAME_CUT_BOTTOM to "El borde inferior de la pantalla queda fuera. Mueve el teléfono hacia abajo.",
+        Key.FRAME_MOVE_CLOSER to "Acércate.",
+        Key.FRAME_MOVE_BACK to "Aléjate un poco.",
+        Key.FRAME_MOVE_LEFT to "Mueve el teléfono a la izquierda.",
+        Key.FRAME_MOVE_RIGHT to "Mueve el teléfono a la derecha.",
+        Key.FRAME_MOVE_UP to "Mueve el teléfono hacia arriba.",
+        Key.FRAME_MOVE_DOWN to "Mueve el teléfono hacia abajo.",
     )
 
     val strings: Map<Locale, Map<Key, String>> = mapOf(
@@ -350,6 +402,21 @@ object Strings {
             else -> EN
         }
         return get(loc, key)
+    }
+
+    fun framing(cue: FramingCue, locale: Locale = EN): String = when (cue) {
+        FramingCue.NO_SCREEN -> get(Key.FRAME_NO_SCREEN, locale)
+        FramingCue.CUT_LEFT -> get(Key.FRAME_CUT_LEFT, locale)
+        FramingCue.CUT_RIGHT -> get(Key.FRAME_CUT_RIGHT, locale)
+        FramingCue.CUT_TOP -> get(Key.FRAME_CUT_TOP, locale)
+        FramingCue.CUT_BOTTOM -> get(Key.FRAME_CUT_BOTTOM, locale)
+        FramingCue.MOVE_CLOSER -> get(Key.FRAME_MOVE_CLOSER, locale)
+        FramingCue.MOVE_BACK -> get(Key.FRAME_MOVE_BACK, locale)
+        FramingCue.MOVE_LEFT -> get(Key.FRAME_MOVE_LEFT, locale)
+        FramingCue.MOVE_RIGHT -> get(Key.FRAME_MOVE_RIGHT, locale)
+        FramingCue.MOVE_UP -> get(Key.FRAME_MOVE_UP, locale)
+        FramingCue.MOVE_DOWN -> get(Key.FRAME_MOVE_DOWN, locale)
+        FramingCue.GOOD -> ""
     }
 
     fun direction(dir: Dir, locale: Locale = EN): String = when (dir) {

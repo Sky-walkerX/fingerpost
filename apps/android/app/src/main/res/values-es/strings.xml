@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="camera_needed">Fingerpost necesita acceso a la cámara para ver la pantalla que quieres pulsar.</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <string name="session_description">Cámara de Fingerpost. Toca dos veces para iniciar o detener la guía.</string>
+    <string name="start_session">Iniciar guía</string>
+    <string name="stop_session">Detener guía</string>
+    <string name="camera_unavailable">Cámara no disponible. Cierra las otras aplicaciones de cámara y vuelve a abrir Fingerpost.</string>
+    <string name="tracking_unavailable">El seguimiento del dedo no está disponible. Cierra Fingerpost y vuelve a abrirlo.</string>
+    <string name="tone_unavailable">El tono no está disponible. Cierra Fingerpost y vuelve a abrirlo.</string>
+    <string name="skip_tutorial">Omitir tutorial</string>
+    <string name="repeat_tutorial">Repetir instrucción</string>
+    <string name="tutorial_gestures">Toca dos veces para repetir. Usa Omitir tutorial en las acciones de TalkBack, o desliza dos dedos para omitirlo.</string>
+    <string name="tutorial_speech_failed">La voz no está disponible. Lee esta instrucción o usa Omitir tutorial.</string>
+    <string name="tutorial_storage_unavailable">Los ajustes del tutorial no están disponibles. Cierra Fingerpost y vuelve a abrirlo.</string>
+    <string name="tutorial_save_failed">No se pudo guardar el progreso del tutorial. Inténtalo de nuevo.</string>
+    <string name="retry">Intentar de nuevo</string>
+</resources>

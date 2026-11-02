@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 class SpeechBoundaryTest {
     @Test fun untranslatedLocalesAreRejectedExplicitly() {
         assertThrows(IllegalArgumentException::class.java) {
-            Phrases.render(GuideCue(listOf(Dir.RIGHT), MagnitudeWord.NONE), "hi")
+            Phrases.render(GuideCue(listOf(Dir.RIGHT), MagnitudeWord.NONE), "fr")
         }
     }
 

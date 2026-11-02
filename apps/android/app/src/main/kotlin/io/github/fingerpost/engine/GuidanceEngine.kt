@@ -109,7 +109,7 @@ class GuidanceEngine(
     private var finishedDuringPin = false
     /** guidance-spec §10: layout and digit-under-finger, earphones only. Digits never reach logs or status. */
     private val pinHelp = PinMode(context, onEarphonesLost = {
-        post { say("Earphones disconnected. Connect earphones for PIN help.", SpeechPriority.SAFETY) }
+        post { say(Strings.get(Key.EARPHONES_DISCONNECTED, machine.locale), SpeechPriority.SAFETY) }
     })
     private val digitUnder = DigitUnderFinger()
     private var layoutAnnounced = false
@@ -150,17 +150,17 @@ class GuidanceEngine(
     } }, onError = { failed -> post {
         updateNotice.clear()
         if (failed == null || speech.onDone(failed))
-            mutableStatus.value = mutableStatus.value.copy(message = "Speech unavailable. Reopen Fingerpost.")
+            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.SPEECH_UNAVAILABLE, machine.locale))
     } })
     private val router = FrameRouter(hands, guard, onFrame = { post { vision(it) } }, onKeyframe = { post { encoded(it) } },
-        onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = "Camera tracking couldn't start. Reopen Fingerpost.") } })
+        onError = { post { tone.stop(); mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale)) } })
 
     init {
         speaker.setLocale(settings.locale)
         machine.locale = guidanceLocale(settings.locale)
         if (!openCvReady) {
-            mutableStatus.value = mutableStatus.value.copy(message = "Camera tracking couldn't start. Reopen Fingerpost.")
-            say("Camera tracking couldn't start.", SpeechPriority.STATE)
+            mutableStatus.value = mutableStatus.value.copy(message = Strings.get(Key.CAMERA_RECOVERY, machine.locale))
+            say(Strings.get(Key.CAMERA_TRACKING_FAILED, machine.locale), SpeechPriority.STATE)
         } else {
             scope.launch { client.messages.collect(::server) }
             scope.launch { client.connected.collect { connected ->
@@ -209,7 +209,7 @@ class GuidanceEngine(
         wantsMic = granted && (ready || offline) && !guard.pinMode && machine.state in LISTENING_STATES
         if (!granted) {
             wantsMic = false
-            say("Microphone access is needed. Open settings to allow it.", SpeechPriority.STATE)
+            say(Strings.get(Key.MIC_PERMISSION_NEEDED, machine.locale), SpeechPriority.STATE)
         }
     }
 
@@ -355,7 +355,7 @@ class GuidanceEngine(
             dispatch(GEvent.TrackingLost(now))
         }
         if (frame.tracking == TrackState.DEGRADED && now - lastGlareAt >= 1500) {
-            lastGlareAt = now; say(Prompts.HOLD_STEADY, SpeechPriority.STATE)
+            lastGlareAt = now; say(Strings.get(Key.HOLD_STEADY, machine.locale), SpeechPriority.STATE)
         }
         val q = frame.quad?.map { Vec2(it.x * frame.width, it.y * frame.height) }
         if (machine.state == GState.FRAMING) {
@@ -367,7 +367,7 @@ class GuidanceEngine(
             dispatch(GEvent.Frame(now, frame.stable && inView, false, null))
         }
         if (frame.glare && frame.stable && now - lastGlareAt >= 5000) {
-            lastGlareAt = now; say("There's glare. Tilt the phone a little.", SpeechPriority.GUIDE)
+            lastGlareAt = now; say(Strings.get(Key.GLARE_WARNING, machine.locale), SpeechPriority.GUIDE)
         }
         if (machine.state == GState.ON_TARGET && frame.tracking == TrackState.TRACKING && frame.gray != null && frame.handMask != null) {
             if (change.update(frame.gray, frame.handMask)) dispatch(GEvent.PressDetected(now, Evidence.SCREEN_CHANGE))
@@ -397,7 +397,7 @@ class GuidanceEngine(
             frame.quad?.map { Vec2(it.x * first.frameW, it.y * first.frameH) }) else null
         dispatch(GEvent.Frame(now, false, result != null, result?.zone))
         if (result == null || machine.state != GState.GUIDING || now < quietUntil) { tone.stop(); return }
-        planner.plan(result.error, orientationFor(pitch), now)?.let(Phrases::render)?.let { say(it, SpeechPriority.GUIDE) }
+        planner.plan(result.error, orientationFor(pitch), now)?.let { Phrases.render(it, machine.locale.language) }?.let { say(it, SpeechPriority.GUIDE) }
         tone.setFrequency(toneFrequencyHz(result.error.length))
         tone.setPan(tonePan(result.error.x))
         val radius = finger.target?.nearRadius ?: 1.0
@@ -673,7 +673,7 @@ class GuidanceEngine(
         polygon = message.polygon.map { Vec2(it.u, it.v) }
         if (QuadEstimator.quadArea(polygon) == 0.0) {
             polygon = emptyList()
-            dispatch(GEvent.TargetNotFound(time(), Prompts.LOCATE_FAILED))
+            dispatch(GEvent.TargetNotFound(time(), Strings.get(Key.LOCATE_FAILED, machine.locale)))
             return
         }
         finger.setTarget(polygon, width / height)
@@ -681,7 +681,7 @@ class GuidanceEngine(
         val tokens = router.latestTokens?.let { KeyframeTokens.forScreen(it, q) }.orEmpty()
         val agrees = if (element.role == ElementRole.ICON) message.confidence >= 0.75
             else twoSourceAgree(element.label, Bbox.of(polygon), tokens)
-        val arrival = if (agrees) message.say else "I think this is ${element.label}, but I'm not sure."
+        val arrival = if (agrees) message.say else "${Strings.get(Key.UNCERTAIN_PREFIX, machine.locale)} ${element.label}, ${Strings.get(Key.UNCERTAIN_SUFFIX, machine.locale)}"
         dispatch(GEvent.TargetArrived(time(), arrival, role))
     }
 
@@ -694,11 +694,11 @@ class GuidanceEngine(
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
         mutableStatus.value = mutableStatus.value.copy(cloudOff = true)
         event(EventKind.PIN_MODE_ENTERED)
-        say("PIN pad detected. I'll stay offline while you enter it.", SpeechPriority.SAFETY)
+        say(Strings.get(Key.PIN_PAD_DETECTED, machine.locale), SpeechPriority.SAFETY)
         digitUnder.reset(); layoutAnnounced = false
         pinHelp.start()
         // Without earphones nothing about the keys is spoken: the speaker could be overheard.
-        if (!pinHelp.earphonesConnected()) say("Connect earphones for PIN help.", SpeechPriority.SAFETY)
+        if (!pinHelp.earphonesConnected()) say(Strings.get(Key.CONNECT_EARPHONES, machine.locale), SpeechPriority.SAFETY)
     }
     private fun pinExited() {
         pinHelp.stop(); digitUnder.reset()
@@ -707,10 +707,10 @@ class GuidanceEngine(
         if (finishedDuringPin) {
             finishedDuringPin = false
             dispatch(GEvent.Abort(time()))
-            say("Done.", SpeechPriority.STATE)
+            say(Strings.get(Key.DONE, machine.locale), SpeechPriority.STATE)
             return
         }
-        if (!offline) say("Back online.", SpeechPriority.STATE)
+        if (!offline) say(Strings.get(Key.BACK_ONLINE, machine.locale), SpeechPriority.STATE)
         if (ready || offline) {
             if (machine.state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) {
                 dispatch(GEvent.Abort(time()))
@@ -737,20 +737,7 @@ class GuidanceEngine(
     }
     fun closeVision() { router.close() }
 
-    private fun framingText(cue: FramingCue): String = when (cue) {
-        FramingCue.NO_SCREEN -> "I can't see a screen. Point the phone at it."
-        FramingCue.CUT_LEFT -> "The screen's left edge is cut off. Move the phone left."
-        FramingCue.CUT_RIGHT -> "The screen's right edge is cut off. Move the phone right."
-        FramingCue.CUT_TOP -> "The screen's top edge is cut off. Move the phone up."
-        FramingCue.CUT_BOTTOM -> "The screen's bottom edge is cut off. Move the phone down."
-        FramingCue.MOVE_CLOSER -> "Move closer."
-        FramingCue.MOVE_BACK -> "Move back a little."
-        FramingCue.MOVE_LEFT -> "Move the phone left."
-        FramingCue.MOVE_RIGHT -> "Move the phone right."
-        FramingCue.MOVE_UP -> "Move the phone up."
-        FramingCue.MOVE_DOWN -> "Move the phone down."
-        FramingCue.GOOD -> ""
-    }
+    private fun framingText(cue: FramingCue): String = Strings.framing(cue, machine.locale)
     private companion object {
         val openCvReady by lazy { OpenCVLoader.initLocal() }
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */
