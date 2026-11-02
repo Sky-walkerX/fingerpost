@@ -25,14 +25,17 @@ class UploadGuard(
     @Synchronized
     fun sendIfAllowed(send: () -> Boolean): Boolean = !pinMode && send()
 
-    /** Feed every OCR result (about 5 Hz). Keeps PIN mode state current even when nothing is being uploaded. null = OCR failed. */
+    /**
+     * Feed every OCR result (about 5 Hz). Keeps PIN mode state current even when nothing is being uploaded. null = OCR failed.
+     * [aspect]: width ÷ height in pixels of the space the tokens are normalized to (PinGate.check).
+     */
     @Synchronized
-    fun observe(tokens: List<OcrToken>?, nowMs: Long) {
+    fun observe(tokens: List<OcrToken>?, nowMs: Long, aspect: Double = 1.0) {
         if (tokens == null) {
             fewDigitsSince = null
             return
         }
-        if (PinGate.check(tokens) != PinGateReason.NONE) {
+        if (PinGate.check(tokens, aspect) != PinGateReason.NONE) {
             enterPinMode()
             return
         }
@@ -54,8 +57,8 @@ class UploadGuard(
      * whose OCR failed (null) is never uploaded either, because it could not be checked.
      */
     @Synchronized
-    fun mayUpload(tokens: List<OcrToken>?, nowMs: Long): Boolean {
-        observe(tokens, nowMs)
+    fun mayUpload(tokens: List<OcrToken>?, nowMs: Long, aspect: Double = 1.0): Boolean {
+        observe(tokens, nowMs, aspect)
         return tokens != null && !pinMode
     }
 

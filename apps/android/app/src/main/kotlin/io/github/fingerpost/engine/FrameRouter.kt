@@ -121,10 +121,13 @@ class FrameRouter(
                                 if (closed.get()) return@execute
                                 val tokens = ocr.recognize(full)
                                 latestTokens = tokens
-                                val gateTokens = if (tokens == null || normalized == null || PinGate.check(tokens) != PinGateReason.NONE ||
-                                    (guard.pinMode && PinGate.digitCount(tokens) >= 5)) tokens
-                                    else KeyframeTokens.forScreen(tokens, normalized)
-                                guard.observe(gateTokens, SystemClock.elapsedRealtime())
+                                // guidance-spec §10.1 tolerances are in pixels: each check gets the aspect of its token space.
+                                val frameAspect = full.width.toDouble() / full.height
+                                val useFrame = tokens == null || normalized == null || PinGate.check(tokens, frameAspect) != PinGateReason.NONE ||
+                                    (guard.pinMode && PinGate.digitCount(tokens) >= 5)
+                                val gateTokens = if (useFrame) tokens else KeyframeTokens.forScreen(tokens!!, normalized!!)
+                                val gateAspect = if (useFrame) frameAspect else quadPixelAspect(normalized!!, full.width, full.height)
+                                guard.observe(gateTokens, SystemClock.elapsedRealtime(), gateAspect)
                                 if (BuildConfig.DEBUG) android.util.Log.d("FingerpostOcr", "tokens=${tokens?.size ?: -1}")
                                 val next = request.get()
                                 if (next != null && !guard.pinMode && tokens != null) {
@@ -133,7 +136,7 @@ class FrameRouter(
                                         else io.github.fingerpost.guidance.KeyframePurpose.LOCATE
                                     val kind = if (capturePolicy.kind(quadPx != null, purpose) == CaptureKind.SCREEN) KeyframeKind.SCREEN else KeyframeKind.FULL
                                     val encoded = keyframer.encode(full, quadPx, kind, next.purpose, tokens,
-                                        SystemClock.elapsedRealtime(), gateTokens)
+                                        SystemClock.elapsedRealtime(), gateTokens, gateAspect)
                                     if (encoded != null && !closed.get() && request.compareAndSet(next, null))
                                         onKeyframe(KeyframeCapture(encoded, normalized, next.generation))
                                 }

@@ -18,12 +18,18 @@ object PinGate {
         "(?=$|[^$WORD])", RegexOption.IGNORE_CASE)
     private val keyLabel = Regex("^[0-9][A-Za-z]{0,4}$")
 
-    fun check(tokens: List<OcrToken>): PinGateReason {
+    /**
+     * [aspect] is width ÷ height, in pixels, of the space the tokens are normalized to (the camera frame or the
+     * rectified screen). The §10.1 tolerances are in pixels, so the column tolerance (a horizontal distance) is
+     * the key-height tolerance divided by it. Without this, a wide screen merged neighbouring key columns.
+     */
+    fun check(tokens: List<OcrToken>, aspect: Double = 1.0): PinGateReason {
         if (tokens.any { pinText.containsMatchIn(it.text) }) return PinGateReason.PIN_TEXT
         val digits = tokens.flatMap(::digitTokens)
         if (digits.map { it.text }.toSet().size < 7) return PinGateReason.NONE
         val tol = 0.6 * digits.map { it.h }.sorted()[digits.size / 2]
-        val columns = groups(digits, tol * 1.5) { it.cx }.filter { it.size >= 2 }
+        val pxAspect = aspect.takeIf { it.isFinite() && it > 0 } ?: 1.0
+        val columns = groups(digits, tol * 1.5 / pxAspect) { it.cx }.filter { it.size >= 2 }
         val grid = columns.flatten()
         if (columns.size != 3 || grid.map { it.text }.toSet().size < 7) return PinGateReason.NONE
         return if (cluster(grid.map { it.cy }, tol) in 3..4) PinGateReason.DIGIT_GRID else PinGateReason.NONE
@@ -63,4 +69,16 @@ object PinGate {
         for (i in 1 until s.size) if (abs(s[i] - s[i - 1]) > tol) n++
         return n
     }
+}
+
+/**
+ * Width ÷ height in pixels of a frame-normalized quad (TL, TR, BR, BL), averaging opposite sides: the space that
+ * screen-rectified tokens (KeyframeTokens.forScreen) are normalized to. 1.0 for a degenerate quad.
+ */
+fun quadPixelAspect(quad: List<Vec2>, frameW: Int, frameH: Int): Double {
+    if (quad.size != 4) return 1.0
+    val px = quad.map { Vec2(it.x * frameW, it.y * frameH) }
+    val w = ((px[1] - px[0]).length + (px[2] - px[3]).length) / 2
+    val h = ((px[3] - px[0]).length + (px[2] - px[1]).length) / 2
+    return if (w > 0 && h > 0) w / h else 1.0
 }

@@ -33,8 +33,9 @@ class Keyframer(private val guard: UploadGuard, private val faces: FaceCover) {
      * [tokens] must be OCR of this very frame; null (OCR failed) blocks it. Blocking: call off the UI thread.
      */
     fun encode(upright: Bitmap, quadPx: List<Vec2>?, kind: KeyframeKind, purpose: KeyframePurpose,
-               tokens: List<OcrToken>?, nowMs: Long, gateTokens: List<OcrToken>? = tokens): EncodedKeyframe? {
-        if (tokens == null || !guard.mayUpload(gateTokens, nowMs)) return null
+               tokens: List<OcrToken>?, nowMs: Long, gateTokens: List<OcrToken>? = tokens,
+               gateAspect: Double = upright.width.toDouble() / upright.height): EncodedKeyframe? {
+        if (tokens == null || !guard.mayUpload(gateTokens, nowMs, gateAspect)) return null
         return if (kind == KeyframeKind.SCREEN && quadPx != null) screen(upright, quadPx, purpose, tokens)
         else full(upright, quadPx, purpose, tokens)
     }
