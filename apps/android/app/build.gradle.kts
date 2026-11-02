@@ -21,6 +21,26 @@ android {
         // ws://<laptop LAN IP>:8080 for local dev; the Cloud Run wss:// URL for releases. Set fingerpost.gatewayUrl in ~/.gradle/gradle.properties.
         buildConfigField("String", "GATEWAY_URL", "\"${providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"}\"")
     }
+    val releaseStoreFile = providers.environmentVariable("RELEASE_STORE_FILE").orNull
+    val releaseStorePassword = providers.environmentVariable("RELEASE_STORE_PASSWORD").orNull
+    val releaseKeyAlias = providers.environmentVariable("RELEASE_KEY_ALIAS").orNull
+    val releaseKeyPassword = providers.environmentVariable("RELEASE_KEY_PASSWORD").orNull
+    val hasReleaseSigning = !releaseStoreFile.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             manifestPlaceholders["cleartext"] = "true" // a laptop gateway over ws://
@@ -29,7 +49,13 @@ android {
                 ndk { abiFilters += abi }
             }
         }
-        release { isMinifyEnabled = false; manifestPlaceholders["cleartext"] = "false" }
+        release {
+            isMinifyEnabled = false
+            manifestPlaceholders["cleartext"] = "false"
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {

@@ -99,7 +99,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A6-1 | Offline basic mode | A | – | doing | Codex |
 | A6-2 | Low-vision UI + a11y audit | A | – | todo | |
 | A6-3 | Phrasing polish | A+C | A4-4 | todo | |
-| B6-1 | Signed APK release workflow | B | – | todo | |
+| B6-1 | Signed APK release workflow | B | – | doing | Codex |
 | B6-2 | Waitlist + config endpoints | B | – | doing | Codex |
 | B6-3 | Threat model, alerts, runbook | B | – | todo | |
 | C6-1 | Launch landing page | C | B6-2 | todo | |
@@ -471,3 +471,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: C4-4 mock: PinGateDatasetTest on 170 sim items: recall 120/120 (also text-free and under OCR noise), 0/50 amount summaries blocked. Found and fixed PIN gate column tolerance ignoring pixel aspect (noisy grid-only recall 0/120 → 120/120). Live server/real-photo recall still 🔑.
 - 2026-11-02: B4-4 gateway speech in en/hi/es via src/i18n/strings.ts t(): targets, asks, verify, errors, offline/private notices, agent lines; positions/lists match the phone; Spark planner gets reply_language. 447 gateway tests pass. Native listen-through is A6-3.
 - 2026-11-02: C5-2 /privacy/, /data-safety/, /install/ (TalkBack-first, 8 numbered steps) + site nav; axe 0 violations in jsdom and real Chromium (contrast included, 390 px and 1280 px); palette ≥4.5:1. 51 web tests. Needs a human contact email for waitlist removals.
+- 2026-11-02: B6-1 release.yml (tag v* → signed :app:assembleRelease, fingerpost-<tag>.apk + .sha256, GitHub Release, cert SHA-256 in job summary, keystore deleted always()); release signingConfig from 4 env vars, unsigned without them; docs/runbook.md Releasing. Doing until v1.0.0-rc1 installs on a clean phone.
