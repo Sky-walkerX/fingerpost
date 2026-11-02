@@ -26,6 +26,9 @@ import io.github.fingerpost.guidance.KeyframePurpose as Purpose
 import io.github.fingerpost.guidance.Priority as SpeechPriority
 import io.github.fingerpost.protocol.Target as ServerTarget
 import io.github.fingerpost.settings.Settings
+import io.github.fingerpost.offline.OfflineAsr
+import io.github.fingerpost.offline.OfflineLocate
+import io.github.fingerpost.offline.OfflineSession
 
 /** State, speech and session callbacks are serialized on the main dispatcher. Native vision stays off it. */
 class GuidanceEngine(
@@ -38,7 +41,7 @@ class GuidanceEngine(
 ) {
     data class Status(val state: GState = GState.IDLE, val connected: Boolean = false, val cloudOff: Boolean = false,
         val message: String? = null, val quad: List<Vec2>? = null, val frameWidth: Int = 1, val frameHeight: Int = 1,
-        val tracking: Boolean = false)
+        val tracking: Boolean = false, val basicMode: Boolean = false)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableStatus = MutableStateFlow(Status())
     val status = mutableStatus.asStateFlow()
@@ -55,6 +58,21 @@ class GuidanceEngine(
     private val earcons = Earcons()
     /** A5-1: names the element under the finger over the last layout. Local only: nothing is uploaded. */
     private val explorer = TouchExplorer()
+    /**
+     * A6-1 basic mode: no network, mode{offline} or the kill switch. Goals come from on-device speech, targets from
+     * on-device OCR boxes, and nothing is uploaded. It lasts until the session ends while the cloud is back.
+     */
+    private var offline = false
+    private var onlineWhenIdle = false
+    private var offlineGoal = ""
+    private var lastEvidence: Evidence? = null
+    private var disconnectedSince: Long? = null
+    private var offlineAsrMissing = false
+    private val offlineSession = OfflineSession()
+    private val offlineAsr = OfflineAsr(context, onFinal = { text -> post { offlineHeard(text) } }, onUnavailable = { post {
+        wantsMic = false
+        if (!offlineAsrMissing) { offlineAsrMissing = true; say(Strings.get(Key.OFFLINE_ASR_UNAVAILABLE, machine.locale), SpeechPriority.STATE) }
+    } })
     private val auth = Auth(context)
     @Volatile private var closed = false
     private var ready = false
@@ -134,7 +152,9 @@ class GuidanceEngine(
             scope.launch { client.messages.collect(::server) }
             scope.launch { client.connected.collect { connected ->
                 mutableStatus.value = mutableStatus.value.copy(connected = connected)
-                if (!connected) { ready = false; reset(); wantsStart = true }
+                disconnectedSince = if (connected) null else disconnectedSince ?: time()
+                // A basic-mode session doesn't need the socket, so losing it changes nothing there.
+                if (!connected && !offline) { ready = false; reset(); wantsStart = true }
             } }
             scope.launch { hands.samples.collect(::handResult) }
             scope.launch { tone.unavailable.collect { unavailable ->
@@ -165,7 +185,7 @@ class GuidanceEngine(
         if (guard.pinMode) return
         if (machine.state == GState.IDLE) {
             wantsStart = true
-            if (ready) { wantsStart = false; dispatch(GEvent.Start(time())) }
+            if (ready || offline) { wantsStart = false; dispatch(GEvent.Start(time())) }
         } else {
             client.send(Abort(newId(), nowMs()))
             reset()
@@ -173,7 +193,7 @@ class GuidanceEngine(
     }
 
     fun micPermissionResult(granted: Boolean) {
-        wantsMic = granted && ready && !guard.pinMode && machine.state in LISTENING_STATES
+        wantsMic = granted && (ready || offline) && !guard.pinMode && machine.state in LISTENING_STATES
         if (!granted) {
             wantsMic = false
             say("Microphone access is needed. Open settings to allow it.", SpeechPriority.STATE)
@@ -184,6 +204,7 @@ class GuidanceEngine(
         generation++
         wantsMic = false
         mic.stop()
+        offlineAsr.stop()
         tone.stop()
         speaker.stop()
         speech.clear()
@@ -206,6 +227,7 @@ class GuidanceEngine(
             }
             if (before == GState.ON_TARGET && machine.state == GState.GUIDING) quietUntil = time() + 300
             if (machine.state == GState.TOUCH_EXPLORE || before == GState.TOUCH_EXPLORE) explorer.reset()
+            if (machine.state == GState.IDLE && onlineWhenIdle) leaveOffline()
         }
         mutableStatus.value = mutableStatus.value.copy(state = machine.state)
     }
@@ -214,8 +236,9 @@ class GuidanceEngine(
         when (effect) {
             is Effect.Say -> say(effect.text, effect.priority, effect.completionId)
             Effect.OpenMic -> wantsMic = true
-            Effect.CloseMic -> { wantsMic = false; mic.stop() }
-            is Effect.SendKeyframe -> if (ready && !guard.pinMode) router.requestKeyframe(when (effect.purpose) {
+            Effect.CloseMic -> { wantsMic = false; mic.stop(); offlineAsr.stop() }
+            is Effect.SendKeyframe -> if (offline) { if (!guard.pinMode) offlineKeyframe(effect.purpose) }
+            else if (ready && !guard.pinMode) router.requestKeyframe(when (effect.purpose) {
                 Purpose.LOCATE -> KeyframePurpose.LOCATE
                 Purpose.VERIFY -> KeyframePurpose.VERIFY
                 Purpose.EXPLORE -> KeyframePurpose.EXPLORE
@@ -225,7 +248,10 @@ class GuidanceEngine(
             is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind)
             Effect.SendTargetReached -> event(EventKind.TARGET_REACHED)
             Effect.SendScreenChanged -> event(EventKind.SCREEN_CHANGED)
-            is Effect.SendTapDetected -> event(EventKind.TAP_DETECTED, EventDetail(TapEvidence.valueOf(effect.evidence.name)))
+            is Effect.SendTapDetected -> {
+                lastEvidence = effect.evidence
+                event(EventKind.TAP_DETECTED, EventDetail(TapEvidence.valueOf(effect.evidence.name)))
+            }
             is Effect.SendAnswer -> client.send(Answer(newId(), nowMs(), effect.askId, effect.text))
             is Effect.SendConfirmReply -> client.send(ConfirmReply(newId(), nowMs(), effect.confirmId, effect.accepted, effect.utterance))
             // On the phone the UploadGuard owns PIN mode (it already stops uploads and the mic); the machine's
@@ -234,9 +260,10 @@ class GuidanceEngine(
         }
     }
 
-    private fun event(kind: EventKind, detail: EventDetail? = null) { client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
+    private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
     private fun say(text: String, priority: SpeechPriority, completion: Long? = null) {
         if (mic.isRunning) mic.stop()
+        if (offlineAsr.isListening) offlineAsr.stop()
         act(speech.offer(Utterance(text, priority, time(), completion)))
         pumpSpeech()
     }
@@ -276,7 +303,14 @@ class GuidanceEngine(
                 dispatch(GEvent.Frame(now, false, false, null))
         }
         pumpSpeech()
-        if (wantsMic && ready && speech.current == null && !mic.isRunning) {
+        // guidance-spec §11b: 5 s without the gateway (no network) → basic mode.
+        if (!offline && !guard.pinMode && disconnectedSince?.let { now - it >= 5_000 } == true) enterOffline()
+        if (offline && wantsMic && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                offlineAsr.listen(asrLanguage(settings.locale))
+            else { wantsMic = false; requestMicPermission() }
+        }
+        if (!offline && wantsMic && ready && speech.current == null && !mic.isRunning) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) mic.start()
             else { wantsMic = false; requestMicPermission() }
         }
@@ -350,6 +384,71 @@ class GuidanceEngine(
         if (settings.tone) tone.start() else tone.stop()
     }
 
+    /** [reason] is the gateway's spoken error, said together with the mode so neither is dropped from the queue. */
+    private fun enterOffline(reason: String? = null) {
+        if (offline || closed) return
+        val wasActive = wantsStart || machine.state != GState.IDLE
+        reset()
+        offline = true; ready = false; onlineWhenIdle = false; offlineAsrMissing = false
+        mutableStatus.value = mutableStatus.value.copy(cloudOff = true, basicMode = true)
+        val notice = Strings.get(Key.BASIC_MODE, machine.locale)
+        say(reason?.trim()?.takeIf { it.isNotEmpty() }?.let { "$it $notice" } ?: notice, SpeechPriority.STATE)
+        if (wasActive && !guard.pinMode) { wantsStart = false; dispatch(GEvent.Start(time())) }
+    }
+
+    private fun leaveOffline() {
+        offline = false; onlineWhenIdle = false
+        offlineAsr.stop()
+        mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready, basicMode = false)
+        // A dropped socket counts again only from now on.
+        disconnectedSince = if (mutableStatus.value.connected) null else time()
+    }
+
+    /** A final on-device transcript. Basic mode has only goals (no task or explore turns). */
+    private fun offlineHeard(text: String) {
+        if (!offline || machine.state != GState.LISTENING) return
+        offlineGoal = text
+        dispatch(GEvent.GoalHeard(time(), text))
+    }
+
+    /**
+     * Basic mode answers the machine's keyframe requests locally, after the current dispatch finishes:
+     * locate → resolve the goal against the screen's OCR; verify → the press evidence the phone already saw.
+     */
+    private fun offlineKeyframe(purpose: Purpose) {
+        val gen = generation
+        scope.launch(Dispatchers.Main) {
+            if (closed || !offline || gen != generation || guard.pinMode) return@launch
+            when (purpose) {
+                Purpose.VERIFY -> dispatch(GEvent.VerifyArrived(time(), VerifyResult.OK, offlineSession.verifySay(lastEvidence, machine.locale)))
+                Purpose.LOCATE, Purpose.EXPLORE -> offlineLocate()
+            }
+        }
+    }
+
+    private fun offlineLocate() {
+        val frame = latest
+        val q = frame?.quad
+        val tokens = router.latestTokens
+        if (frame == null || q == null || tokens == null) {
+            dispatch(GEvent.TargetNotFound(time(), Strings.get(Key.LOCATE_FAILED, machine.locale))); return
+        }
+        when (val r = offlineSession.locate(offlineGoal, KeyframeTokens.forScreen(tokens, q), machine.locale)) {
+            is OfflineLocate.NotFound -> dispatch(GEvent.TargetNotFound(time(), r.say))
+            is OfflineLocate.Target -> {
+                val pixels = q.map { Vec2(it.x * frame.width, it.y * frame.height) }
+                val width = ((pixels[1] - pixels[0]).length + (pixels[2] - pixels[3]).length) / 2
+                val height = ((pixels[3] - pixels[0]).length + (pixels[2] - pixels[1]).length) / 2
+                if (width <= 0 || height <= 0) { dispatch(GEvent.TargetNotFound(time(), Strings.get(Key.LOCATE_FAILED, machine.locale))); return }
+                polygon = r.polygon
+                finger.setTarget(polygon, width / height)
+                planner.reset()
+                // The OCR box is the only source offline, so it's text by construction: never a pay-role element.
+                dispatch(GEvent.TargetArrived(time(), r.say, "button"))
+            }
+        }
+    }
+
     /** Touch-explore: the element under the finger's pad is named once it settles; leaving it plays an earcon. */
     private fun touchHand(samples: List<FingerSample>) {
         val now = time()
@@ -395,6 +494,13 @@ class GuidanceEngine(
 
     private fun server(message: ServerMessage) {
         if (message is Ready) {
+            if (offline) {
+                // The cloud is back: finish this session in basic mode, then switch.
+                if (message.flags.cloudEnabled) { if (machine.state == GState.IDLE) leaveOffline() else onlineWhenIdle = true }
+                ready = message.flags.cloudEnabled
+                return
+            }
+            if (!message.flags.cloudEnabled) { enterOffline(); return }
             ready = message.flags.cloudEnabled
             mutableStatus.value = mutableStatus.value.copy(connected = true, cloudOff = guard.pinMode || !ready, message = null)
             if (wantsStart && ready && !guard.pinMode) { wantsStart = false; dispatch(GEvent.Start(time())) }
@@ -441,8 +547,9 @@ class GuidanceEngine(
                 if (machine.state == GState.EXPLORING) dispatch(GEvent.ExploreSaid(time()))
             }
             is Confirm -> if (machine.state in TURN_STATES) dispatch(GEvent.ConfirmArrived(time(), message.id, message.summary, message.amount?.let { spokenAmount(it) }))
-            is Mode -> if (message.mode == SessionMode.OFFLINE) { ready = false; reset(); mutableStatus.value = mutableStatus.value.copy(cloudOff = true); say("Cloud features are paused. Try again later.", SpeechPriority.SAFETY) }
+            is Mode -> if (message.mode == SessionMode.OFFLINE) enterOffline()
             is ErrorMessage -> {
+                if (message.code == ErrorCode.CLOUD_PAUSED || message.code == ErrorCode.QUOTA_EXHAUSTED) { enterOffline(message.say); return }
                 reset(); say(message.say, SpeechPriority.STATE)
                 if (message.code in setOf(ErrorCode.CLOUD_PAUSED, ErrorCode.QUOTA_EXHAUSTED, ErrorCode.VERSION_UNSUPPORTED)) {
                     ready = false
@@ -513,8 +620,8 @@ class GuidanceEngine(
             say("Done.", SpeechPriority.STATE)
             return
         }
-        say("Back online.", SpeechPriority.STATE)
-        if (ready) {
+        if (!offline) say("Back online.", SpeechPriority.STATE)
+        if (ready || offline) {
             if (machine.state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) {
                 dispatch(GEvent.Abort(time()))
                 dispatch(GEvent.Start(time()))
@@ -526,7 +633,7 @@ class GuidanceEngine(
         if (closed) return
         closed = true
         reset(); client.close(); sensorManager.unregisterListener(gravity)
-        hands.close(); tone.release(); haptics.release(); earcons.release(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
+        hands.close(); tone.release(); haptics.release(); earcons.release(); offlineAsr.close(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
     }
     fun closeVision() { router.close() }
 
@@ -551,6 +658,12 @@ class GuidanceEngine(
         val LAYOUT_STATES = setOf(GState.LOCATING, GState.VERIFYING, GState.AWAIT_NEXT, GState.EXPLORING)
         /** States that listen to the user: a goal, an answer, a yes/no, or "more" while exploring. */
         val LISTENING_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
+
+        fun asrLanguage(tag: String): String = when {
+            tag.lowercase().startsWith("hi") -> "hi-IN"
+            tag.lowercase().startsWith("es") -> "es-ES"
+            else -> "en-US"
+        }
 
         fun guidanceLocale(tag: String): java.util.Locale = when {
             tag.lowercase().startsWith("hi") -> Strings.HI

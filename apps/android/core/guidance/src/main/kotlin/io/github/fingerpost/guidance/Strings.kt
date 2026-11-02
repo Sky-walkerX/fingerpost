@@ -71,6 +71,22 @@ enum class Key {
     TOUCH_EXPLORE_ON,
     TOUCH_EXPLORE_NEEDS_SCREEN,
     TEXT_PREFIX,
+
+    // A6-1 offline basic mode
+    POS_TOP,
+    POS_MIDDLE,
+    POS_BOTTOM,
+    POS_LEFT,
+    POS_RIGHT,
+    POS_FORMAT,
+    OFFLINE_FOUND,
+    OFFLINE_WHICH,
+    OFFLINE_NOT_FOUND,
+    OFFLINE_NOT_FOUND_EMPTY,
+    BASIC_MODE,
+    ICON_NEEDS_CLOUD,
+    OFFLINE_DWELL_DONE,
+    OFFLINE_ASR_UNAVAILABLE,
 }
 
 typealias StringKey = Key
@@ -140,6 +156,20 @@ object Strings {
         Key.TOUCH_EXPLORE_ON to "Touch explore on. Slide your finger over the screen.",
         Key.TOUCH_EXPLORE_NEEDS_SCREEN to "Say explore first, so I can read the screen.",
         Key.TEXT_PREFIX to "Text",
+        Key.POS_TOP to "top",
+        Key.POS_MIDDLE to "middle",
+        Key.POS_BOTTOM to "bottom",
+        Key.POS_LEFT to "left",
+        Key.POS_RIGHT to "right",
+        Key.POS_FORMAT to "{row} {col}",
+        Key.OFFLINE_FOUND to "Found {label}, {position}.",
+        Key.OFFLINE_WHICH to "I see {a} and {b}. Which one?",
+        Key.OFFLINE_NOT_FOUND to "I can't find {goal}. I can see {list}.",
+        Key.OFFLINE_NOT_FOUND_EMPTY to "I can't find {goal}. Point the phone at the screen.",
+        Key.BASIC_MODE to "Basic mode: text buttons only.",
+        Key.ICON_NEEDS_CLOUD to "Icons need the cloud. In basic mode I can only find buttons with words on them.",
+        Key.OFFLINE_DWELL_DONE to "I think that pressed it.",
+        Key.OFFLINE_ASR_UNAVAILABLE to "Offline speech isn't set up on this phone. Turn on offline speech recognition in Android settings.",
     )
 
     private val hi: Map<Key, String> = mapOf(
@@ -199,6 +229,20 @@ object Strings {
         Key.TOUCH_EXPLORE_ON to "टच एक्सप्लोर चालू है। स्क्रीन पर उंगली फिराएं।",
         Key.TOUCH_EXPLORE_NEEDS_SCREEN to "पहले एक्सप्लोर कहें, ताकि मैं स्क्रीन पढ़ सकूं।",
         Key.TEXT_PREFIX to "टेक्स्ट",
+        Key.POS_TOP to "ऊपर",
+        Key.POS_MIDDLE to "बीच में",
+        Key.POS_BOTTOM to "नीचे",
+        Key.POS_LEFT to "बाईं ओर",
+        Key.POS_RIGHT to "दाईं ओर",
+        Key.POS_FORMAT to "{row} {col}",
+        Key.OFFLINE_FOUND to "{label} मिला, {position}।",
+        Key.OFFLINE_WHICH to "मुझे {a} और {b} दिख रहे हैं। कौन सा?",
+        Key.OFFLINE_NOT_FOUND to "मुझे {goal} नहीं मिला। मुझे {list} दिख रहे हैं।",
+        Key.OFFLINE_NOT_FOUND_EMPTY to "मुझे {goal} नहीं मिला। फ़ोन को स्क्रीन की ओर करें।",
+        Key.BASIC_MODE to "बेसिक मोड: सिर्फ़ शब्दों वाले बटन।",
+        Key.ICON_NEEDS_CLOUD to "आइकन के लिए क्लाउड चाहिए। बेसिक मोड में मैं सिर्फ़ शब्दों वाले बटन ढूंढ सकता हूँ।",
+        Key.OFFLINE_DWELL_DONE to "मुझे लगता है यह दब गया।",
+        Key.OFFLINE_ASR_UNAVAILABLE to "इस फ़ोन पर ऑफ़लाइन आवाज़ पहचान चालू नहीं है। Android सेटिंग्स में इसे चालू करें।",
     )
 
     private val es: Map<Key, String> = mapOf(
@@ -258,6 +302,20 @@ object Strings {
         Key.TOUCH_EXPLORE_ON to "Exploración táctil activada. Desliza el dedo por la pantalla.",
         Key.TOUCH_EXPLORE_NEEDS_SCREEN to "Primero di explorar, para que pueda leer la pantalla.",
         Key.TEXT_PREFIX to "Texto",
+        Key.POS_TOP to "arriba",
+        Key.POS_MIDDLE to "en el centro",
+        Key.POS_BOTTOM to "abajo",
+        Key.POS_LEFT to "izquierda",
+        Key.POS_RIGHT to "derecha",
+        Key.POS_FORMAT to "{row}, a la {col}",
+        Key.OFFLINE_FOUND to "Encontré {label}, {position}.",
+        Key.OFFLINE_WHICH to "Veo {a} y {b}. ¿Cuál?",
+        Key.OFFLINE_NOT_FOUND to "No encuentro {goal}. Veo {list}.",
+        Key.OFFLINE_NOT_FOUND_EMPTY to "No encuentro {goal}. Apunta el teléfono a la pantalla.",
+        Key.BASIC_MODE to "Modo básico: solo botones con texto.",
+        Key.ICON_NEEDS_CLOUD to "Los iconos necesitan la nube. En modo básico solo encuentro botones con palabras.",
+        Key.OFFLINE_DWELL_DONE to "Creo que se pulsó.",
+        Key.OFFLINE_ASR_UNAVAILABLE to "El reconocimiento de voz sin conexión no está activado. Actívalo en los ajustes de Android.",
     )
 
     val strings: Map<Locale, Map<Key, String>> = mapOf(

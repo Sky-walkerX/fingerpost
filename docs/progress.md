@@ -96,7 +96,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C5-2 | Privacy, data-safety, install pages | C | – | todo | |
 | C5-3 | README v1 + soak steps | C | – | todo | |
 | C5-4 | (cut first) Donation pipeline | C+B | – | doing | Codex |
-| A6-1 | Offline basic mode | A | – | todo | |
+| A6-1 | Offline basic mode | A | – | doing | Codex |
 | A6-2 | Low-vision UI + a11y audit | A | – | todo | |
 | A6-3 | Phrasing polish | A+C | A4-4 | todo | |
 | B6-1 | Signed APK release workflow | B | – | todo | |
@@ -461,3 +461,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: A4-5 Settings (DataStore 1.1.7) + accessible SettingsScreen; locale, speech, tone, haptics and private mode wired; speechRate/verbosity/handedness/holdMode/volumeKeys stored only. 213 guidance + 15 app tests pass. TalkBack order, 200% font and restart checks pending on phone.
 - 2026-11-02: A5-1 EXPLORING/TOUCH_EXPLORE states, explore keyframe, local TouchExplorer (150 ms, smallest polygon, text prefix, edge earcon), en/hi/es strings, explore-summary flow replay; machine locale now follows settings. 236 guidance tests pass. Phone check pending.
 - 2026-11-02: C4-2 virtual flow runner: WebSocket replay with binary keyframes, sim touches, wildcard matching and divergence index. medium-cola, go-back, guide-start pass; 578 TS tests in pnpm -r test.
+- 2026-11-02: A6-1 offline basic mode: OfflineResolver (gateway resolveByText rules, no digit targets, icon goals refused), OfflineAsr (SpeechRecognizer, prefer offline), local verify, enters on mode{offline}/cloud_paused/quota/5 s no connection. 248 guidance + 5 app tests pass. Phone check pending.

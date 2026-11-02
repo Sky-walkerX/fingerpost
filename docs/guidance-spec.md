@@ -171,6 +171,15 @@ The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for mis
 - **Edge earcon (initial value, 2026-11-02):** leaving an element plays a 30 ms `TONE_PROP_BEEP2` on the accessibility stream at 25% volume, immediately and without speech.
 - **Command:** "touch explore" (hi "टच एक्सप्लोर", es "exploración táctil"); plain "explore" is the summary.
 
+## 11b. Offline basic mode
+- **Starts on:** `mode{offline}`, `error{cloud_paused | quota_exhausted}`, `ready.flags.cloudEnabled = false`, or no gateway connection for **5 s** (initial value, 2026-11-02). It says "Basic mode: text buttons only." (after the gateway's reason, if any) and restarts the session if one was running.
+- **Speech:** Android `SpeechRecognizer` with `EXTRA_PREFER_OFFLINE`, one utterance at a time, language from settings (en-US, hi-IN, es-ES). Transcripts are never logged. If the phone can't recognise speech offline, say so once.
+- **Locate:** the goal (filler words removed, same list as the gateway) is matched against on-device OCR tokens inside the screen quad with the gateway's `resolveByText` rules: an exact name wins (two exact → ask which); otherwise token-set ratio ≥ 0.8, and a runner-up within 0.05 → ask which. Tokens with no letters (digits, prices, PIN keys) are never targets. The token's box is the target polygon.
+- **Icons:** a goal naming an icon (wifi, power, settings, back arrow, home, volume, and their hi/es words) says icons need the cloud, unless that exact word is printed on the screen.
+- **No match:** "I can't find {goal}. I can see …" with up to 5 readable words.
+- **Verify:** no upload. Screen-change evidence → "Done."; dwell alone → "I think that pressed it." (§9 weak evidence).
+- **Nothing is uploaded** and no session events are sent. The local PIN gate (§10) still runs. When the cloud returns, the current session finishes in basic mode and the next one is online.
+
 ## 12. Performance budget (mid-range Android, 2021 or newer)
 | Stage | Budget |
 |---|---|

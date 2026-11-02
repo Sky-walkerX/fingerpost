@@ -99,6 +99,7 @@ fun SessionScreen(
         else -> status.message
     }
     val label = when {
+        status.basicMode -> "Basic mode"
         status.cloudOff -> "Cloud off"
         !status.connected -> "Connecting"
         else -> when (status.state) {
