@@ -6,7 +6,10 @@ plugins {
 }
 // Firebase config is gitignored (download app/google-services.json from the Firebase console). Without it the
 // app builds and runs unauthenticated against a mock/dev gateway.
-if (file("google-services.json").exists()) apply(plugin = libs.plugins.google.services.get().pluginId)
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
+}
 
 android {
     namespace = "io.github.fingerpost"
@@ -19,6 +22,7 @@ android {
             requireNotNull(it.toIntOrNull()?.takeIf { code -> code > 0 }) { "fingerpost.versionCode must be positive" }
         } ?: 1
         versionName = providers.gradleProperty("fingerpost.versionName").orNull ?: "0.1.0"
+        manifestPlaceholders["crashReportingEnabled"] = "false"
         testInstrumentationRunner = "io.github.fingerpost.DeviceSafetyRunner"
         // ws://<laptop LAN IP>:8080 for local dev; the Cloud Run wss:// URL for releases. Set fingerpost.gatewayUrl in ~/.gradle/gradle.properties.
         buildConfigField("String", "GATEWAY_URL", "\"${providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"}\"")
@@ -45,6 +49,7 @@ android {
 
     buildTypes {
         debug {
+            manifestPlaceholders["crashReportingEnabled"] = "false"
             manifestPlaceholders["cleartext"] = "true" // a laptop gateway over ws://
             providers.gradleProperty("fingerpost.debugAbi").orNull?.let { abi ->
                 require(abi in setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")) { "Unsupported debug ABI" }
@@ -52,6 +57,9 @@ android {
             }
         }
         release {
+            // Exact, explicit build-time opt-in; debug collection always stays off.
+            manifestPlaceholders["crashReportingEnabled"] =
+                (providers.gradleProperty("fingerpost.crashReporting").orNull == "true").toString()
             isMinifyEnabled = false
             manifestPlaceholders["cleartext"] = "false"
             if (hasReleaseSigning) {
@@ -78,6 +86,7 @@ dependencies {
     implementation(libs.mlkit.face)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.crashlytics)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)

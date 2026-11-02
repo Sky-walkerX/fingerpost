@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="${cleartext}"
         android:theme="@android:style/Theme.Material.NoActionBar">
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="${crashReportingEnabled}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
