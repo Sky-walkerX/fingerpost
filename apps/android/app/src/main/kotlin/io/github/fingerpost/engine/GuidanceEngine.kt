@@ -140,12 +140,15 @@ class GuidanceEngine(
         onExit = { post { pinExited() } },
     )
     private val mic: MicStreamer = MicStreamer(client, guard)
+    private val updateNotice = io.github.fingerpost.updates.NoticeCompletion()
     private val speaker = TtsSpeaker(context, onDone = { finished -> post {
         if (speech.onDone(finished)) {
+            updateNotice.succeeded(finished)
             finished.completionId?.let { dispatch(GEvent.SpeechDone(time(), it)) }
             pumpSpeech()
         }
     } }, onError = { failed -> post {
+        updateNotice.clear()
         if (failed == null || speech.onDone(failed))
             mutableStatus.value = mutableStatus.value.copy(message = "Speech unavailable. Reopen Fingerpost.")
     } })
@@ -216,6 +219,7 @@ class GuidanceEngine(
         mic.stop()
         offlineAsr.stop()
         tone.stop()
+        updateNotice.clear()
         speaker.stop()
         speech.clear()
         finger.clear()
@@ -297,7 +301,7 @@ class GuidanceEngine(
         }
         when (action) {
             is SpeechAction.Speak -> speaker.speak(action.u, false)
-            is SpeechAction.Interrupt -> speaker.speak(action.u, true)
+            is SpeechAction.Interrupt -> { updateNotice.clear(); speaker.speak(action.u, true) }
             SpeechAction.Wait -> Unit
         }
     }
@@ -684,6 +688,7 @@ class GuidanceEngine(
     private fun pinEntered() {
         generation++; relockKey = null
         wantsMic = false
+        updateNotice.clear()
         mic.stop(); tone.stop(); speaker.stop(); speech.clear()
         finger.clear(); planner.reset(); router.cancelKeyframes()
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
@@ -714,13 +719,17 @@ class GuidanceEngine(
         }
     }
 
-    fun announceUpdateIfIdle(): Boolean {
+    fun announceUpdateIfIdle(onDone: () -> Unit): Boolean {
         if (machine.state != GState.IDLE || speech.current != null || !settings.speech) return false
-        say(Strings.get(Key.UPDATE_AVAILABLE, machine.locale), SpeechPriority.STATE)
+        val utterance = Utterance(Strings.get(Key.UPDATE_AVAILABLE, machine.locale), SpeechPriority.STATE, time())
+        updateNotice.track(utterance, onDone)
+        act(speech.offer(utterance))
+        pumpSpeech()
         return true
     }
 
     fun close() {
+        updateNotice.clear()
         if (closed) return
         closed = true
         reset(); client.close(); sensorManager.unregisterListener(gravity)

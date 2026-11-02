@@ -123,8 +123,8 @@ fun SessionScreen(
     }
     LaunchedEffect(current, status.state, availableUpdate, settings.speech) {
         if (availableUpdate != null && settings.speech && current != null) {
-            while (!current.announceUpdateIfIdle()) kotlinx.coroutines.delay(1000)
-            onUpdateAnnounced(availableUpdate)
+            while (!current.announceUpdateIfIdle { onUpdateAnnounced(availableUpdate) })
+                kotlinx.coroutines.delay(1000)
         }
     }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
