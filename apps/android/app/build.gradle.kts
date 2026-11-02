@@ -102,7 +102,8 @@ dependencies {
 
 // Release tasks must never silently produce an unsigned APK or point to the emulator.
 gradle.taskGraph.whenReady {
-    if (allTasks.any { it.project == project && it.name.contains("Release", ignoreCase = true) }) {
+    val releasePackagingTasks = setOf("assembleRelease", "bundleRelease", "packageRelease", "installRelease")
+    if (allTasks.any { it.project == project && it.name in releasePackagingTasks }) {
         require(listOf("RELEASE_STORE_FILE", "RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD")
             .all { !providers.environmentVariable(it).orNull.isNullOrBlank() }) { "Release signing configuration is required" }
         val gateway = java.net.URI(providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "")

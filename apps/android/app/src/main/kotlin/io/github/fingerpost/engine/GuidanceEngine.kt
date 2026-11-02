@@ -716,7 +716,7 @@ class GuidanceEngine(
 
     fun announceUpdateIfIdle(): Boolean {
         if (machine.state != GState.IDLE || speech.current != null || !settings.speech) return false
-        say("An update is available", SpeechPriority.STATE)
+        say(Strings.get(Key.UPDATE_AVAILABLE, machine.locale), SpeechPriority.STATE)
         return true
     }
 

@@ -87,6 +87,7 @@ enum class Key {
     ICON_NEEDS_CLOUD,
     OFFLINE_DWELL_DONE,
     OFFLINE_ASR_UNAVAILABLE,
+    UPDATE_AVAILABLE,
 }
 
 typealias StringKey = Key
@@ -170,6 +171,7 @@ object Strings {
         Key.ICON_NEEDS_CLOUD to "Icons need the cloud. In basic mode I can only find buttons with words on them.",
         Key.OFFLINE_DWELL_DONE to "I think that pressed it.",
         Key.OFFLINE_ASR_UNAVAILABLE to "Offline speech isn't set up on this phone. Turn on offline speech recognition in Android settings.",
+        Key.UPDATE_AVAILABLE to "An update is available",
     )
 
     private val hi: Map<Key, String> = mapOf(
@@ -243,6 +245,7 @@ object Strings {
         Key.ICON_NEEDS_CLOUD to "आइकन के लिए क्लाउड चाहिए। बेसिक मोड में मैं सिर्फ़ शब्दों वाले बटन ढूंढ सकता हूँ।",
         Key.OFFLINE_DWELL_DONE to "मुझे लगता है यह दब गया।",
         Key.OFFLINE_ASR_UNAVAILABLE to "इस फ़ोन पर ऑफ़लाइन आवाज़ पहचान चालू नहीं है। Android सेटिंग्स में इसे चालू करें।",
+        Key.UPDATE_AVAILABLE to "एक अपडेट उपलब्ध है",
     )
 
     private val es: Map<Key, String> = mapOf(
@@ -316,6 +319,7 @@ object Strings {
         Key.ICON_NEEDS_CLOUD to "Los iconos necesitan la nube. En modo básico solo encuentro botones con palabras.",
         Key.OFFLINE_DWELL_DONE to "Creo que se pulsó.",
         Key.OFFLINE_ASR_UNAVAILABLE to "El reconocimiento de voz sin conexión no está activado. Actívalo en los ajustes de Android.",
+        Key.UPDATE_AVAILABLE to "Hay una actualización disponible",
     )
 
     val strings: Map<Locale, Map<Key, String>> = mapOf(

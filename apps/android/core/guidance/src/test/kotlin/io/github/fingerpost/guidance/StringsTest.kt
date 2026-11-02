@@ -5,6 +5,12 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 class StringsTest {
+    @Test fun updateNoticeUsesTheSelectedLanguage() {
+        assertEquals("An update is available", Strings.get(Key.UPDATE_AVAILABLE, "en"))
+        assertEquals("एक अपडेट उपलब्ध है", Strings.get(Key.UPDATE_AVAILABLE, "hi-IN"))
+        assertEquals("Hay una actualización disponible", Strings.get(Key.UPDATE_AVAILABLE, "es-ES"))
+    }
+
     @Test
     fun everyKeyHasAllThreeLocales() {
         val locales = listOf(Strings.EN, Strings.HI, Strings.ES)
