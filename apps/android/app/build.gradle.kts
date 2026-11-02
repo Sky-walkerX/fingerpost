@@ -11,6 +11,20 @@ if (file("google-services.json").exists()) {
     apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
 }
 
+
+// Restrict source-code literals before interpolation, including local debug overrides.
+val gatewayUrl = providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"
+require(gatewayUrl.matches(Regex("^[A-Za-z0-9:/.-]+$"))) { "Gateway URL contains unsupported characters" }
+val gatewayUri = requireNotNull(runCatching { java.net.URI(gatewayUrl) }.getOrNull()) { "Invalid gateway URL" }
+val gatewayHost = gatewayUri.host?.lowercase(java.util.Locale.ROOT).orEmpty()
+val dnsLabel = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+require(gatewayUri.scheme in setOf("ws", "wss") && gatewayHost.length in 1..253 &&
+    gatewayHost.matches(Regex("$dnsLabel(?:\\.$dnsLabel)*")) &&
+    (gatewayUri.port == -1 || gatewayUri.port in 1..65535) && gatewayUri.rawUserInfo == null &&
+    gatewayUri.rawQuery == null && gatewayUri.rawFragment == null && gatewayUri.path.isNullOrEmpty()) {
+    "Gateway URL must be a ws/wss base URL with a DNS host or IPv4 address and no path"
+}
+
 android {
     namespace = "io.github.fingerpost"
     compileSdk = 37
@@ -25,7 +39,7 @@ android {
         manifestPlaceholders["crashReportingEnabled"] = "false"
         testInstrumentationRunner = "io.github.fingerpost.DeviceSafetyRunner"
         // ws://<laptop LAN IP>:8080 for local dev; the Cloud Run wss:// URL for releases. Set fingerpost.gatewayUrl in ~/.gradle/gradle.properties.
-        buildConfigField("String", "GATEWAY_URL", "\"${providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "ws://10.0.2.2:8080"}\"")
+        buildConfigField("String", "GATEWAY_URL", "\"${gatewayUrl}\"")
     }
     val releaseStoreFile = providers.environmentVariable("RELEASE_STORE_FILE").orNull
     val releaseStorePassword = providers.environmentVariable("RELEASE_STORE_PASSWORD").orNull
@@ -115,10 +129,10 @@ gradle.taskGraph.whenReady {
     if (allTasks.any { it.project == project && it.name in releasePackagingTasks }) {
         require(listOf("RELEASE_STORE_FILE", "RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD")
             .all { !providers.environmentVariable(it).orNull.isNullOrBlank() }) { "Release signing configuration is required" }
-        val gateway = java.net.URI(providers.gradleProperty("fingerpost.gatewayUrl").orNull ?: "")
-        require(gateway.scheme == "wss" && !gateway.host.isNullOrBlank() && gateway.rawUserInfo == null &&
-            gateway.rawQuery == null && gateway.rawFragment == null && gateway.path.isNullOrEmpty()) {
-            "Release requires fingerpost.gatewayUrl as a secure wss base URL without a path"
+        require(gatewayUri.scheme == "wss" && gatewayHost.contains('.') &&
+            gatewayHost.substringAfterLast('.').any { it in 'a'..'z' } &&
+            gatewayHost != "localhost" && !gatewayHost.endsWith(".localhost")) {
+            "Release requires fingerpost.gatewayUrl as a secure wss base URL with a production DNS host"
         }
         require(file("google-services.json").isFile) { "Release requires Firebase google-services.json" }
     }
