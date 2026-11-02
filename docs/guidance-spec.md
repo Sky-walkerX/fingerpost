@@ -180,6 +180,12 @@ The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for mis
 - **Verify:** no upload. Screen-change evidence → "Done."; dwell alone → "I think that pressed it." (§9 weak evidence).
 - **Nothing is uploaded** and no session events are sent. The local PIN gate (§10) still runs. When the cloud returns, the current session finishes in basic mode and the next one is online.
 
+## 11c. On-device layout cache (instant re-lock)
+- **What is kept:** for guide goals on ordinary screens, the gateway's layout as element id, label, role and polygon (no `text` elements, no images). Never for `pin_pad`, `payment_entry` or `confirm` screens, or any sensitivity other than `none`. At most **50** screens, least recently used dropped first; on this phone only; "Clear saved screens" in settings empties it.
+- **Key:** a 4-bit aspect bucket (16 log-spaced buckets over 1/3 … 3) plus a 60-bit SimHash of character trigrams of the OCR words inside the screen quad; words with digits or currency symbols are dropped, so prices and order numbers don't change it. A lookup hits the nearest entry within Hamming **3** on the SimHash bits and at most one aspect bucket away (initial values, 2026-11-02).
+- **Re-lock:** when a guide-intent locate keyframe is sent, a hit is resolved with the gateway's `resolveByText` rules. It guides at once only for a plain control (not pay/confirm/submit, icon or text) whose label fresh OCR inside its box agrees with (§11). OCR disagreement drops the entry. The keyframe still goes to the gateway: its target confirms the re-lock, or replaces the target (and the entry) if it names another element.
+- **Target:** "Found …" in < 0.8 s on a known screen.
+
 ## 12. Performance budget (mid-range Android, 2021 or newer)
 | Stage | Budget |
 |---|---|

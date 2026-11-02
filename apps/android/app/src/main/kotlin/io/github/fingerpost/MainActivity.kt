@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fingerpost.settings.Settings as AppSettings
 import io.github.fingerpost.settings.SettingsScreen
 import io.github.fingerpost.settings.settingsStore
+import io.github.fingerpost.memory.layoutStore
 import io.github.fingerpost.ui.FingerpostTheme
 import io.github.fingerpost.ui.SessionScreen
 import io.github.fingerpost.ui.OnboardingGate
@@ -103,7 +104,8 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 settings = settings,
                                 onUpdate = { updated -> scope.launch { settingsStore.save(updated) } },
-                                onBack = { showSettings = false }
+                                onBack = { showSettings = false },
+                                onClearSavedScreens = { scope.launch { layoutStore(this@MainActivity).clearNow() } }
                             )
                         } else if (cameraGranted) {
                             SessionScreen(

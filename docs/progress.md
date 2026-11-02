@@ -85,7 +85,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
 | A5-1 | Explore summary + touch-explore | A | B5-0 | doing | Codex |
-| A5-2 | On-device layout cache | A | – | todo | |
+| A5-2 | On-device layout cache | A | – | doing | Codex |
 | A5-3 | Tuning, Crashlytics, update check | A | C4-3 | todo | |
 | A5-4 | (stretch) Mock glasses source | A | – | todo | |
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
@@ -463,3 +463,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: C4-2 virtual flow runner: WebSocket replay with binary keyframes, sim touches, wildcard matching and divergence index. medium-cola, go-back, guide-start pass; 578 TS tests in pnpm -r test.
 - 2026-11-02: A6-1 offline basic mode: OfflineResolver (gateway resolveByText rules, no digit targets, icon goals refused), OfflineAsr (SpeechRecognizer, prefer offline), local verify, enters on mode{offline}/cloud_paused/quota/5 s no connection. 248 guidance + 5 app tests pass. Phone check pending.
 - 2026-11-02: B5-4 50-session load test (mock models, 5 min): 751,245 messages, p50 1.7 ms, p95 10.1 ms, max 110.6 ms, 0 errors. PASS (gate p95 < 200 ms). Report docs/evals/load-day5.md.
+- 2026-11-02: A5-2 LocalLayoutCache (aspect bucket + trigram SimHash, Hamming ≤3, LRU 50, DataStore), OCR-agreed instant re-lock for guide goals with gateway confirm/replace, never pay/confirm/submit/icon or PIN/payment screens, Clear saved screens. 262 guidance tests pass. Phone check (<0.8 s re-lock) pending.

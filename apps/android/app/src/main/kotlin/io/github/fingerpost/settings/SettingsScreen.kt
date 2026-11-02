@@ -19,6 +19,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -35,8 +39,11 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(
     settings: Settings,
     onUpdate: (Settings) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    /** A5-2: empties the on-device layout cache. */
+    onClearSavedScreens: () -> Unit = {},
 ) {
+    var screensCleared by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -162,6 +169,14 @@ fun SettingsScreen(
                 checked = settings.volumeKeys,
                 onCheckedChange = { onUpdate(settings.copy(volumeKeys = it)) }
             )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            SettingAction(
+                label = "Clear saved screens",
+                state = if (screensCleared) "Cleared" else "Screens you used are remembered on this phone",
+                onClick = { onClearSavedScreens(); screensCleared = true }
+            )
         }
     }
 }
@@ -213,6 +228,37 @@ private fun SettingToggle(
             checked = checked,
             onCheckedChange = null
         )
+    }
+}
+
+/** A one-shot action (not a value to cycle through), read as "label, button, state". */
+@Composable
+private fun SettingAction(
+    label: String,
+    state: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .clickable(onClick = onClick)
+            .clearAndSetSemantics {
+                contentDescription = label
+                stateDescription = state
+                role = Role.Button
+                onClick(label = label) {
+                    onClick()
+                    true
+                }
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(text = state, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

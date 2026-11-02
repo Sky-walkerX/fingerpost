@@ -29,6 +29,7 @@ import io.github.fingerpost.settings.Settings
 import io.github.fingerpost.offline.OfflineAsr
 import io.github.fingerpost.offline.OfflineLocate
 import io.github.fingerpost.offline.OfflineSession
+import io.github.fingerpost.memory.layoutStore
 
 /** State, speech and session callbacks are serialized on the main dispatcher. Native vision stays off it. */
 class GuidanceEngine(
@@ -63,6 +64,15 @@ class GuidanceEngine(
      * on-device OCR boxes, and nothing is uploaded. It lasts until the session ends while the cloud is back.
      */
     private var offline = false
+    /**
+     * A5-2: the user's own screens, for an instant re-lock. A guide goal on a remembered screen is guided at once
+     * when fresh OCR agrees; the keyframe still goes to the gateway, whose target confirms or replaces it.
+     */
+    private val layoutCache = LocalLayoutCache(layoutStore(context))
+    private var goalText = ""
+    private var goalIntent: String? = null
+    private var relockKey: Long? = null
+    private var relockLabel = ""
     private var onlineWhenIdle = false
     private var offlineGoal = ""
     private var lastEvidence: Evidence? = null
@@ -212,7 +222,7 @@ class GuidanceEngine(
         planner.reset()
         router.cancelKeyframes()
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
-        explorer.reset()
+        explorer.reset(); relockKey = null
         dispatch(GEvent.Abort(time()))
     }
 
@@ -238,11 +248,14 @@ class GuidanceEngine(
             Effect.OpenMic -> wantsMic = true
             Effect.CloseMic -> { wantsMic = false; mic.stop(); offlineAsr.stop() }
             is Effect.SendKeyframe -> if (offline) { if (!guard.pinMode) offlineKeyframe(effect.purpose) }
-            else if (ready && !guard.pinMode) router.requestKeyframe(when (effect.purpose) {
-                Purpose.LOCATE -> KeyframePurpose.LOCATE
-                Purpose.VERIFY -> KeyframePurpose.VERIFY
-                Purpose.EXPLORE -> KeyframePurpose.EXPLORE
-            }, generation)
+            else if (ready && !guard.pinMode) {
+                router.requestKeyframe(when (effect.purpose) {
+                    Purpose.LOCATE -> KeyframePurpose.LOCATE
+                    Purpose.VERIFY -> KeyframePurpose.VERIFY
+                    Purpose.EXPLORE -> KeyframePurpose.EXPLORE
+                }, generation)
+                if (effect.purpose == Purpose.LOCATE) tryRelock()
+            }
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
             Effect.ToneOff -> tone.stop()
             is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind)
@@ -329,7 +342,7 @@ class GuidanceEngine(
         val now = time()
         if (frame.tracking != TrackState.TRACKING) tone.stop()
         if (frame.tracking == TrackState.LOST && machine.state in setOf(GState.LOCATING, GState.GUIDING, GState.ON_TARGET)) {
-            generation++; finger.clear(); planner.reset(); capture = null; layout = null
+            generation++; finger.clear(); planner.reset(); capture = null; layout = null; relockKey = null
             router.cancelKeyframes(); event(EventKind.LOST)
             dispatch(GEvent.TrackingLost(now))
         }
@@ -382,6 +395,69 @@ class GuidanceEngine(
         val radius = finger.target?.nearRadius ?: 1.0
         tone.setPulseHz(if (result.zone == Zone.NEAR) 4 + 8 * (1 - result.error.length / radius).coerceIn(0.0, 1.0) else 0.0)
         if (settings.tone) tone.start() else tone.stop()
+    }
+
+    private fun screenAspect(frame: VisionFrame, q: List<Vec2>): Double {
+        val px = q.map { Vec2(it.x * frame.width, it.y * frame.height) }
+        val w = ((px[1] - px[0]).length + (px[2] - px[3]).length) / 2
+        val h = ((px[3] - px[0]).length + (px[2] - px[1]).length) / 2
+        return if (w > 0 && h > 0) w / h else Double.NaN
+    }
+
+    /** guidance-spec §11c: a guide goal on a remembered screen, after the current dispatch (still LOCATING). */
+    private fun tryRelock() {
+        val gen = generation
+        scope.launch(Dispatchers.Main) {
+            if (closed || offline || gen != generation || guard.pinMode || machine.state != GState.LOCATING || goalIntent != "guide") return@launch
+            val frame = latest ?: return@launch
+            val q = frame.quad ?: return@launch
+            val screen = KeyframeTokens.forScreen(router.latestTokens ?: return@launch, q)
+            val aspect = screenAspect(frame, q)
+            val key = layoutCache.keyIfStable(screen, aspect) ?: return@launch
+            val cached = layoutCache.get(key) ?: return@launch
+            when (val r = CacheRelock.decide(goalText, cached, screen, machine.locale)) {
+                CacheRelock.Server -> Unit
+                CacheRelock.Drop -> layoutCache.remove(key)
+                is CacheRelock.Guide -> {
+                    polygon = r.element.polygon
+                    finger.setTarget(polygon, aspect)
+                    planner.reset()
+                    relockKey = key; relockLabel = r.element.label
+                    dispatch(GEvent.TargetArrived(time(), r.say, r.element.role))
+                }
+            }
+        }
+    }
+
+    /** The gateway's own target after a re-lock: the same label keeps guiding; anything else replaces the entry. */
+    private fun confirmRelock(message: ServerTarget) {
+        val key = relockKey ?: return
+        relockKey = null
+        val element = layout?.elements?.find { it.id == message.elementId } ?: return
+        if (normalizeLabel(element.label) == normalizeLabel(relockLabel)) return
+        layoutCache.remove(key)
+        val role = element.role.name.lowercase()
+        if (!machine.policy.mayGuide(role, element.id)) { reset(); say(Strings.get(Key.CONFIRM_FIRST, machine.locale), SpeechPriority.SAFETY); return }
+        val frame = latest ?: return
+        val aspect = screenAspect(frame, frame.quad ?: return)
+        polygon = message.polygon.map { Vec2(it.u, it.v) }
+        if (!aspect.isFinite() || QuadEstimator.quadArea(polygon) == 0.0) return
+        finger.setTarget(polygon, aspect)
+        planner.reset()
+        say(message.say, SpeechPriority.STATE)
+    }
+
+    /** Guide-intent layouts of ordinary screens are remembered for next time; payment, PIN and confirm screens never. */
+    private fun rememberLayout(message: Layout) {
+        if (offline || goalIntent != "guide" || message.sensitivity != Sensitivity.NONE
+            || message.screenType in setOf(ScreenType.PIN_PAD, ScreenType.PAYMENT_ENTRY, ScreenType.CONFIRM)) return
+        val frame = latest ?: return
+        val q = frame.quad ?: return
+        val screen = KeyframeTokens.forScreen(router.latestTokens ?: return, q)
+        val key = layoutCache.keyIfStable(screen, screenAspect(frame, q)) ?: return
+        val elements = message.elements.filter { it.role != ElementRole.TEXT }
+            .map { CachedElement(it.id, it.label, it.role.name.lowercase(), it.polygon.map { p -> Vec2(p.u, p.v) }) }
+        if (elements.isNotEmpty()) layoutCache.put(key, CachedLayout(elements))
     }
 
     /** [reason] is the gateway's spoken error, said together with the mode so neither is dropped from the queue. */
@@ -516,7 +592,7 @@ class GuidanceEngine(
         }
         when (message) {
             is Transcript -> if (message.final && message.text.isNotBlank()) when (machine.state) {
-                GState.LISTENING -> dispatch(GEvent.GoalHeard(time(), message.text))
+                GState.LISTENING -> { goalIntent = null; dispatch(GEvent.GoalHeard(time(), message.text)) }
                 GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
                 // "more" and new goals are answered by the gateway; only "touch explore" is handled here.
                 GState.EXPLORING -> dispatch(if (isTouchExploreCommand(message.text)) GEvent.TouchExploreRequested(time(), layout != null)
@@ -524,13 +600,17 @@ class GuidanceEngine(
                 else -> Unit
             }
             is GoalAck -> {
+                goalText = message.goal; goalIntent = message.intent.name.lowercase()
                 if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
                 dispatch(GEvent.IntentArrived(time(), message.intent.name.lowercase()))
             }
             is Layout -> {
                 // A verify keyframe's layout arrives while VERIFYING; in task mode the next target refers to it.
-                if (machine.state !in LAYOUT_STATES) return
+                // After a cache re-lock it arrives while already GUIDING, and its target confirms the re-lock.
+                val relocked = relockKey != null && machine.state in RELOCK_STATES
+                if (machine.state !in LAYOUT_STATES && !relocked) return
                 layout = message
+                rememberLayout(message)
                 val uploaded = capture
                 if (uploaded != null && uploaded.encoded.header.kind == KeyframeKind.FULL) message.screenQuad?.let { quad ->
                     val size = uploaded.encoded.header.imageSize
@@ -567,6 +647,7 @@ class GuidanceEngine(
     }
 
     private fun target(message: ServerTarget) {
+        if (relockKey != null && machine.state in RELOCK_STATES) { confirmRelock(message); return }
         if (machine.state !in TURN_STATES) return
         if (awaitingAnchor) { pendingTarget = message; return }
         val element = layout?.elements?.find { it.id == message.elementId } ?: return
@@ -597,7 +678,7 @@ class GuidanceEngine(
     }
 
     private fun pinEntered() {
-        generation++
+        generation++; relockKey = null
         wantsMic = false
         mic.stop(); tone.stop(); speaker.stop(); speech.clear()
         finger.clear(); planner.reset(); router.cancelKeyframes()
@@ -656,6 +737,8 @@ class GuidanceEngine(
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */
         val TURN_STATES = setOf(GState.LOCATING, GState.AWAIT_NEXT)
         val LAYOUT_STATES = setOf(GState.LOCATING, GState.VERIFYING, GState.AWAIT_NEXT, GState.EXPLORING)
+        /** Where a cache re-lock is guiding before the gateway's layout and target arrive. */
+        val RELOCK_STATES = setOf(GState.GUIDING, GState.ON_TARGET)
         /** States that listen to the user: a goal, an answer, a yes/no, or "more" while exploring. */
         val LISTENING_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
 
