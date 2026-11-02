@@ -7,7 +7,7 @@ The beta is not yet accepted for public release. This page distinguishes known f
 | Live recognition | Earlier photo evaluation scored 6/10 correct targets; later five-second Spark probe timed out | Improve and remeasure quality/latency without weakening timeout policy; see progress evidence |
 | Tracking | Prior physical runs missed the FPS/inference budget under thermal pressure | Controlled unthrottled performance and visual/TalkBack regression |
 | PIN/payment | Local synthetic recall does not establish real-photo or physical payment safety | Real examples, no-upload evidence and zero wrong payment taps before release |
-| Android changes | New update notices, release guards and low-vision overlays are source-reviewed only in this pass | Teammate compilation, authored JVM tests, 200% text and device accessibility checks |
+| Android changes | New update notices, release guards, low-vision overlays and EN/HI/ES localization are source-reviewed only; offline JVM execution stops on an uncached planned plugin | Teammate compilation, authored JVM tests, 200% text and device accessibility checks |
 | Crash reporting | Crashlytics source integration is prepared with collection off by default | Android build/plugin checks, SDK retention/privacy review and console acceptance before enabling |
 | Private mode | Adapter/deployment source exists; live Modal quality and cold/warm latency are unverified | Credential holder deploys and runs the private eval |
 | Monitoring | Opt-in collector/exporter and disabled policy drafts are locally tested; deployment is unverified | Verify one active writer, metric-writer IAM, actual exports/policies and delivered notifications |

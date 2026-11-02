@@ -69,24 +69,24 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | Task | What | Lane | Needs | Status | Owner |
 |---|---|---|---|---|---|
 | B4-0 | Flow contracts + review hardening | B | – | done | Codex |
-| A4-0 | Single-hand tracking + thermal stride | A | – | doing | Codex |
-| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | doing | Codex |
-| A4-2 | Device pay-confirm policy | A | – | doing | Codex |
-| A4-3 | Local PIN mode on device | A | A4-1 | doing | Codex |
-| A4-4 | HI/ES guidance strings | A | – | doing | Codex |
-| A4-5 | Settings screen | A | – | doing | Codex |
+| A4-0 | Single-hand tracking + thermal stride | A | – | blocked | Codex |
+| A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | blocked | Codex |
+| A4-2 | Device pay-confirm policy | A | – | blocked | Codex |
+| A4-3 | Local PIN mode on device | A | A4-1 | blocked | Codex |
+| A4-4 | HI/ES guidance strings | A | – | blocked | Codex |
+| A4-5 | Settings screen | A | – | blocked | Codex |
 | B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
-| B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | doing | Codex |
+| B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | blocked | Codex |
 | B4-4 | HI/ES server speech | B | – | done | Codex |
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
 | C4-2 | Virtual-device flow runner | C | B4-0 | done | Codex |
 | C4-3 | Tester session #1 + triage | C | – | todo | |
-| C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | doing | Codex |
+| C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | blocked | Codex |
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
-| A5-1 | Explore summary + touch-explore | A | B5-0 | doing | Codex |
-| A5-2 | On-device layout cache | A | – | doing | Codex |
-| A5-3 | Tuning, Crashlytics, update check | A | C4-3 | doing | Codex |
+| A5-1 | Explore summary + touch-explore | A | B5-0 | blocked | Codex |
+| A5-2 | On-device layout cache | A | – | blocked | Codex |
+| A5-3 | Tuning, Crashlytics, update check | A | C4-3 | blocked | Codex |
 | A5-4 | (stretch) Mock glasses source | A | – | todo | |
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
 | B5-2 | Kiosk memory | B | – | done | Codex |
@@ -95,15 +95,15 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C5-1 | Tester session #2 | C | – | todo | |
 | C5-2 | Privacy, data-safety, install pages | C | – | done | Codex |
 | C5-3 | README v1 + soak steps | C | – | done | Codex |
-| C5-4 | (cut first) Donation pipeline | C+B | – | doing | Codex |
-| A6-1 | Offline basic mode | A | – | doing | Codex |
-| A6-2 | Low-vision UI + a11y audit | A | – | doing | Codex |
-| A6-3 | Phrasing polish | A+C | A4-4 | todo | |
-| B6-1 | Signed APK release workflow | B | – | doing | Codex |
-| B6-2 | Waitlist + config endpoints | B | – | doing | Codex |
-| B6-3 | Threat model, alerts, runbook | B | – | doing | Codex |
-| C6-1 | Launch landing page | C | B6-2 | doing | Codex |
-| C6-2 | Video script, shots, B-roll | C | – | doing | Codex |
+| C5-4 | (cut first) Donation pipeline | C+B | – | blocked | Codex |
+| A6-1 | Offline basic mode | A | – | blocked | Codex |
+| A6-2 | Low-vision UI + a11y audit | A | – | blocked | Codex |
+| A6-3 | Phrasing polish | A+C | A4-4 | blocked | Codex / Human |
+| B6-1 | Signed APK release workflow | B | – | blocked | Codex |
+| B6-2 | Waitlist + config endpoints | B | – | blocked | Codex |
+| B6-3 | Threat model, alerts, runbook | B | – | blocked | Codex |
+| C6-1 | Launch landing page | C | B6-2 | blocked | Codex |
+| C6-2 | Video script, shots, B-roll | C | – | blocked | Codex |
 | C6-3 | Tester session #3, X warm-up | C | – | todo | |
 | D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | todo | |
 
@@ -485,3 +485,7 @@ _(task id · what changed · why · who approved)_
 
 - 2026-11-02 continuation: Planned Crashlytics integration added using existing Firebase BoM35.1.0 plus plugin3.0.8 (official Firebase setup reference; new plugin pin recorded). Collection defaults off/debug off, explicit release opt-in only. No Analytics/custom keys/logs added. Public disclosures now distinguish disabled uploads from possible local SDK retention. Dependency resolution, Android compilation and device/console/privacy acceptance remain unrun; no report was sent.
 - 2026-11-02 continuation checkpoint: 616 TS tests, typechecks/builds and 43 Python tests pass; QR independently decoded; synthetic simulator-only B-roll 12.64s/1280×800 captured and visually checked. Review fix defers update notice persistence until exact successful TTS completion (Android regression tests authored, unrun). Android SDK/build/device, Crashlytics console/privacy rollout, real metric export, deployments, live safety/model results and final real-world footage remain open. No task requiring those checks is marked done.
+
+- 2026-11-02 final code completion: user explicitly assigns live gates to teammates. Production telemetry lifecycle/exporter, Hosting/HTTP CI checks, signer/version/gateway verification and Android speech/UI/PIN localization source are finished. Review findings (hung exporter accumulation and incompatible release versions) fixed with red→green regressions. Required source tasks now wait on teammate acceptance rather than implying active implementation. See [code handoff](evals/local-code-handoff-2026-11-02.md).
+- Local verification: 644 TS tests (59 protocol / 53 web / 475 gateway / 57 evals), recursive TS typecheck/build, 52 Python tests and production-site HTTP smoke pass. Resource XML/key parity/reference checks pass, excluding the intentionally non-translatable brand name.
+- Android offline JVM attempt: existing JDK21 + cached Gradle9.8.2, `gradle --offline --configure-on-demand :core:guidance:test :core:protocol:test --console=plain` stops during root configuration: `Plugin [id: 'com.google.firebase.crashlytics', version: '3.0.8', apply: false] was not found` in the offline cache; `BUILD FAILED in 3s`. No tests ran, no SDK/library was downloaded, and no retry was made. Teammates must resolve the planned plugin and run Android checks; this is not a test pass or a compiled-source failure.

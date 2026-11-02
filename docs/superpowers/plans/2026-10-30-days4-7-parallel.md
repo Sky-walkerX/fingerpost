@@ -547,29 +547,29 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [ ] **Commit:** `ci: signed APK release workflow`
 
 #### B6-2: waitlist, config, min version
-- [ ] **`POST /v1/waitlist`:** zod email + locale, honeypot field, 5/min per IP, stored in Firestore `waitlist`.
-- [ ] **`GET /v1/config`:** `{minVersion, cloudEnabled}` from Remote Config, cached 30 s.
-- [ ] **Tests:** `honeypot rejects`, `rate limit 429`, `config cached`.
-- [ ] **Commit:** `feat(gateway): waitlist and config endpoints`
+- [x] **`POST /v1/waitlist`:** zod email + locale, honeypot field, 5/min per IP, stored in Firestore `waitlist`.
+- [x] **`GET /v1/config`:** `{minVersion, cloudEnabled}` from Remote Config, cached 30 s.
+- [x] **Tests:** `honeypot rejects`, `rate limit 429`, `config cached`.
+- [x] **Commit:** `feat(gateway): waitlist and config endpoints`
 
 #### B6-3: threat model, alerts, runbook
-- [ ] **`docs/threat-model.md`:** STRIDE-lite over the auth, session, memory, donate and waitlist surfaces. Each row has a mitigation and the test that covers it.
+- [x] **`docs/threat-model.md`:** STRIDE-lite over the auth, session, memory, donate and waitlist surfaces. Each row has a mitigation and the test that covers it.
 - [ ] **🔑 Alerts:** error rate >5%, p95 parse >5 s, spend >80% of cap.
-- [ ] **`docs/runbook.md`:** kill switch, roll back a revision, rotate secrets, raise quota.
-- [ ] **Run `pnpm audit --prod`** and resolve the highs.
-- [ ] **Commit:** `docs: threat model and runbook`
+- [x] **`docs/runbook.md`:** kill switch, roll back a revision, rotate secrets, raise quota.
+- [x] **Run `pnpm audit --prod`** and resolve the highs.
+- [x] **Commit:** `docs: threat model and runbook`
 
 ### Lane C
 #### C6-1: final landing page
-- [ ] **Content:** download button + QR to the latest Release, the install guide, privacy, and a waitlist wired to B6-2. The axe check passes.
+- [x] **Content:** download button + QR to the latest Release, the install guide, privacy, and a waitlist wired to B6-2. The axe check passes.
 - [ ] **🔑 Deploy:** `fingerpost.web.app` via Firebase Hosting.
-- [ ] **Commit:** `feat(web): launch landing page`
+- [x] **Commit:** `feat(web): launch landing page`
 
 #### C6-2: video script v1, shot list, B-roll
-- [ ] **`docs/video/script.md`** follows design §8, timed to 3:00.
-- [ ] **`docs/video/shots.md`:** each shot with its device, scene, take count and owner.
+- [x] **`docs/video/script.md`** follows design §8, timed to 3:00.
+- [x] **`docs/video/shots.md`:** each shot with its device, scene, take count and owner.
 - [ ] **Capture B-roll:** cooktop appliance, tablet sim, screen recording of the gateway logs showing "PIN mode: no upload".
-- [ ] **Commit:** `docs(video): script and shot list`
+- [x] **Commit:** `docs(video): script and shot list`
 
 #### C6-3: tester session #3 with consented quotes; warm up the X account (3 posts, alt text on every image)
 
@@ -628,3 +628,5 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - the confirm gate (device and server);
 - auth and quota;
 - the 98% recall measurement.
+
+Local source completion note (2026-11-02): user assigns live gates to teammates. Checked boxes above record implemented/local-verified TS or documentation steps; every deployment, signed APK, real model, Android build/device and footage acceptance remains open. Monitoring runtime source is now wired but defaults off. See docs/evals/local-code-handoff-2026-11-02.md for the final handoff.
