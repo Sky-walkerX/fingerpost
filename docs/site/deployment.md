@@ -4,4 +4,4 @@ Build with `VITE_GATEWAY_URL=https://<verified-gateway-host> pnpm --filter @fing
 
 Verify persistence in the production Firestore waitlist store before deploying. A mock gateway accepts requests into memory only and must not be advertised as a public registration service. Use synthetic emails for testing; never paste real addresses into logs or reports.
 
-The page links to GitHub's latest release page without claiming an APK has passed acceptance. Hosting deployment, release QR artwork and browser/device checks remain open. The public pages' automated axe checks run with `pnpm --filter @fingerpost/web test`; jsdom does not test screen-reader speech or rendered layout.
+The page links to GitHub's latest release page without claiming an APK has passed acceptance. Hosting deployment, browser/device checks remain open. The release QR points to the same latest-release URL and was independently decoded with macOS Core Image. The public pages' automated axe checks run with `pnpm --filter @fingerpost/web test`; jsdom does not test screen-reader speech or rendered layout.
