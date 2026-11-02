@@ -126,6 +126,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 | `CONFIRM` | Server `confirm` | Spoken "yes" → LOCATING; anything else → cancel the step | 15 s → cancel, "Payment not confirmed" |
 | `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → a fresh locate keyframe (LOCATING), or DONE if the gateway finished the task meanwhile | none (user-driven) |
 | `DONE` | Task finished | → IDLE after the speech ends | — |
+| `EXPLORING` | `goal.ack{intent:"explore"}` → `keyframe{purpose:"explore"}` (a locate keyframe already sent counts; no second upload) | Server `say` (summary) → mic opens for "more"; a new goal's `goal.ack` → LOCATING (guide/task) or a fresh explore keyframe (explore); "touch explore" → TOUCH_EXPLORE | No summary in 6 s → one more explore keyframe; 6 s more → "I couldn't read the screen" → FRAMING. After a summary: 12 s quiet → hint once ("Say more, touch explore, or what you want to press."); 12 s more → IDLE (initial values, 2026-11-02) |
+| `TOUCH_EXPLORE` | "touch explore" while EXPLORING with a layout on the phone | Abort (session button) → IDLE; PIN gate → PIN_MODE, and its exit returns to EXPLORING | none (user-driven); no uploads, mic closed, tone off |
 
 **DONE completion:** the final STATE utterance carries a completion id through the speech queue to the TTS adapter. Return to IDLE only when that utterance finishes; ignore stale or unrelated completion callbacks. Timer ticks do not substitute for speech completion.
 
@@ -162,6 +164,12 @@ The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for mis
   - **On mismatch:** say "I think this is {label}, but I'm not sure". Payment-role targets require a confirm.
 - **Icon-only targets:** server confidence must be at least 0.75. Otherwise speak the uncertainty.
 - **Roles `pay | confirm | submit`:** the device refuses to guide unless the server has a matching `confirm` that the user accepted in this session. Defense in depth: the gateway's policy layer enforces the same rule.
+
+## 11a. Explore and touch-explore
+- **Summary:** the gateway reads the screen by region (≤ 3 sentences, ending "Say more for details."); "more" reads the next region. The device only sends the explore keyframe and speaks the `say` at INFO priority.
+- **Touch-explore (local only):** over the last layout, the element under the finger's pad (§3 pad point, through the tracked homography) is named once it has stayed under the pad for **150 ms**, and not again until the finger leaves it. The smallest polygon under the pad wins. Plain `text` elements are prefixed ("Text: Total ₹149") so they aren't mistaken for controls.
+- **Edge earcon (initial value, 2026-11-02):** leaving an element plays a 30 ms `TONE_PROP_BEEP2` on the accessibility stream at 25% volume, immediately and without speech.
+- **Command:** "touch explore" (hi "टच एक्सप्लोर", es "exploración táctil"); plain "explore" is the summary.
 
 ## 12. Performance budget (mid-range Android, 2021 or newer)
 | Stage | Budget |

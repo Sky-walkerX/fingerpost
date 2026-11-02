@@ -2,10 +2,10 @@ package io.github.fingerpost.guidance
 
 import java.util.Locale
 
-enum class GState { IDLE, LISTENING, FRAMING, LOCATING, GUIDING, ON_TARGET, VERIFYING, ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, DONE }
+enum class GState { IDLE, LISTENING, FRAMING, LOCATING, GUIDING, ON_TARGET, VERIFYING, ASK, CONFIRM, AWAIT_NEXT, PIN_MODE, DONE, EXPLORING, TOUCH_EXPLORE }
 enum class Evidence { SIM, SCREEN_CHANGE, DWELL }
 enum class VerifyResult { OK, WRONG, NOCHANGE }
-enum class KeyframePurpose { LOCATE, VERIFY }
+enum class KeyframePurpose { LOCATE, VERIFY, EXPLORE }
 enum class HapticKind { TICK, ON_TARGET, LOST }
 
 sealed interface GEvent {
@@ -38,6 +38,10 @@ sealed interface GEvent {
     data class FinishArrived(override val nowMs: Long, val result: String, val say: String) : GEvent
     /** The local pre-upload PIN/payment gate (guidance-spec §10.1), once per checked frame. */
     data class PinGate(override val nowMs: Long, val blocked: Boolean, val digitTokens: Int) : GEvent
+    /** A server `say` (the explore summary, or the next region after "more") arrived while EXPLORING. */
+    data class ExploreSaid(override val nowMs: Long) : GEvent
+    /** The user said "touch explore". [hasLayout]: a layout of this screen is on the phone to explore. */
+    data class TouchExploreRequested(override val nowMs: Long, val hasLayout: Boolean) : GEvent
 }
 
 sealed interface Effect {
@@ -83,6 +87,9 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
     var state = GState.IDLE; private set
     /** True after goal.ack says "task". Cleared when the session goes IDLE. */
     var taskIntent = false; private set
+    /** True after goal.ack says "explore": keyframes ask for a summary and no target is expected. */
+    var exploreIntent = false; private set
+    private var summaryHeard = false
     val policy = SafetyPolicy()
     private var askId: String? = null
     private var askQuestion = ""
@@ -118,10 +125,12 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             verifyRetried = false
             doneCompletionId = null
             taskIntent = false
+            exploreIntent = false
             policy.reset()
             askId = null; confirmId = null; finishedInPin = null
         }
         if (s == GState.AWAIT_NEXT) awaitResent = false
+        if (s == GState.EXPLORING) summaryHeard = false
     }
 
     /** guidance-spec §10: entry stops uploads first; exit after < 5 digit tokens for 2 s. */
@@ -138,6 +147,9 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                 out += Effect.Say(finished, Priority.STATE, id)
                 go(GState.DONE, ev.nowMs)
                 doneCompletionId = id
+            } else if (exploreIntent) {
+                out += Effect.SendKeyframe(KeyframePurpose.EXPLORE)
+                go(GState.EXPLORING, ev.nowMs)
             } else {
                 out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                 go(GState.LOCATING, ev.nowMs)
@@ -200,7 +212,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
 
     fun handle(ev: GEvent): List<Effect> {
         if (ev is GEvent.PinGate) return pinGate(ev)
-        if (ev is GEvent.IntentArrived) { if (state != GState.IDLE) taskIntent = ev.intent == "task"; return emptyList() }
+        if (ev is GEvent.IntentArrived) return intent(ev)
         if (state == GState.PIN_MODE) {
             // Only the gate (above), an abort, or the task's end matter while the keypad is up.
             if (ev is GEvent.FinishArrived && ev.result == "done") finishedInPin = ev.say
@@ -221,6 +233,10 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
         if (ev is GEvent.ResumeAfterPin) {
             if (state in setOf(GState.IDLE, GState.LISTENING, GState.DONE)) return emptyList()
             debounce.reset()
+            if (exploreIntent) {
+                go(GState.EXPLORING, ev.nowMs)
+                return listOf(Effect.ToneOff, Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.EXPLORE))
+            }
             go(GState.LOCATING, ev.nowMs)
             return listOf(Effect.ToneOff, Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.LOCATE))
         }
@@ -259,7 +275,10 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                 }
             }
             GState.FRAMING -> when {
-                ev is GEvent.Frame && ev.quadStable -> {
+                ev is GEvent.Frame && ev.quadStable -> if (exploreIntent) {
+                    out += Effect.SendKeyframe(KeyframePurpose.EXPLORE)
+                    go(GState.EXPLORING, now)
+                } else {
                     out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                     go(GState.LOCATING, now)
                 }
@@ -367,12 +386,69 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                 }
             }
             GState.PIN_MODE -> Unit
+            GState.EXPLORING -> exploring(ev, now, out)
+            GState.TOUCH_EXPLORE -> Unit  // Local only: the engine feeds TouchExplorer; nothing is uploaded.
             GState.DONE -> if (ev is GEvent.SpeechDone && ev.completionId == doneCompletionId) go(GState.IDLE, now)
         }
         return out
     }
 
     private var verifyRetried = false
+
+    /**
+     * goal.ack. "task" turns verified presses into AWAIT_NEXT. "explore" asks for a summary instead of a target:
+     * a locate keyframe already on its way is read as explore by the gateway, so no second upload. A new goal
+     * while exploring (the gateway answered it with a new intent) locates or explores again.
+     */
+    private fun intent(ev: GEvent.IntentArrived): List<Effect> {
+        if (state == GState.IDLE || state == GState.TOUCH_EXPLORE) return emptyList()
+        taskIntent = ev.intent == "task"
+        exploreIntent = ev.intent == "explore"
+        val now = ev.nowMs
+        return when {
+            state == GState.EXPLORING && exploreIntent -> { go(GState.EXPLORING, now); listOf(Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.EXPLORE)) }
+            state == GState.EXPLORING -> { go(GState.LOCATING, now); listOf(Effect.CloseMic, Effect.SendKeyframe(KeyframePurpose.LOCATE)) }
+            state == GState.LOCATING && exploreIntent -> { go(GState.EXPLORING, now); emptyList() }
+            else -> emptyList()
+        }
+    }
+
+    /** guidance-spec §8 EXPLORING: 6 s without a summary → one more explore keyframe; 12 s idle after it → hint, then end. */
+    private fun exploring(ev: GEvent, now: Long, out: MutableList<Effect>) {
+        val timed = ev is GEvent.Tick || ev is GEvent.Frame
+        when {
+            ev is GEvent.ExploreSaid -> {
+                if (!summaryHeard) out += Effect.OpenMic
+                summaryHeard = true; retried = false; enteredAt = now
+            }
+            // "more" and new goals go to the gateway through the mic stream; it answers with a say or a goal.ack.
+            ev is GEvent.UserSaid || ev is GEvent.GoalHeard -> enteredAt = now
+            ev is GEvent.TouchExploreRequested -> if (ev.hasLayout) {
+                out += Effect.ToneOff
+                out += Effect.CloseMic
+                out += Effect.Say(prompt(Key.TOUCH_EXPLORE_ON), Priority.STATE)
+                go(GState.TOUCH_EXPLORE, now)
+            } else out += Effect.Say(prompt(Key.TOUCH_EXPLORE_NEEDS_SCREEN), Priority.STATE)
+            !summaryHeard && timed && now - enteredAt >= 6000 -> if (!retried) {
+                out += Effect.SendKeyframe(KeyframePurpose.EXPLORE)
+                retried = true
+                enteredAt = now
+            } else {
+                out += Effect.Say(prompt(Key.LOCATE_FAILED), Priority.STATE)
+                go(GState.FRAMING, now)
+            }
+            summaryHeard && timed && now - enteredAt >= 12_000 -> if (!retried) {
+                out += Effect.Say(prompt(Key.EXPLORE_HINT), Priority.STATE)
+                out += Effect.OpenMic
+                retried = true
+                enteredAt = now
+            } else {
+                out += Effect.CloseMic
+                out += Effect.Say(prompt(Key.GIVE_UP_LISTENING), Priority.STATE)
+                go(GState.IDLE, now)
+            }
+        }
+    }
 
     private fun cancelConfirm(id: String, utterance: String, now: Long, out: MutableList<Effect>) {
         policy.onConfirmReply(id, false)

@@ -16,6 +16,7 @@ class FlowReplayTest {
     @Test fun mediumColaFlow() = replay("medium-cola")
     @Test fun guideStartFlow() = replay("guide-start")
     @Test fun goBackFlow() = replay("go-back")
+    @Test fun exploreSummaryFlow() = replay("explore-summary")
 
     @Suppress("UNCHECKED_CAST")
     private fun replay(name: String) {
@@ -40,13 +41,14 @@ class FlowReplayTest {
                     (msg["amount"] as Map<String, Any?>?)?.let { a -> "${a["currency"]} ${a["value"]}" }) }
                 "ask" -> feed { GEvent.AskArrived(it, msg["id"] as String, msg["question"] as String, msg["options"] as List<String>) }
                 "finish" -> feed { GEvent.FinishArrived(it, msg["result"] as String, msg["say"] as String) }
+                "say" -> feed { GEvent.ExploreSaid(it) }
                 else -> Unit // ready, sim.touch: the press evidence is fed with the client's tapDetected below
             } else {
                 if (type == "hello" || type == "abort") continue  // engine-level: the session's user controls
                 if (type == "goal") { feed { GEvent.GoalHeard(it, msg["text"] as String) }; continue }
                 val want = clientSignature(msg)
                 if (produced.isEmpty()) when (want) {
-                    "keyframe:locate" -> feed { GEvent.Frame(it, true, false, null) }
+                    "keyframe:locate", "keyframe:explore" -> feed { GEvent.Frame(it, true, false, null) }
                     "event:targetReached" -> repeat(6) { feed { t -> GEvent.Frame(t, false, true, Zone.ON) } }
                     "event:tapDetected:sim" -> feed { GEvent.PressDetected(it, Evidence.SIM) }
                     "confirm.reply:true" -> feed { GEvent.UserSaid(it, "yes") }

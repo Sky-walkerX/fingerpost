@@ -84,7 +84,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C4-3 | Tester session #1 + triage | C | – | todo | |
 | C4-4 🔑 | Eval report v1, local PIN recall | C | C4-1 | todo | |
 | B5-0 | Explore + memory flow contracts | B | – | done | Codex |
-| A5-1 | Explore summary + touch-explore | A | B5-0 | todo | |
+| A5-1 | Explore summary + touch-explore | A | B5-0 | doing | Codex |
 | A5-2 | On-device layout cache | A | – | todo | |
 | A5-3 | Tuning, Crashlytics, update check | A | C4-3 | todo | |
 | A5-4 | (stretch) Mock glasses source | A | – | todo | |
@@ -455,3 +455,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: B4-3 mock-first: Glimmer adapter (Spark schema/toLayout, no SAM), all-or-none GLIMMER_* config, live-only client, ready.flags.privateAvailable, eval --mode private, Modal vLLM app (not deployed). 410 gateway + 51 eval tests pass. Live deploy + 20-image eval wait on Modal credits.
 - 2026-11-02: C5-4 gateway + consent: POST /v1/donate (consent donate.v1, redaction flags, ≤20 JPEG + 1 replay, 15-min signed PUTs, pointer before sign, no uid/IP stored, 90-day expiry), GCS/Firestore-TTL store, infra/setup-donations.sh (not run), EN/HI/ES consent text. 429 gateway tests pass. Android ask/blur/upload and bucket setup pending.
 - 2026-11-02: A4-5 Settings (DataStore 1.1.7) + accessible SettingsScreen; locale, speech, tone, haptics and private mode wired; speechRate/verbosity/handedness/holdMode/volumeKeys stored only. 213 guidance + 15 app tests pass. TalkBack order, 200% font and restart checks pending on phone.
+- 2026-11-02: A5-1 EXPLORING/TOUCH_EXPLORE states, explore keyframe, local TouchExplorer (150 ms, smallest polygon, text prefix, edge earcon), en/hi/es strings, explore-summary flow replay; machine locale now follows settings. 236 guidance tests pass. Phone check pending.

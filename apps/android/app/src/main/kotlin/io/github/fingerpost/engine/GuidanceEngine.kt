@@ -52,6 +52,9 @@ class GuidanceEngine(
     private val metering = ScreenMetering()
     private val tone = ToneSynth()
     private val haptics = Haptics(context)
+    private val earcons = Earcons()
+    /** A5-1: names the element under the finger over the last layout. Local only: nothing is uploaded. */
+    private val explorer = TouchExplorer()
     private val auth = Auth(context)
     @Volatile private var closed = false
     private var ready = false
@@ -123,6 +126,7 @@ class GuidanceEngine(
 
     init {
         speaker.setLocale(settings.locale)
+        machine.locale = guidanceLocale(settings.locale)
         if (!openCvReady) {
             mutableStatus.value = mutableStatus.value.copy(message = "Camera tracking couldn't start. Reopen Fingerpost.")
             say("Camera tracking couldn't start.", SpeechPriority.STATE)
@@ -153,6 +157,7 @@ class GuidanceEngine(
     fun updateSettings(newSettings: Settings) {
         settings = newSettings
         speaker.setLocale(newSettings.locale)
+        machine.locale = guidanceLocale(newSettings.locale)
         if (!newSettings.tone) tone.stop()
     }
 
@@ -186,6 +191,7 @@ class GuidanceEngine(
         planner.reset()
         router.cancelKeyframes()
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
+        explorer.reset()
         dispatch(GEvent.Abort(time()))
     }
 
@@ -199,6 +205,7 @@ class GuidanceEngine(
                 onSince = time(); occluded = false
             }
             if (before == GState.ON_TARGET && machine.state == GState.GUIDING) quietUntil = time() + 300
+            if (machine.state == GState.TOUCH_EXPLORE || before == GState.TOUCH_EXPLORE) explorer.reset()
         }
         mutableStatus.value = mutableStatus.value.copy(state = machine.state)
     }
@@ -208,8 +215,11 @@ class GuidanceEngine(
             is Effect.Say -> say(effect.text, effect.priority, effect.completionId)
             Effect.OpenMic -> wantsMic = true
             Effect.CloseMic -> { wantsMic = false; mic.stop() }
-            is Effect.SendKeyframe -> if (ready && !guard.pinMode) router.requestKeyframe(
-                if (effect.purpose == Purpose.LOCATE) KeyframePurpose.LOCATE else KeyframePurpose.VERIFY, generation)
+            is Effect.SendKeyframe -> if (ready && !guard.pinMode) router.requestKeyframe(when (effect.purpose) {
+                Purpose.LOCATE -> KeyframePurpose.LOCATE
+                Purpose.VERIFY -> KeyframePurpose.VERIFY
+                Purpose.EXPLORE -> KeyframePurpose.EXPLORE
+            }, generation)
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
             Effect.ToneOff -> tone.stop()
             is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind)
@@ -320,6 +330,7 @@ class GuidanceEngine(
 
     private fun handResult(samples: List<FingerSample>) {
         if (guard.pinMode) { pinHand(samples); return }
+        if (machine.state == GState.TOUCH_EXPLORE) { touchHand(samples); return }
         if (machine.state !in setOf(GState.GUIDING, GState.ON_TARGET)) return
         val now = time()
         lastHandAt = now
@@ -337,6 +348,29 @@ class GuidanceEngine(
         val radius = finger.target?.nearRadius ?: 1.0
         tone.setPulseHz(if (result.zone == Zone.NEAR) 4 + 8 * (1 - result.error.length / radius).coerceIn(0.0, 1.0) else 0.0)
         if (settings.tone) tone.start() else tone.stop()
+    }
+
+    /** Touch-explore: the element under the finger's pad is named once it settles; leaving it plays an earcon. */
+    private fun touchHand(samples: List<FingerSample>) {
+        val now = time()
+        lastHandAt = now
+        tone.stop()
+        val frame = latest
+        val s = samples.firstOrNull { it.presence >= 0.6f }
+        val quad = frame?.quad
+        val pad = if (s != null && frame != null && quad != null && frame.tracking == TrackState.TRACKING) {
+            Homography.imageToScreen(quad.map { Vec2(it.x * s.frameW, it.y * s.frameH) })
+                ?.map(padPoint(Vec2(s.tipX.toDouble(), s.tipY.toDouble()), Vec2(s.dipX.toDouble(), s.dipY.toDouble())))
+                ?.takeIf { it.x.isFinite() && it.y.isFinite() && !isOffScreen(it) }
+        } else null
+        val elements = layout?.elements.orEmpty().map { e ->
+            ExploreElement(e.id, e.label, e.role.name.lowercase(), e.polygon.map { Vec2(it.u, it.v) })
+        }
+        when (val cue = explorer.update(now, pad, elements)) {
+            is ExploreCue.Speak -> say(cue.spoken(machine.locale), SpeechPriority.INFO)
+            ExploreCue.Edge -> earcons.edge()
+            null -> Unit
+        }
     }
 
     /** PIN mode: announce the keypad layout once, then the digit under the finger's pad. Local only. */
@@ -378,6 +412,9 @@ class GuidanceEngine(
             is Transcript -> if (message.final && message.text.isNotBlank()) when (machine.state) {
                 GState.LISTENING -> dispatch(GEvent.GoalHeard(time(), message.text))
                 GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
+                // "more" and new goals are answered by the gateway; only "touch explore" is handled here.
+                GState.EXPLORING -> dispatch(if (isTouchExploreCommand(message.text)) GEvent.TouchExploreRequested(time(), layout != null)
+                    else GEvent.UserSaid(time(), message.text))
                 else -> Unit
             }
             is GoalAck -> {
@@ -399,7 +436,10 @@ class GuidanceEngine(
             is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options))
             is Verify -> if (message.re == verifyId) { verifyId = null; dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
             is SimTouch -> if (simRunId != null && message.runId == simRunId) dispatch(GEvent.PressDetected(time(), Evidence.SIM))
-            is Say -> say(message.text, SpeechPriority.valueOf(message.priority.name))
+            is Say -> {
+                say(message.text, SpeechPriority.valueOf(message.priority.name))
+                if (machine.state == GState.EXPLORING) dispatch(GEvent.ExploreSaid(time()))
+            }
             is Confirm -> if (machine.state in TURN_STATES) dispatch(GEvent.ConfirmArrived(time(), message.id, message.summary, message.amount?.let { spokenAmount(it) }))
             is Mode -> if (message.mode == SessionMode.OFFLINE) { ready = false; reset(); mutableStatus.value = mutableStatus.value.copy(cloudOff = true); say("Cloud features are paused. Try again later.", SpeechPriority.SAFETY) }
             is ErrorMessage -> {
@@ -486,7 +526,7 @@ class GuidanceEngine(
         if (closed) return
         closed = true
         reset(); client.close(); sensorManager.unregisterListener(gravity)
-        hands.close(); tone.release(); haptics.release(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
+        hands.close(); tone.release(); haptics.release(); earcons.release(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
     }
     fun closeVision() { router.close() }
 
@@ -508,9 +548,15 @@ class GuidanceEngine(
         val openCvReady by lazy { OpenCVLoader.initLocal() }
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */
         val TURN_STATES = setOf(GState.LOCATING, GState.AWAIT_NEXT)
-        val LAYOUT_STATES = setOf(GState.LOCATING, GState.VERIFYING, GState.AWAIT_NEXT)
-        /** States that listen to the user: a goal, an answer or a yes/no. */
-        val LISTENING_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM)
+        val LAYOUT_STATES = setOf(GState.LOCATING, GState.VERIFYING, GState.AWAIT_NEXT, GState.EXPLORING)
+        /** States that listen to the user: a goal, an answer, a yes/no, or "more" while exploring. */
+        val LISTENING_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
+
+        fun guidanceLocale(tag: String): java.util.Locale = when {
+            tag.lowercase().startsWith("hi") -> Strings.HI
+            tag.lowercase().startsWith("es") -> Strings.ES
+            else -> Strings.EN
+        }
 
         /** "₹149" for the confirm prompt; the summary usually contains it already and then it isn't repeated. */
         fun spokenAmount(a: Amount): String {

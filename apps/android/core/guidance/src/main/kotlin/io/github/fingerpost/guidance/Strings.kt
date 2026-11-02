@@ -65,6 +65,12 @@ enum class Key {
     GLARE_WARNING,
     UNCERTAIN_PREFIX,
     UNCERTAIN_SUFFIX,
+
+    // A5-1 explore and touch-explore
+    EXPLORE_HINT,
+    TOUCH_EXPLORE_ON,
+    TOUCH_EXPLORE_NEEDS_SCREEN,
+    TEXT_PREFIX,
 }
 
 typealias StringKey = Key
@@ -130,6 +136,10 @@ object Strings {
         Key.GLARE_WARNING to "There's glare. Tilt the phone a little.",
         Key.UNCERTAIN_PREFIX to "I think this is",
         Key.UNCERTAIN_SUFFIX to "but I'm not sure.",
+        Key.EXPLORE_HINT to "Say more, touch explore, or what you want to press.",
+        Key.TOUCH_EXPLORE_ON to "Touch explore on. Slide your finger over the screen.",
+        Key.TOUCH_EXPLORE_NEEDS_SCREEN to "Say explore first, so I can read the screen.",
+        Key.TEXT_PREFIX to "Text",
     )
 
     private val hi: Map<Key, String> = mapOf(
@@ -185,6 +195,10 @@ object Strings {
         Key.GLARE_WARNING to "चमक आ रही है। फ़ोन को थोड़ा झुकाएं।",
         Key.UNCERTAIN_PREFIX to "मुझे लगता है यह",
         Key.UNCERTAIN_SUFFIX to "लेकिन मुझे पक्का यकीन नहीं है।",
+        Key.EXPLORE_HINT to "आगे सुनने के लिए और कहें, उंगली से जानने के लिए टच एक्सप्लोर कहें, या बताएं कि क्या दबाना है।",
+        Key.TOUCH_EXPLORE_ON to "टच एक्सप्लोर चालू है। स्क्रीन पर उंगली फिराएं।",
+        Key.TOUCH_EXPLORE_NEEDS_SCREEN to "पहले एक्सप्लोर कहें, ताकि मैं स्क्रीन पढ़ सकूं।",
+        Key.TEXT_PREFIX to "टेक्स्ट",
     )
 
     private val es: Map<Key, String> = mapOf(
@@ -240,6 +254,10 @@ object Strings {
         Key.GLARE_WARNING to "Hay reflejos. Inclina un poco el teléfono.",
         Key.UNCERTAIN_PREFIX to "Creo que esto es",
         Key.UNCERTAIN_SUFFIX to "pero no estoy seguro.",
+        Key.EXPLORE_HINT to "Di más, exploración táctil, o lo que quieres pulsar.",
+        Key.TOUCH_EXPLORE_ON to "Exploración táctil activada. Desliza el dedo por la pantalla.",
+        Key.TOUCH_EXPLORE_NEEDS_SCREEN to "Primero di explorar, para que pueda leer la pantalla.",
+        Key.TEXT_PREFIX to "Texto",
     )
 
     val strings: Map<Locale, Map<Key, String>> = mapOf(

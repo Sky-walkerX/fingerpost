@@ -114,6 +114,8 @@ fun SessionScreen(
             GState.AWAIT_NEXT -> "Next step"
             GState.PIN_MODE -> "PIN entry"
             GState.DONE -> "Done"
+            GState.EXPLORING -> "Reading the screen"
+            GState.TOUCH_EXPLORE -> "Touch explore"
         }
     }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
