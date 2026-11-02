@@ -1,6 +1,6 @@
 import type { ErrorCode } from '@fingerpost/protocol';
 
-/** What the app says for each error (docs/protocol.md). Short, plain, says what to do next. English; Day 4 adds hi/es. */
+/** English text for each error (docs/protocol.md). Sessions in hi/es use spokenError() in src/i18n/strings.ts. */
 export const SPOKEN_ERRORS: Record<ErrorCode, { say: string; retryable: boolean }> = {
   auth_expired: { say: 'Reconnecting.', retryable: true },
   quota_exhausted: { say: "You've used today's free tasks. Basic offline mode still works.", retryable: false },

@@ -1,4 +1,5 @@
 import { ulid } from 'ulid';
+import { spokenError } from '../i18n/strings.ts';
 import { decodeFrame, LIMITS, parseClientMessage, PROTOCOL, type ClientMessage, type ErrorCode, type Locale, type ServerMessage } from '@fingerpost/protocol';
 
 /** What the hub hands work to. Day 1 runs with none; Day 2 wires SessionPipeline + ASR. */
@@ -9,7 +10,6 @@ export interface HubHandlers {
 
 export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
 
-const SPOKEN_BAD = 'Something went wrong talking to the server.';
 
 /**
  * One WebSocket session. Validates every frame against fp.v1 and the size limits, enforces hello-first,
@@ -27,7 +27,7 @@ export class SessionHub {
   private now() {
     return this.d.now?.() ?? Date.now();
   }
-  private error(code: ErrorCode, say = SPOKEN_BAD) {
+  private error(code: ErrorCode, say = spokenError(code, this.locale).say) {
     this.d.send({ type: 'error', id: ulid(), ts: this.now(), code, retryable: false, say });
   }
 
@@ -58,7 +58,7 @@ export class SessionHub {
   private async dispatch(json: unknown, payload: Uint8Array | null): Promise<void> {
     if (typeof json === 'object' && json !== null && 'type' in json && json.type === 'hello'
         && (!('protocol' in json) || json.protocol !== PROTOCOL)) {
-      this.error('version_unsupported', 'Please update Fingerpost to keep using it.');
+      this.error('version_unsupported');
       return;
     }
     const parsed = parseClientMessage(json);
@@ -86,7 +86,7 @@ export class SessionHub {
       }
     } catch {
       this.d.send({ type: 'error', id: ulid(), ts: this.now(), code: 'model_unavailable', retryable: true,
-        say: "I couldn't reach the reading service. Try again in a moment." });
+        say: spokenError('model_unavailable', this.locale).say });
     }
   }
 }

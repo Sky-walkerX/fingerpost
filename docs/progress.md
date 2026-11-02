@@ -78,7 +78,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | B4-1 | Model router (private, Spark fallback) | B | – | done | Codex |
 | B4-2 | Agent loop + policy | B | B4-0 | done | Codex |
 | B4-3 🔑 | Glimmer private parse on Modal | B | B4-1 | doing | Codex |
-| B4-4 | HI/ES server speech | B | – | todo | |
+| B4-4 | HI/ES server speech | B | – | done | Codex |
 | C4-1 | Sim scenes 3/5/6, PIN after pay | C | – | done | Codex |
 | C4-2 | Virtual-device flow runner | C | B4-0 | done | Codex |
 | C4-3 | Tester session #1 + triage | C | – | todo | |
@@ -269,6 +269,7 @@ After five logged warm-up windows:
 
 
 ## Deviations from the plan
+- B4-4 (2026-11-02) · Two controller tests use a Hindi session and expected the English retry line; their expected text is now the Hindi line (same assertion). agent.v1.md gains rule 7 (reply in reply_language) in place, without a version bump, since it has never run live.
 - C4-4 (2026-11-02) · PinGate.check takes the token space's pixel aspect: the §10.1 column tolerance was compared in mixed units and merged key columns on wide screens. Callers (FrameRouter, UploadGuard, Keyframer) pass the frame or rectified-screen aspect; square spaces unchanged. The sim token file is committed (evals/out/pinpay-tokens.json) with a freshness test.
 - A5-1 (2026-11-02) · Added EXPLORING and TOUCH_EXPLORE states with initial-value timeouts (6 s summary retry, 12 s idle hint) and a 30 ms edge earcon (guidance-spec §8, §11a). The state machine's locale now follows settings (prompts were English-only).
 - A4-5 (2026-11-02) · speechRate, verbosity, handedness, holdMode and volumeKeys are stored but not applied yet (TtsSpeaker has no rate API); A6-3 picks up speech rate.
@@ -467,3 +468,4 @@ _(task id · what changed · why · who approved)_
 - 2026-11-02: A5-2 LocalLayoutCache (aspect bucket + trigram SimHash, Hamming ≤3, LRU 50, DataStore), OCR-agreed instant re-lock for guide goals with gateway confirm/replace, never pay/confirm/submit/icon or PIN/payment screens, Clear saved screens. 262 guidance tests pass. Phone check (<0.8 s re-lock) pending.
 - 2026-11-02: B6-2 POST /v1/waitlist (honeypot 400, 5/min/IP 429, dedupe, waitlist/{sha256(email)} with email/locale/createdAt only, email never logged) and GET /v1/config {minVersion, cloudEnabled} cached 30 s (Remote Config min_supported_version, last good value on error). 438 gateway tests pass. Live Firestore/Remote Config check needs GCP.
 - 2026-11-02: C4-4 mock: PinGateDatasetTest on 170 sim items: recall 120/120 (also text-free and under OCR noise), 0/50 amount summaries blocked. Found and fixed PIN gate column tolerance ignoring pixel aspect (noisy grid-only recall 0/120 → 120/120). Live server/real-photo recall still 🔑.
+- 2026-11-02: B4-4 gateway speech in en/hi/es via src/i18n/strings.ts t(): targets, asks, verify, errors, offline/private notices, agent lines; positions/lists match the phone; Spark planner gets reply_language. 447 gateway tests pass. Native listen-through is A6-3.

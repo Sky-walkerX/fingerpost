@@ -9,7 +9,7 @@ import type { SimRegistry } from '../sim/registry.ts';
 import type { QuotaPort, SessionClaims, StartResult } from './types.ts';
 import { SessionHub } from './hub.ts';
 import { SessionPipeline } from './pipeline.ts';
-import { SPOKEN_ERRORS } from '../errors/spoken.ts';
+import { spokenError, t } from '../i18n/strings.ts';
 
 export type AsrFactory = (o: Omit<AsrOptions, 'apiKey'>, sink: AsrSink) => AsrRelay;
 export interface ControllerDeps {
@@ -41,7 +41,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
       if (!accountingFailed) {
         accountingFailed = true;
         closeRelay(); pipeline.abort();
-        send({ ...base(), type: 'error', code: 'cloud_paused', ...SPOKEN_ERRORS.cloud_paused });
+        send({ ...base(), type: 'error', code: 'cloud_paused', ...spokenError('cloud_paused', pipeline.speechLocale) });
       }
       throw new Error('Spend accounting unavailable');
     });
@@ -107,7 +107,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
             if (disposed || openingTurn !== turn) break;
             if (!enabled) {
               awaitingEnd = true;
-              send({ ...base(), type: 'error', code: 'cloud_paused', ...SPOKEN_ERRORS.cloud_paused });
+              send({ ...base(), type: 'error', code: 'cloud_paused', ...spokenError('cloud_paused', pipeline.speechLocale) });
               break;
             }
             if (relay || disposed) break;
@@ -118,7 +118,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
               const ended = audioEnded;
               closeRelay();
               awaitingEnd = !ended;
-              send({ ...base(), type: 'error', code: 'model_unavailable', retryable: true, say: "I didn't catch that. Please say it again." });
+              send({ ...base(), type: 'error', code: 'model_unavailable', retryable: true, say: t(pipeline.speechLocale, 'not_caught') });
             };
             try {
               const opened = d.asr({ locales: [hub.locale], keywords }, {
@@ -159,7 +159,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
           closeRelay();
           pipeline.abort();
           keywords = [];
-          send({ ...base(), type: 'finish', result: 'aborted', say: 'Stopped.' });
+          send({ ...base(), type: 'finish', result: 'aborted', say: t(pipeline.speechLocale, 'stopped') });
           break;
       }
     },

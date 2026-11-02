@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import type OpenAI from 'openai';
 import { z } from 'zod';
-import type { LayoutElement, ScreenType } from '@fingerpost/protocol';
+import type { LayoutElement, Locale, ScreenType } from '@fingerpost/protocol';
+import { joinList, t } from '../i18n/strings.ts';
 import { MODELS } from '../models/meta-client.ts';
 import { normalizeLabel } from '../parse/spark-parse.ts';
 import { elementKey, isSensitive } from './policy.ts';
@@ -22,6 +23,8 @@ export interface AgentState {
   confirmed: string[];
   /** Why the previous tool call was refused, so the model can correct itself. */
   feedback: string | null;
+  /** B4-4: the user's language; questions, summaries and reasons are spoken in it. Default en. */
+  locale?: Locale;
 }
 
 export interface ToolCall { name: string; arguments: Record<string, unknown> }
@@ -88,13 +91,12 @@ function score(el: LayoutElement, want: readonly string[]): number {
   return 0;
 }
 
-const joinOr = (labels: readonly string[]) =>
-  labels.length <= 1 ? (labels[0] ?? '') : `${labels.slice(0, -1).join(', ')} or ${labels.at(-1)}`;
 
 export function rulesPlanner(): Planner {
   return {
     id: 'rules.v1',
     async next(state) {
+      const locale = state.locale ?? 'en';
       const els = state.screen.elements;
       const want = wanted(state);
       const sensitive = els.filter(isSensitive);
@@ -107,7 +109,7 @@ export function rulesPlanner(): Planner {
         if (target) return { call: { name: 'guide_to', arguments: { element_id: target.id, why: 'Pay' } } };
         const amount = screenAmount(els);
         const items = want.filter((w) => !CATEGORIES[w]).join(' ');
-        const what = items ? items.charAt(0).toUpperCase() + items.slice(1) : 'Your order';
+        const what = items ? items.charAt(0).toUpperCase() + items.slice(1) : t(locale, 'your_order');
         return { call: { name: 'confirm_with_user', arguments: {
           summary: amount ? `${what}, ${amount.label}` : what,
           amount_value: amount?.value ?? 0, amount_currency: amount?.currency ?? 'INR',
@@ -119,10 +121,10 @@ export function rulesPlanner(): Planner {
       const choices = els.filter(actionable);
       if (choices.length >= 2 && choices.length <= 8 && state.answers.length < 2) {
         const labels = choices.map((el) => el.label.slice(0, 100));
-        return { call: { name: 'ask_user', arguments: { question: `Which one: ${joinOr(labels)}?`.slice(0, 300), options: labels } } };
+        return { call: { name: 'ask_user', arguments: { question: t(locale, 'ask_which_one', { options: joinList(labels, 'or', locale) }).slice(0, 300), options: labels } } };
       }
-      const seen = joinOr(choices.map((el) => el.label).slice(0, 6)) || 'nothing I can press';
-      return { call: { name: 'finish', arguments: { result: 'failed', reason: `I can't find that here. I see ${seen}.`.slice(0, 280) } } };
+      const seen = joinList(choices.map((el) => el.label).slice(0, 6), 'or', locale) || t(locale, 'nothing_to_press');
+      return { call: { name: 'finish', arguments: { result: 'failed', reason: t(locale, 'not_found_here', { labels: seen }).slice(0, 280) } } };
     },
   };
 }
@@ -142,6 +144,8 @@ const Args = {
   finish: z.object({ result: z.enum(['done', 'failed']), reason: z.string().min(1).max(280) }),
 } as const;
 
+const LANGUAGE_NAMES: Record<Locale, string> = { en: 'English', hi: 'Hindi', es: 'Spanish' };
+
 export function stateMessage(state: AgentState): string {
   return JSON.stringify({
     goal: state.goal,
@@ -150,6 +154,8 @@ export function stateMessage(state: AgentState): string {
     previous_screens: state.history,
     screen: { type: state.screen.screenType, elements: state.screen.elements.map((el) => ({ id: el.id, label: el.label, role: el.role })) },
     ...(state.feedback ? { feedback: state.feedback } : {}),
+    // Spoken text (questions, summaries, reasons) in the user's language; labels stay as the screen shows them.
+    ...(state.locale && state.locale !== 'en' ? { reply_language: LANGUAGE_NAMES[state.locale] } : {}),
   });
 }
 

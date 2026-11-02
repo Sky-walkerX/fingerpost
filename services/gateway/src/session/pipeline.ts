@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { ulid } from 'ulid';
 import { Ask, Layout, Target, type Keyframe, type LayoutElement, type Locale, type ServerMessage } from '@fingerpost/protocol';
 import type { ModelPort } from '../models/port.ts';
-import { ModelsUnavailable, OFFLINE_SAY, PrivateUnavailable, type RoutedModels } from '../models/router.ts';
+import { ModelsUnavailable, PrivateUnavailable, type RoutedModels } from '../models/router.ts';
 import type { Usage } from '../quota/cost.ts';
-import { SPOKEN_ERRORS } from '../errors/spoken.ts';
+import { spokenError, t } from '../i18n/strings.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { describePosition, listLabels } from '../resolve/describe.ts';
 import { fullFrameCoordinates } from './screen-coordinates.ts';
@@ -84,6 +84,8 @@ export function labelJaccard(a: readonly LayoutElement[], b: readonly LayoutElem
 export class SessionPipeline {
   private goal: string | null = null;
   private locale: Locale = 'en';
+  /** The session's language for spoken text (B4-4). */
+  get speechLocale(): Locale { return this.locale; }
   private layout: Layout | null = null;
   private target: LayoutElement | null = null;
   private lastTap: { keyframeId: string | null; simElementId: string | null } = { keyframeId: null, simElementId: null };
@@ -134,8 +136,7 @@ export class SessionPipeline {
     } catch (error) {
       if (!(error instanceof PrivateUnavailable)) throw error;
       this.d.send({ ...this.base(), type: 'mode', mode: 'private', reason: 'Private models are not available.' });
-      this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', retryable: false,
-        say: "Private mode isn't available right now. Turn it off in settings to continue." });
+      this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', retryable: false, say: t(this.locale, 'private_unavailable') });
       return null;
     }
   }
@@ -169,6 +170,7 @@ export class SessionPipeline {
       ...(this.d.now ? { now: this.d.now } : {}),
       onUsage: (u) => this.d.onUsage?.({ kind: 'spark', ...u }),
       onPlannerError: (id) => this.d.onPlannerError?.(id),
+      locale: this.locale,
     }) : null;
     this.d.send({ ...this.base(), type: 'goal.ack', goal: text, intent });
   }
@@ -191,12 +193,12 @@ export class SessionPipeline {
 
   /** The device entered PIN mode after a confirmed payment press: the cloud part of the task is done. */
   onPinModeEntered(): void {
-    if (this.agent?.pinEntered()) this.d.send({ ...this.base(), type: 'finish', result: 'done', say: 'PIN entry is ready.' });
+    if (this.agent?.pinEntered()) this.d.send({ ...this.base(), type: 'finish', result: 'done', say: t(this.locale, 'pin_ready') });
   }
 
   private paymentDeclined(): void {
     this.target = null;
-    this.d.send({ ...this.base(), type: 'finish', result: 'aborted', say: 'Payment not confirmed.' });
+    this.d.send({ ...this.base(), type: 'finish', result: 'aborted', say: t(this.locale, 'payment_not_confirmed') });
   }
 
   abort(): void {
@@ -223,7 +225,7 @@ export class SessionPipeline {
   }
 
   private refuse(code: 'cloud_paused' | 'quota_exhausted' | 'rate_limited') {
-    this.d.send({ ...this.base(), type: 'error', code, ...SPOKEN_ERRORS[code] });
+    this.d.send({ ...this.base(), type: 'error', code, ...spokenError(code, this.locale) });
   }
 
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
@@ -275,7 +277,7 @@ export class SessionPipeline {
     } else {
     if (h.purpose === 'locate' && !this.lookingSpoken) {
       this.lookingSpoken = true;
-      this.d.send({ ...this.base(), type: 'say', priority: 'state', text: 'Looking at the screen.' });
+      this.d.send({ ...this.base(), type: 'say', priority: 'state', text: t(this.locale, 'looking') });
     }
     const parse = models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
       .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
@@ -287,7 +289,7 @@ export class SessionPipeline {
     } catch (error) {
       if (!(error instanceof ModelsUnavailable)) throw error;
       // The whole chain failed (Spark 1.3, 1.2, retry, Glimmer): switch the session to offline basic mode.
-      this.d.send({ ...this.base(), type: 'mode', mode: 'offline', reason: OFFLINE_SAY });
+      this.d.send({ ...this.base(), type: 'mode', mode: 'offline', reason: t(this.locale, 'offline') });
       return;
     }
     if (result === CANCELLED || signal.aborted) return;
@@ -295,7 +297,7 @@ export class SessionPipeline {
     const mapped = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
     coordinates = mapped;
     if (h.kind === 'full' && !mapped) {
-      this.d.send({ ...this.base(), type: 'ask', question: "I can't find the screen. Hold the phone steady and try again.", options: [] });
+      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'no_screen'), options: [] });
       return;
     }
     const elements = mapped ? parsed.layout.elements.flatMap((element) => {
@@ -328,7 +330,7 @@ export class SessionPipeline {
       const { regions } = summarize(layout, this.locale);
       this.explore = { regions, cursor: Math.min(3, regions.length) };
       this.d.send({ ...this.base(), type: 'say', priority: 'info', text: regions.length ? firstSay(regions, this.locale).slice(0, 500)
-        : 'I can\'t read anything on this screen. Hold the phone steady and try again.' });
+        : t(this.locale, 'explore_empty') });
       return;
     }
     if (this.agent) {
@@ -338,9 +340,8 @@ export class SessionPipeline {
     const resolved = resolveByText(this.goal ?? '', layout.elements);
     if (resolved.kind !== 'match') {
       const elements = resolved.kind === 'ambiguous' ? resolved.candidates : layout.elements.filter((element) => element.role !== 'text');
-      const labels = listLabels(elements) || 'nothing I can read';
-      const prefix = resolved.kind === 'ambiguous' ? 'I see ' : "I can't find that. I see ";
-      const suffix = resolved.kind === 'ambiguous' ? '. Which one?' : '. What do you want to press?';
+      const labels = listLabels(elements, 5, this.locale) || t(this.locale, 'nothing_to_read');
+      const [prefix, suffix] = t(this.locale, resolved.kind === 'ambiguous' ? 'ask_which' : 'ask_not_found').split('{labels}') as [string, string];
       const budget = Ask.shape.question.maxLength! - prefix.length - suffix.length;
       this.d.send(Ask.parse({ ...this.base(), type: 'ask', question: prefix + labels.slice(0, budget) + suffix,
         options: elements.slice(0, 8).map(({ label }) => label.slice(0, 100)) }));
@@ -372,7 +373,7 @@ export class SessionPipeline {
     const turn = await whileActive<AgentTurn>(agent.decide(layout, signal), signal).catch(() => null);
     if (turn === CANCELLED || signal.aborted || agent !== this.agent) return;
     if (!turn) {
-      this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', ...SPOKEN_ERRORS.model_unavailable });
+      this.d.send({ ...this.base(), type: 'error', code: 'model_unavailable', ...spokenError('model_unavailable', this.locale) });
       return;
     }
     for (const { text, priority } of turn.says) this.d.send({ ...this.base(), type: 'say', text, priority });
@@ -394,7 +395,7 @@ export class SessionPipeline {
       // Stored polygons are already final: answering a known screen needs no model call at all.
       this.target = element;
       this.d.send(Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon: element.polygon,
-        confidence: element.confidence, say: `Found ${element.label}, ${describePosition(element.polygon)}.` }));
+        confidence: element.confidence, say: t(this.locale, 'found', { label: element.label, position: describePosition(element.polygon, this.locale) }) }));
       return;
     }
     const original = parsedElements.find(({ id }) => id === element.id) ?? element;
@@ -410,7 +411,7 @@ export class SessionPipeline {
     const polygon = refined || element.polygon;
     const target = Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon,
       confidence: Math.min(element.confidence, refined ? mask.confidence ?? element.confidence : element.confidence),
-      say: `Found ${element.label}, ${describePosition(polygon)}.` });
+      say: t(this.locale, 'found', { label: element.label, position: describePosition(polygon, this.locale) }) });
     this.target = element;
     this.d.send(target);
   }
@@ -421,13 +422,13 @@ export class SessionPipeline {
     this.lastTap = { keyframeId: null, simElementId: null };
     if (touched && this.target && (actual === null || !simMatches(actual, this.target))) {
       this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'wrong',
-        ...(actual !== null ? { actualElementId: actual } : {}), say: `That pressed something else. Let's find ${this.target.label} again.` });
+        ...(actual !== null ? { actualElementId: actual } : {}), say: t(this.locale, 'pressed_other', { label: this.target.label }) });
       return 'wrong';
     } else if (!before || labelJaccard(before.elements, after.elements) < 0.7 || touched) {
-      this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'ok', say: 'Done.' });
+      this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'ok', say: t(this.locale, 'verify_done') });
       return 'ok';
     }
-    this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'nochange', say: "The screen didn't change. Press a little firmer." });
+    this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'nochange', say: t(this.locale, 'verify_nochange') });
     return 'nochange';
   }
 }

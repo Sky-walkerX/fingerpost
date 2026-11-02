@@ -1,5 +1,6 @@
 import { ulid } from 'ulid';
-import type { Layout, LayoutElement, Priority } from '@fingerpost/protocol';
+import type { Layout, LayoutElement, Locale, Priority } from '@fingerpost/protocol';
+import { t } from '../i18n/strings.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { listLabels } from '../resolve/describe.ts';
 import { elementKey, isSensitive, Policy } from './policy.ts';
@@ -23,6 +24,8 @@ export interface AgentDeps {
   now?: () => number;
   onUsage?: (u: { inputTokens: number; outputTokens: number }) => void | Promise<void>;
   onPlannerError?: (plannerId: string, error: unknown) => void;
+  /** B4-4: the language of everything this session says. Default en. */
+  locale?: Locale;
 }
 
 /** Planner calls per screen: speech and refused calls loop back; the last attempt uses the fallback planner. */
@@ -70,6 +73,8 @@ export class AgentSession {
     this.policy = new Policy({ now: d.now });
     this.fallback = d.fallback ?? rulesPlanner();
   }
+
+  private get locale(): Locale { return this.d.locale ?? 'en'; }
 
   get done() { return this.finished; }
   get awaiting(): Pending { return this.pending; }
@@ -132,13 +137,13 @@ export class AgentSession {
     if (this.paidOn !== null) {
       if (layout.fingerprint === this.paidOn) return turn({ kind: 'wait' });
       this.finished = true;
-      return turn({ kind: 'finish', result: 'done', say: 'Done. Your order went through.' });
+      return turn({ kind: 'finish', result: 'done', say: t(this.locale, 'order_done') });
     }
 
     const verdict = this.policy.step(layout.fingerprint);
     if (verdict === 'budget') {
       this.finished = true;
-      return turn({ kind: 'finish', result: 'failed', say: 'This is taking too many steps. Please ask someone nearby for help.' });
+      return turn({ kind: 'finish', result: 'failed', say: t(this.locale, 'too_many_steps') });
     }
 
     if (this.wantBack) {
@@ -146,12 +151,12 @@ export class AgentSession {
       this.policy.forgetScreen(layout.fingerprint);
       const back = layout.elements.find((el) => el.role === 'back');
       if (back) return turn({ kind: 'target', element: back });
-      says.push({ text: "I can't find a Back button.", priority: 'state' });
+      says.push({ text: t(this.locale, 'no_back'), priority: 'state' });
     } else if (verdict === 'loop') {
       const id = ulid();
       this.pending = { kind: 'loop', id };
       this.loopScreen = layout.fingerprint;
-      return turn({ kind: 'ask', id, question: 'This screen keeps coming back. Should I go back?', options: ['Yes', 'No'] });
+      return turn({ kind: 'ask', id, question: t(this.locale, 'ask_go_back'), options: [t(this.locale, 'yes'), t(this.locale, 'no')] });
     }
 
     let feedback: string | null = null;
@@ -165,7 +170,7 @@ export class AgentSession {
         feedback = r.feedback ?? null;
       }
       this.finished = true;
-      return turn({ kind: 'finish', result: 'failed', say: "I'm not sure what to press next. Please ask someone nearby for help." });
+      return turn({ kind: 'finish', result: 'failed', say: t(this.locale, 'not_sure_next') });
     } finally {
       this.history.push(layoutSummary(layout.elements));
       if (this.history.length > 5) this.history.shift();
@@ -174,7 +179,7 @@ export class AgentSession {
 
   private state(layout: Layout, feedback: string | null): AgentState {
     return {
-      goal: this.goal, answers: [...this.answers], history: [...this.history], feedback,
+      goal: this.goal, answers: [...this.answers], history: [...this.history], feedback, locale: this.locale,
       screen: { fingerprint: layout.fingerprint, screenType: layout.screenType, elements: layout.elements },
       confirmed: layout.elements.filter((el) => this.policy.hasAccepted(el)).map(elementKey),
     };
@@ -213,7 +218,7 @@ export class AgentSession {
         if (!covered.length) covered = els.filter(isSensitive);
         if (!covered.length) return { feedback: 'confirm_with_user refused: there is no pay, confirm or submit button on this screen.' };
         const shown = screenAmount(els);
-        let summary = String(a.summary ?? '').trim().slice(0, 300) || 'Your order';
+        let summary = String(a.summary ?? '').trim().slice(0, 300) || t(this.locale, 'your_order');
         // The user must hear the amount the screen shows, whatever the model wrote.
         if (shown && !summary.includes(String(shown.value))) summary = `${summary}, ${shown.label}`.slice(0, 300);
         const id = ulid();
@@ -239,7 +244,7 @@ export class AgentSession {
       }
       case 'finish': {
         this.finished = true;
-        const say = String(a.reason ?? '').trim().slice(0, 280) || 'Done.';
+        const say = String(a.reason ?? '').trim().slice(0, 280) || t(this.locale, 'verify_done');
         return { action: { kind: 'finish', result: a.result === 'done' ? 'done' : 'failed', say } };
       }
       case 'wait_for_screen_change':
@@ -248,7 +253,8 @@ export class AgentSession {
         return { action: { kind: 'wait' } };
       case 'find_element': {
         const r = resolveByText(String(a.description ?? ''), els);
-        const text = r.kind === 'match' ? `Found ${r.element.label}.` : `I see ${listLabels(els.filter((e) => e.role !== 'text')) || 'nothing'}.`;
+        const text = r.kind === 'match' ? t(this.locale, 'found_short', { label: r.element.label })
+          : t(this.locale, 'i_see', { labels: listLabels(els.filter((e) => e.role !== 'text'), 5, this.locale) || t(this.locale, 'nothing') });
         return { say: { text, priority: 'info' }, feedback: 'find_element done. Now choose the next action.' };
       }
       default:

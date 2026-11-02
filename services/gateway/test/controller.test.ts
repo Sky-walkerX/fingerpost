@@ -38,7 +38,7 @@ test('typed goals and answers reach the pipeline and provide labels/locale to AS
 test('ASR failure gives one generic retry and late callbacks cannot affect a new utterance', async () => {
   const c = setup(); await c.text(hello()); await c.hub.onBinary(audio);
   c.sinks[0]!.error('synthetic provider detail'); c.sinks[0]!.error('again'); c.sinks[0]!.final('stale');
-  expect(c.sent.filter((m) => m.type === 'error')).toMatchObject([{ code: 'model_unavailable', retryable: true, say: "I didn't catch that. Please say it again." }]);
+  expect(c.sent.filter((m) => m.type === 'error')).toMatchObject([{ code: 'model_unavailable', retryable: true, say: 'मैं समझ नहीं पाया। कृपया फिर से कहें।' }]);
   await c.hub.onBinary(audio); expect(c.asr).toHaveBeenCalledTimes(1);
   await c.text({ type: 'audio.end', id: 'end1', ts: 3 });
   await c.hub.onBinary(audio); c.sinks[0]!.partial('stale'); c.sinks[1]!.final('start');
@@ -89,7 +89,7 @@ test('a synchronous ASR factory failure produces the same spoken retry', async (
   const sent: ServerMessage[] = [];
   const c = createSessionController({ models: mockModels(), sims: new SimRegistry(), send: (m) => sent.push(m), asr: () => { throw new Error('synthetic private detail'); } });
   await c.hub.onText(JSON.stringify(hello())); await c.hub.onBinary(audio);
-  expect(sent.at(-1)).toMatchObject({ type: 'error', say: "I didn't catch that. Please say it again." }); c.dispose();
+  expect(sent.at(-1)).toMatchObject({ type: 'error', say: 'मैं समझ नहीं पाया। कृपया फिर से कहें।' }); c.dispose();
 });
 
 test('quota ledger rejection pauses the session instead of guiding with unrecorded spend', async () => {

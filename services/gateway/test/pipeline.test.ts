@@ -150,3 +150,26 @@ test('no looking message on verify', async () => {
   expect(sent.some((m) => m.type === 'say' && m.text === 'Looking at the screen.')).toBe(false);
 });
 
+
+// ── B4-4: Hindi and Spanish server speech ──────────────────────────────────────────────────────────────
+test('hindi session gets hindi target say', async () => {
+  const { p, sent } = run();
+  p.setLocale('hi');
+  p.onGoal('press start'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent.map((m) => m.type)).toEqual(['say', 'layout', 'target']);
+  expect(sent[0]).toMatchObject({ type: 'say', text: 'स्क्रीन देख रहा हूँ।' });
+  expect((sent[2] as Extract<ServerMessage, { type: 'target' }>).say).toBe('Start मिला, नीचे दाईं ओर।');
+});
+
+test('spanish session gets spanish asks and verify speech', async () => {
+  const { p, sent } = run();
+  p.setLocale('es');
+  p.onGoal('defrost'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  expect(sent[2]).toMatchObject({ type: 'ask', question: 'No lo encuentro. Veo Timer, Power, Stop y Start. ¿Qué quieres pulsar?' });
+  p.onGoal('start'); sent.length = 0;
+  await p.onKeyframe(kf('locate'), jpeg);
+  await p.onKeyframe(kf('verify', 'k2'), jpeg);
+  expect(sent.find((m) => m.type === 'verify')).toMatchObject({ say: 'La pantalla no cambió. Pulsa un poco más firme.' });
+});
