@@ -13,26 +13,37 @@ def validate(env):
         if not env.get(name, '').strip():
             raise ValueError('Required release configuration is missing')
     tag = env.get('GITHUB_REF_NAME', '')
-    if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?', tag):
+    if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?', tag):
         raise ValueError('Release tag must contain a version')
     code = env.get('GITHUB_RUN_NUMBER', '')
-    if not re.fullmatch(r'[1-9]\d*', code) or int(code) > 2147483647:
+    if not re.fullmatch(r'[1-9][0-9]*', code) or len(code) > 10 or int(code) > 2147483647:
         raise ValueError('Invalid release version code')
     url = env.get('RELEASE_GATEWAY_URL', '')
-    if any(c.isspace() for c in url):
+    # This value also becomes a generated Java string and a GitHub output line.
+    if not re.fullmatch(r'wss://(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(?::[0-9]+)?', url):
         raise ValueError('Invalid release gateway')
     parsed = urlsplit(url)
     if parsed.scheme != 'wss' or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
         raise ValueError('Release gateway must be a secure base URL')
-    if parsed.hostname.lower() == 'localhost' or parsed.hostname.lower().endswith('.localhost'):
+    host = parsed.hostname.lower()
+    if host == 'localhost' or host.endswith('.localhost'):
         raise ValueError('Release gateway must not be loopback')
     try:
-        if ipaddress.ip_address(parsed.hostname).is_loopback:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        labels = host.split('.')
+        if (len(host) > 253 or any(not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label) for label in labels)
+                or re.fullmatch(r'(?:[0-9]+|0x[0-9a-f]+)', labels[-1])):
+            raise ValueError('Invalid gateway hostname') from None
+    else:
+        mapped = getattr(address, 'ipv4_mapped', None)
+        if address.is_loopback or (mapped is not None and mapped.is_loopback):
             raise ValueError('Release gateway must not be loopback')
-    except ValueError as error:
-        if str(error) == 'Release gateway must not be loopback': raise
-    try: parsed.port
+    try:
+        port = parsed.port
     except ValueError: raise ValueError('Invalid gateway port') from None
+    if parsed.netloc.endswith(':') or port == 0:
+        raise ValueError('Invalid gateway port')
     return tag[1:], int(code), url
 
 

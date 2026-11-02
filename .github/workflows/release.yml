@@ -39,13 +39,18 @@ jobs:
         env:
           RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
         run: |
+          umask 077
           printf '%s' "$RELEASE_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.jks"
       - name: Record signing certificate digest
+        id: signing
+        shell: bash
         env:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
-          DIGEST=$(keytool -list -v -keystore "$RUNNER_TEMP/release.jks" -alias "$RELEASE_KEY_ALIAS" -storepass "$RELEASE_STORE_PASSWORD" | awk '/SHA256:/ { print tolower($2) }' | tr -d ':')
+          DIGEST=$(keytool -J-Duser.language=en -J-Duser.country=US -list -v -keystore "$RUNNER_TEMP/release.jks" -alias "$RELEASE_KEY_ALIAS" -storepass:env RELEASE_STORE_PASSWORD | awk '/SHA256:/ { print tolower($2) }' | tr -d ':')
+          [[ "$DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "Invalid signing certificate digest" >&2; exit 1; }
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "Signing certificate SHA-256 digest: $DIGEST"
           echo "### Signing Certificate SHA-256 Digest" >> "$GITHUB_STEP_SUMMARY"
           echo "\`$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
@@ -64,10 +69,15 @@ jobs:
           -Pfingerpost.versionName="${RELEASE_VERSION_NAME}"
           -Pfingerpost.versionCode="${RELEASE_VERSION_CODE}"
       - name: Verify APK signature
+        env:
+          RELEASE_CERTIFICATE_SHA256: ${{ steps.signing.outputs.digest }}
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           test -n "$APKSIGNER"
-          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/app-release.apk
+          python3 ../../scripts/verify-release-apk.py \
+            --apksigner "$APKSIGNER" \
+            --apk app/build/outputs/apk/release/app-release.apk \
+            --expected-certificate-sha256 "$RELEASE_CERTIFICATE_SHA256"
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
