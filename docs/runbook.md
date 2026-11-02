@@ -71,3 +71,14 @@ The `.github/workflows/release.yml` workflow will:
 
 
 > The `^@^` prefix makes `@` the separator, because `SIGNING_DIGESTS` itself contains commas.
+
+## Incident response and alerts
+
+These are preparation steps, not evidence that production alerts are configured.
+
+- Cloud pause: set `config/runtime.cloudEnabled=false` in the intended Firestore project. Confirm a fresh session and an existing session both refuse new billed calls; retain numeric outcomes only. Accounting failures must keep cloud work paused. Resume only after the cause is resolved and the cap is reviewed.
+- Rollback: identify the previous verified Cloud Run revision, then route traffic to it with `gcloud run services update-traffic gateway --region <accepted-region> --to-revisions <verified-revision>=100`. Verify health, auth rejection and a synthetic task. Do not infer the accepted region from example commands above; ADR-0003 remains the authority.
+- Secret rotation: create a new Secret Manager version, deploy a revision referencing it and verify access before retiring the old version. Rotating SESSION_SECRET invalidates existing tokens; expect clients to authenticate again. Never print values or put them in command-line history.
+- Quota changes: review the task/spend limits and `DAILY_CAP_USD`, change the intended configuration, then test the boundary with synthetic identities. Increasing a cap needs the budget owner's authorization.
+- Alerts to configure: error rate above 5%, parse p95 above 5 seconds and spend above 80% of the daily cap. Use content-free structured counters; exclude health checks from task error rates. Record each alert's window, notification destination and a delivered test notification before marking B6-3 complete. Missing latency samples must not appear as healthy zero latency.
+- Incident record: UTC time, revision, affected surface, numeric impact, pause/rollback action, verification and owner. Exclude image/audio/OCR/transcripts, email addresses and credentials.
