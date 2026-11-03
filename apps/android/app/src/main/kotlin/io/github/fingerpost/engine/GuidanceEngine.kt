@@ -638,7 +638,7 @@ class GuidanceEngine(
             return
         }
         when (message) {
-            is Transcript -> if (!speechPrivacy.localOnly && message.final && message.text.isNotBlank()) when (machine.state) {
+            is Transcript -> if (speechPrivacy.input(offline, guard.pinMode) == SpeechInput.CLOUD && message.final && message.text.isNotBlank()) when (machine.state) {
                 GState.LISTENING -> { goalIntent = null; dispatch(GEvent.GoalHeard(time(), message.text)) }
                 GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
                 // "more" and new goals are answered by the gateway; only "touch explore" is handled here.
