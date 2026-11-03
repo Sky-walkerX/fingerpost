@@ -1,5 +1,5 @@
 import { ulid } from 'ulid';
-import type { ServerMessage } from '@fingerpost/protocol';
+import type { ClientMessage, ServerMessage } from '@fingerpost/protocol';
 import type { AsrOptions, AsrRelay, AsrSink } from '../asr/relay.ts';
 import type { ModelPort } from '../models/port.ts';
 import type { Planner } from '../agent/planner.ts';
@@ -26,6 +26,8 @@ export interface ControllerDeps {
   router?: RoutedModels;
   /** B5-2 kiosk memory; records are vouched for by the session's attested key id. */
   memory?: MemoryService;
+  /** Local-only diagnostics receives validated headers, never payloads or text. */
+  onInbound?: (message: ClientMessage) => void;
 }
 
 /** Wires one WebSocket: hub (validation) → pipeline (brain) + ASR relay + sim touches. Returns a disposer. */
@@ -106,6 +108,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     },
     async onMessage(message, payload) {
       if (disposed) return;
+      d.onInbound?.(message);
       if (pinMode && message.type !== 'abort' && message.type !== 'audio.end' &&
           !(message.type === 'event' && message.kind === 'pinModeExited')) return;
       if (accountingFailed && message.type !== 'abort' && message.type !== 'audio.end') return;

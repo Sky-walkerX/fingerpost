@@ -99,6 +99,24 @@ test('mock phone practice ignores private provider settings', () => {
   expect(config.GLIMMER_TOKEN).toBeUndefined();
 });
 
+test('mock phone exposes only content-free PIN transport counters', async () => {
+  const app = await buildPhoneGateway();
+  try {
+    expect((await app.inject('/v1/debug/transport-counters')).json()).toEqual({
+      audioChunks: 0, audioChunksWhilePinActive: 0,
+      audioEnds: 0, audioEndsWhilePinActive: 0,
+      keyframes: 0, keyframesWhilePinActive: 0,
+      pinEntered: 0, pinExited: 0, pinActive: false,
+    });
+  } finally { await app.close(); }
+});
+
+test('live phone gateway does not expose local transport diagnostics', async () => {
+  const app = await buildPhoneGateway({ live: true, env: privateEnv });
+  try { expect((await app.inject('/v1/debug/transport-counters')).statusCode).toBe(404); }
+  finally { await app.close(); }
+});
+
 test('flag parsing: --live sets live mode, defaults to mock', () => {
   expect(parseFlags([])).toEqual({ live: false });
   expect(parseFlags(['--live'])).toEqual({ live: true });

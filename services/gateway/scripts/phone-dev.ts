@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { parseEnv, promisify } from 'node:util';
 import { buildApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
+import { TransportCounters } from '../src/debug/transport-counters.ts';
 
 export type AdbCommand = (args: string[]) => Promise<string>;
 export type UsbState = 'ready' | 'waiting' | 'forwarding_failed';
@@ -40,8 +41,10 @@ export function phoneDevConfig(o: { live?: boolean; env?: Record<string, string 
 }
 
 export function buildPhoneGateway(o: { live?: boolean; env?: Record<string, string | undefined> } = {}) {
+  const transportCounters = new TransportCounters();
   return buildApp(phoneDevConfig(o), {
     mockNotice: 'Practice mode. Targets are simulated. Do not use these directions on real controls.',
+    ...(!o.live ? { transportCounters } : {}),
   });
 }
 
@@ -77,6 +80,7 @@ export async function startPhoneDev(run: AdbCommand = adbCommand(), report: (mes
   } else {
     report('Local mock gateway ready. Keep this terminal open while testing the USB phone.');
     report('Use a debug APK built with -Pfingerpost.gatewayUrl=ws://127.0.0.1:8080. No live recognition or cloud calls.');
+    report('Content-free transport counters: http://127.0.0.1:8080/v1/debug/transport-counters');
   }
   const messages: Record<UsbState, string> = {
     ready: 'USB gateway route ready. Open Fingerpost on the phone.',

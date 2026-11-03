@@ -32,6 +32,7 @@ import { MemoryWaitlistStore, type WaitlistStore } from './waitlist/store.ts';
 import { registerWaitlistRoute } from './waitlist/routes.ts';
 import { CachedMinVersionSource, MemoryMinVersionSource, type MinVersionSource } from './min-version/source.ts';
 import { registerConfigRoute } from './min-version/routes.ts';
+import { TransportCounters } from './debug/transport-counters.ts';
 
 export interface AppOverrides {
   telemetry?: TelemetryCollector;
@@ -50,6 +51,8 @@ export interface AppOverrides {
   waitlistStore?: WaitlistStore;
   /** B6-2: min-version source. In-memory default "0.1.0" for mock/tests, Remote Config in server.ts. */
   minVersionSource?: MinVersionSource;
+  /** Bound only by the local mock phone gateway; records counters, never transport contents. */
+  transportCounters?: TransportCounters;
 }
 
 export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<FastifyInstance> {
@@ -95,6 +98,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   registerConfigRoute(app, { minVersionSource, cloudEnabled: () => quota.cloudEnabled() });
 
   app.get('/healthz', async () => ({ status: 'ok', version: cfg.GIT_SHA, protocol: PROTOCOL }));
+  if (o.transportCounters) app.get('/v1/debug/transport-counters', async () => o.transportCounters!.snapshot());
   if (cfg.DEBUG_TOKEN) {
     registerLatencyRoute(app, models, cfg.DEBUG_TOKEN);
     registerRegionRoutes(app, cfg, models, o.asrProbe ?? (live
@@ -172,7 +176,8 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
         }));
       }, models, asr, sims, now, quota, minimumVersion: () => minVersionSource.getMinVersion(), ...(claims ? { claims } : {}),
         ...(live && cfg.MONITORING_ENABLED && o.telemetry ? { telemetry: o.telemetry } : {}),
-        planner, router, memory, onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
+        planner, router, memory, ...(o.transportCounters ? { onInbound: (message) => o.transportCounters!.record(message) } : {}),
+        onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
       dispose = session.dispose;
       const { hub } = session;
       // Ordinary messages stay ordered; a validated abort cancels the in-flight task and its backlog.
