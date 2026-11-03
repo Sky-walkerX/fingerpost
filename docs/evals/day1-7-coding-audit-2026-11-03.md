@@ -1,5 +1,8 @@
 # Day 1–7 coding audit — 2026-11-03
 
+**Later continuation:** the user explicitly added both optional features. Mock-glasses replay and Android donation coding are now implemented and locally verified; their physical/cloud acceptance remains open. See [deferred-code cleanup](deferred-code-cleanup-2026-11-03.md). The measurements below are the earlier audit snapshot.
+
+
 This audit compares the plans/specifications with the active implementations, not copied assets or unchecked claims of completion. It includes protocol/session admission, model and speech routing, task/payment/PIN boundaries, the native engine and entry points, memory, evaluation, configuration and release tooling. README's development-beta warning remains accurate. No device trial, paid model call, deployment, signing, account setup or release was performed in this continuation.
 
 ## Repairs implemented and verified

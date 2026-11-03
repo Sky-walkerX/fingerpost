@@ -57,7 +57,7 @@ pnpm -r typecheck
 pnpm -r test
 ```
 
-Other machines can use their own Node 24 installation with pnpm 11.10.0. Full tests may remain red for planned skeletons; `docs/progress.md` records which tasks are implemented and which checks remain pending.
+Other machines can use their own Node 24 installation with pnpm 11.10.0. The current local test suites pass; `docs/progress.md` distinguishes implemented code from pending device, live-model and deployment acceptance.
 
 ## Firebase Android build configuration
 

@@ -1,6 +1,6 @@
 # Fingerpost tester session protocol
 
-This is the session plan, not evidence that a session happened. Fingerpost is an unfinished hackathon prototype. The current app has a camera, fingertip overlay and tone prototype; its tracking performance requirement is still open. Voice-named target guidance and PIN protection are not implemented yet. Check [progress](progress.md) before offering a feature for testing.
+This is the session plan, not evidence that a session happened. Fingerpost is an unfinished hackathon prototype. The current app implements camera/finger tracking, voice-named guidance, task turns and PIN protection, but tracking performance and real-world safety acceptance remain open. Mock targets do not recognize a real appliance. Check [progress](progress.md) before offering a feature for testing.
 
 ## Preparation and participation
 
@@ -33,7 +33,7 @@ Ask whether directions were understandable, tone/pan changes were useful, respon
 
 The current simulator automatically keeps tap events in page memory: run id, screen/element id, coordinates, pointer id and timestamp. It has no participant recording-off switch. Explain this and obtain separate metrics consent before simulator interaction. If declined, skip the simulator; do not promise an unrecorded simulator session. Close/reload its page after the session to discard its in-memory run, and do not export without permission.
 
-The current Android prototype processes camera images locally and has no voice/cloud session client. Future builds must explain any new network processing before use. Do not capture camera frames, screenshots of private surroundings, audio, video, transcripts or OCR text. Permission to save metrics or notes is not permission to save media. Do not offer the unimplemented session-donation feature.
+The Android app has a gateway session client. Normal sessions can send speech and approved keyframes through the gateway to Meta Standard APIs; private/sensitive processing uses local speech and Glimmer for screen parsing. Explain the exact build, model mode, network processing and unverified limitations before use. Do not capture camera frames, screenshots of private surroundings, audio, video, transcripts or OCR text. Permission to save metrics or notes is not permission to save media. The donation implementation is off by default. Keep it off in tester sessions until physical redaction/PIN/consent and cloud IAM/lifecycle acceptance are recorded; ordinary tester consent is not donation consent.
 
 With metrics consent, keep raw simulator exports and any consent records privately outside the repository. Store numerical outcomes and latency summaries under an anonymous session/run id; do not add personal details. Use the project's 30-day metrics retention limit from [ADR 0005](adr/0005-zero-retention.md); the human facilitator schedules deletion because local exports do not have an automatic TTL. Written notes and approved quotations also require their own explicit permission and a stated deletion date. Git reports contain only non-identifying aggregate results. Keep any private scheduling lookup separate so a participant can ask for deletion before anonymization.
 
