@@ -7,6 +7,8 @@ enum class LocalSpeechTurn { GOAL, REPLY, TOUCH_EXPLORE }
 class SpeechPrivacy(privateSession: Boolean) {
     var localOnly = privateSession; private set
     fun requireLocal() { localOnly = true }
+    fun shouldFallbackAfterCloudError(state: GState, pinMode: Boolean): Boolean =
+        !localOnly && !pinMode && state in setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
     fun input(offline: Boolean, pinMode: Boolean): SpeechInput = when {
         pinMode -> SpeechInput.NONE
         offline || localOnly -> SpeechInput.LOCAL

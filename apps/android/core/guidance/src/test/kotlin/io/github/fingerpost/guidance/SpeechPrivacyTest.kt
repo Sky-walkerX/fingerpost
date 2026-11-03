@@ -4,6 +4,16 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class SpeechPrivacyTest {
+    @Test fun cloudFailureFallsBackOnlyDuringAnActiveSpeechTurn() {
+        val policy = SpeechPrivacy(false)
+        val listening = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
+        for (state in GState.entries) {
+            assertEquals(state in listening, policy.shouldFallbackAfterCloudError(state, false))
+            assertFalse(policy.shouldFallbackAfterCloudError(state, true))
+        }
+        policy.requireLocal()
+        for (state in GState.entries) assertFalse(policy.shouldFallbackAfterCloudError(state, false))
+    }
     @Test fun ordinarySpeechUsesTheCloudUntilPrivacyIsRequired() {
         val policy = SpeechPrivacy(false)
         assertEquals(SpeechInput.CLOUD, policy.input(false, false))

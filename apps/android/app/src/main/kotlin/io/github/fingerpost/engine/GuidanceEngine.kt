@@ -681,6 +681,12 @@ class GuidanceEngine(
             }
             is ErrorMessage -> {
                 if (message.code == ErrorCode.CLOUD_PAUSED || message.code == ErrorCode.QUOTA_EXHAUSTED) { enterOffline(message.say); return }
+                if (message.code == ErrorCode.MODEL_UNAVAILABLE && speechPrivacy.shouldFallbackAfterCloudError(machine.state, guard.pinMode)) {
+                    protectSpeech()
+                    wantsMic = true
+                    say(message.say, SpeechPriority.STATE)
+                    return
+                }
                 reset(); say(message.say, SpeechPriority.STATE)
                 if (message.code in setOf(ErrorCode.CLOUD_PAUSED, ErrorCode.QUOTA_EXHAUSTED, ErrorCode.VERSION_UNSUPPORTED)) {
                     ready = false
