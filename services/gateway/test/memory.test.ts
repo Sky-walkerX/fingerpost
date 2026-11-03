@@ -41,6 +41,18 @@ describe('simhash', () => {
 });
 
 describe('kiosk memory (B5-2)', () => {
+  test('direct construction cannot bypass independent-install trust', () => {
+    expect(() => new MemoryService(new InMemoryStore(), { salt: 's', minInstalls: 1 })).toThrow(/MEMORY_MIN_INSTALLS/);
+  });
+
+  test('free-form model language metadata cannot retain a personal name', async () => {
+    const store = new InMemoryStore();
+    const service = new MemoryService(store, { salt: 's' });
+    await trusted(service, layout(sizes, { language: 'Synthetic Personal Name' }), tokensFor(sizes));
+    expect(JSON.stringify(store.all())).not.toContain('Synthetic Personal Name');
+    expect((await service.lookup(tokensFor(sizes), ASPECT))?.language).toBe('en');
+  });
+
   test('same screen different price hits', async () => {
     const service = new MemoryService(new InMemoryStore(), { salt: 's' });
     await trusted(service, layout(sizes), tokensFor(sizes));
@@ -97,10 +109,57 @@ describe('kiosk memory (B5-2)', () => {
     // Words are checked, not hex hashes: a hash can contain any digit pair by chance.
     const words = JSON.stringify(entry!.elements);
     for (const secret of ['Rahul', 'Hello', '149', '99', '179', '12', '₹', 'Choose a size', 'Total']) expect(words).not.toContain(secret);
-    expect(entry!.elements.map((e) => e.label)).toEqual(['Small', 'Medium', 'Large', 'Back', 'Table']);
+    expect(entry!.elements).toEqual([]);
     // One install's static text is kept only as salted hashes, never as words.
     expect(entry!.textVotes.every((v) => /^[0-9a-f]{64}$/.test(v.hash) && Object.keys(v).sort().join() === 'hash,installs')).toBe(true);
     expect(JSON.stringify(entry!.textVotes)).not.toMatch(/Rahul|Choose|size/);
+  });
+
+  test.each(['button', 'text', 'back'] as const)('never persists names in %s labels, ids or textNorm, even after trust', async (role) => {
+    const store = new InMemoryStore();
+    const service = new MemoryService(store, { salt: 's' });
+    const named = el('Synthetic Personal Identifier', 'Synthetic Personal Name', role, 0.05, 0.3);
+    named.textNorm = 'synthetic personal name';
+    const l = layout([named]);
+    for (const install of ['install-a', 'install-b', 'install-c']) {
+      await service.record(l, tokensFor(l.elements), ASPECT, install);
+      expect(store.all()).toHaveLength(1);
+      expect(JSON.stringify(store.all()).toLowerCase()).not.toMatch(/synthetic|personal|identifier|name/);
+    }
+    const fresh = tokensFor(l.elements).map((t) => ({ ...t, text: 'SYNTHETIC PERSONAL NAME' }));
+    const hit = await service.lookup(fresh, ASPECT);
+    expect(hit?.elements[0]?.label).toBe('SYNTHETIC PERSONAL NAME');
+    expect(hit?.elements[0]?.id).toBe('memory-0');
+    expect(JSON.stringify(store.all()).toLowerCase()).not.toContain('personal');
+  });
+
+  test('a new control on an already trusted screen still needs two distinct install votes', async () => {
+    const store = new InMemoryStore();
+    const service = new MemoryService(store, { salt: 's' });
+    await trusted(service, layout(sizes), tokensFor(sizes));
+    const current = layout([...sizes, el('new', 'Synthetic Name', 'button', 0.05, 0.9)]);
+    // Keep the established screen fingerprint to exercise per-element trust separately.
+    await service.record(current, tokensFor(sizes), ASPECT, 'install-c');
+    await service.record(current, tokensFor(sizes), ASPECT, 'install-c');
+    expect(store.all()[0]!.elements).toHaveLength(sizes.length);
+    expect(JSON.stringify(store.all())).not.toContain('Synthetic Name');
+  });
+
+  test('memory fingerprints are salted as well as stored label candidates', async () => {
+    const first = new InMemoryStore(), second = new InMemoryStore();
+    await new MemoryService(first, { salt: 'one' }).record(layout(sizes), tokensFor(sizes), ASPECT, 'install');
+    await new MemoryService(second, { salt: 'two' }).record(layout(sizes), tokensFor(sizes), ASPECT, 'install');
+    expect(first.all()[0]!.key).not.toBe(second.all()[0]!.key);
+  });
+
+  test('legacy memory records cannot be served after the privacy format change', async () => {
+    const store = new InMemoryStore();
+    const service = new MemoryService(store, { salt: 's' });
+    await trusted(service, layout(sizes), tokensFor(sizes));
+    const entry = store.all()[0]!;
+    Reflect.deleteProperty(entry, 'formatVersion');
+    await store.upsert(entry);
+    expect(await service.lookup(tokensFor(sizes), ASPECT)).toBeNull();
   });
 
   test('never remembers payment, PIN, confirm or sensitive screens', async () => {
@@ -145,7 +204,8 @@ test('memory hit path sends layout{source:memory} without calling parseScreen, i
   ws.send(encodeFrame({ ...keyframe, ts: 3 }, new Uint8Array([0xff, 0xd8])));
   const elapsed = (await arrived) - started;
   expect(messages.find((m) => m.type === 'layout')).toMatchObject({ source: 'memory', fingerprint: home.fingerprint });
-  expect(messages.find((m) => m.type === 'target')).toMatchObject({ elementId: 'start-order' });
+  const cached = messages.find((m) => m.type === 'layout') as Layout;
+  expect(messages.find((m) => m.type === 'target')).toMatchObject({ elementId: cached.elements.find((e) => e.textNorm === 'start order')!.id });
   expect(parse).not.toHaveBeenCalled();
   expect(box).not.toHaveBeenCalled();
   expect(elapsed).toBeLessThan(50);

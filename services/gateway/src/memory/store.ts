@@ -1,16 +1,24 @@
 import type { LayoutElement, Layout } from '@fingerpost/protocol';
 
+export interface MemoryElement {
+  labelHash: string;
+  role: LayoutElement['role'];
+  polygon: LayoutElement['polygon'];
+  confidence: number;
+}
+
 /** kiosk_layouts/{key} (design §4.9). Layout structure only: no images, uids, prices, names or numbers. */
 export interface MemoryEntry {
+  formatVersion: 2;
   key: string;
   aspect: string;
   bands: string[];
   screenType: Layout['screenType'];
   language: string;
   rotation: Layout['rotation'];
-  /** Actionable elements and text that at least two installs saw, with digits and currency removed. */
-  elements: LayoutElement[];
-  /** Static-text candidates seen by a single install so far: salted hashes only, never the words. */
+  /** Agreed geometry/roles and salted label hashes. Labels and model IDs are never persisted. */
+  elements: MemoryElement[];
+  /** Candidates for every role: salted hashes only, including after independent agreement. */
   textVotes: { hash: string; installs: string[] }[];
   /** ≤5 salted SHA-256 hashes of attestation key ids. */
   installs: string[];

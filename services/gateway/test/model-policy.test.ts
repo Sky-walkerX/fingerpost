@@ -12,7 +12,7 @@ test('a failed model fetch is attempted once; retries belong to the future route
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-test('the actual SDK aborts a pending request at the configured model budget (default 30 s)', async () => {
+test('the actual SDK aborts a pending request at the configured model budget (default 5 s)', async () => {
   vi.useFakeTimers();
   let signal: AbortSignal | undefined;
   const fetch = vi.fn<typeof globalThis.fetch>((_input, init) => new Promise<Response>((_resolve, reject) => {
@@ -22,14 +22,18 @@ test('the actual SDK aborts a pending request at the configured model budget (de
   const client = createMetaClient('synthetic-key').withOptions({ fetch, logLevel: 'off' });
   const work = expect(parseScreen(client, image, { locale: 'en' })).rejects.toThrow();
   await vi.waitFor(() => expect(signal).toBeDefined());
-  expect(client.timeout).toBe(30_000);
-  await vi.advanceTimersByTimeAsync(29_000);
+  expect(client.timeout).toBe(5_000);
+  await vi.advanceTimersByTimeAsync(4_000);
   expect(signal?.aborted).toBe(false);
   await vi.advanceTimersByTimeAsync(1_000);
   await work;
   expect(signal?.aborted).toBe(true); expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-test('the model budget follows MODEL_TIMEOUT_MS', () => {
-  expect(createMetaClient('synthetic-key', 12_000).timeout).toBe(12_000);
+test('a stricter model budget is allowed', () => {
+  expect(createMetaClient('synthetic-key', 3_000).timeout).toBe(3_000);
+});
+
+test.each([500, 5_001, 30_000, NaN])('refuses a model budget outside the plan: %s', (timeout) => {
+  expect(() => createMetaClient('synthetic-key', timeout)).toThrow(/MODEL_TIMEOUT_MS/);
 });

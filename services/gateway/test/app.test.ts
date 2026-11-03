@@ -21,9 +21,11 @@ test('defaults: port 8080, mock mode', () => {
   expect(loadConfig({})).toMatchObject({ PORT: 8080, MODEL_MODE: 'mock', GIT_SHA: 'dev' });
 });
 
-test('model timeout defaults to 30 s and is bounded', () => {
-  expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(30_000);
-  expect(loadConfig({ MODEL_TIMEOUT_MS: '45000' }).MODEL_TIMEOUT_MS).toBe(45_000);
+test('model timeout defaults to 5 s and cannot exceed the plan', () => {
+  expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(5_000);
+  expect(loadConfig({ MODEL_TIMEOUT_MS: '3000' }).MODEL_TIMEOUT_MS).toBe(3_000);
+  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '30000' })).toThrow(/MODEL_TIMEOUT_MS/);
+  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '5001' })).toThrow(/MODEL_TIMEOUT_MS/);
   expect(() => loadConfig({ MODEL_TIMEOUT_MS: '500' })).toThrow(/MODEL_TIMEOUT_MS/);
   expect(() => loadConfig({ MODEL_TIMEOUT_MS: '90000' })).toThrow(/MODEL_TIMEOUT_MS/);
 });
@@ -31,6 +33,11 @@ test('model timeout defaults to 30 s and is bounded', () => {
 test('agent planner is spark or rules', () => {
   expect(loadConfig({ AGENT_PLANNER: 'rules' }).AGENT_PLANNER).toBe('rules');
   expect(() => loadConfig({ AGENT_PLANNER: 'gpt' })).toThrow(/AGENT_PLANNER/);
+});
+
+test('shared memory cannot lower the two-install trust requirement', () => {
+  expect(loadConfig({}).MEMORY_MIN_INSTALLS).toBe(2);
+  expect(() => loadConfig({ MEMORY_MIN_INSTALLS: '1' })).toThrow(/MEMORY_MIN_INSTALLS/);
 });
 
 test('websocket hello → ready over a real socket', async () => {

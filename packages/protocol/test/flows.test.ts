@@ -79,5 +79,7 @@ test('memory-hit: a known screen is answered from kiosk memory with OCR tokens a
   expect((flow.steps[locate]!.msg.ocrTokens as unknown[]).length).toBeGreaterThan(0);
   expect(flow.steps[locate + 1]!.msg).toMatchObject({ type: 'layout', source: 'memory' });
   expect(Layout.parse(flow.steps[locate + 1]!.msg).source).toBe('memory');
-  expect(flow.steps[locate + 2]!.msg).toMatchObject({ type: 'target', elementId: 'start-order' });
+  expect(flow.steps[locate + 2]!.msg).toMatchObject({ type: 'target', elementId: 'memory-1' });
+  // Cached IDs are session-local; the simulator still reports its own physical control ID.
+  expect(flow.steps.find((s) => s.msg.type === 'sim.touch')!.msg).toMatchObject({ elementId: 'start-order' });
 });

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const bool = z.enum(['true', 'false']).transform((v) => v === 'true');
+export const MODEL_TIMEOUT_LIMIT_MS = 5_000;
 const Env = z
   .object({
     MONITORING_ENABLED: bool.default(false),
@@ -10,10 +11,10 @@ const Env = z
     META_API_KEY: z.string().min(1).optional(),
     DEBUG_TOKEN: z.string().min(16).optional(),
     GIT_SHA: z.string().min(1).default('dev'),
-    /** Per model call. Real Spark screen reads take 10–22 s (docs/progress.md, D1-T5), so 5 s always timed out. */
-    MODEL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(30_000),
+    /** B4-0: five-second per-call ceiling; operators may choose a stricter budget. */
+    MODEL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(MODEL_TIMEOUT_LIMIT_MS).default(MODEL_TIMEOUT_LIMIT_MS),
     /** Kiosk memory: distinct attested installs that must agree before a screen is served from memory (design §4.9). */
-    MEMORY_MIN_INSTALLS: z.coerce.number().int().min(1).max(5).default(2),
+    MEMORY_MIN_INSTALLS: z.coerce.number().int().min(2).max(5).default(2),
     /** Salt for install and text hashes in kiosk_layouts. Unset: a random per-process salt (memory then lasts one run). */
     MEMORY_SALT: z.string().min(16).optional(),
     /** Task planner: Spark tool calling (falls back to rules on error) or the deterministic rules planner. */

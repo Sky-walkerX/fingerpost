@@ -2,7 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { once } from 'node:events';
 import { parseServerMessage } from '@fingerpost/protocol';
 import { buildApp } from '../src/app.ts';
-import { loadConfig } from '../src/config.ts';
+import { loadConfig, privateAvailable } from '../src/config.ts';
 import { buildPhoneGateway, parseFlags, phoneDevConfig, restoreUsbForwarding, watchUsbForwarding } from '../scripts/phone-dev.ts';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
@@ -59,13 +59,44 @@ test('phone gateway stays mock and unauthenticated regardless of live shell cred
 
 test('--live uses only the key and model settings from .env, with auth off', () => {
   vi.stubEnv('LOG_LEVEL', 'trace'); vi.stubEnv('META_API_KEY', 'shell-key-ignored');
-  const config = phoneDevConfig({ live: true, env: { META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: '25000', DEBUG_TOKEN: 'synthetic-debug-token-123', PORT: '9999' } });
-  expect(config).toMatchObject({ MODEL_MODE: 'live', META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: 25_000, AUTH_REQUIRED: false, ALLOW_UNAUTHENTICATED_LIVE: true, PORT: 8080 });
+  const config = phoneDevConfig({ live: true, env: { META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: '3000', DEBUG_TOKEN: 'synthetic-debug-token-123', PORT: '9999' } });
+  expect(config).toMatchObject({ MODEL_MODE: 'live', META_API_KEY: 'synthetic-private-key', MODEL_TIMEOUT_MS: 3_000, AUTH_REQUIRED: false, ALLOW_UNAUTHENTICATED_LIVE: true, PORT: 8080 });
   expect(config.DEBUG_TOKEN).toBeUndefined();
 });
 
 test('--live without a key fails instead of silently falling back to mock', () => {
   expect(() => phoneDevConfig({ live: true, env: {} })).toThrow(/META_API_KEY/);
+});
+
+const privateEnv = {
+  META_API_KEY: 'synthetic-private-key',
+  GLIMMER_URL: 'https://synthetic.example/v1',
+  GLIMMER_TOKEN: 'synthetic-key:synthetic-secret',
+  GLIMMER_MODEL: 'glimmer',
+};
+
+test('--live advertises configured private mode without contacting providers', async () => {
+  const app = await buildPhoneGateway({ live: true, env: privateEnv });
+  await app.ready();
+  const ws = await app.injectWS('/v1/session');
+  try {
+    const received = once(ws, 'message');
+    ws.send(JSON.stringify({ type: 'hello', id: 'synthetic-private-hello', ts: 1, appVersion: '0.1.0',
+      protocol: 'fp.v1', locale: 'en', mode: 'guide', privacy: 'private', caps: {} }));
+    const [data] = await received;
+    expect(JSON.parse(data.toString())).toMatchObject({ type: 'ready', flags: { privateAvailable: true } });
+  } finally { ws.terminate(); await app.close(); }
+});
+
+test.each(['GLIMMER_URL', 'GLIMMER_TOKEN', 'GLIMMER_MODEL'] as const)('--live refuses missing %s in partial private configuration', (key) => {
+  expect(() => phoneDevConfig({ live: true, env: { ...privateEnv, [key]: undefined } })).toThrow(/set all of GLIMMER/);
+});
+
+test('mock phone practice ignores private provider settings', () => {
+  const config = phoneDevConfig({ env: privateEnv });
+  expect(config.MODEL_MODE).toBe('mock');
+  expect(privateAvailable(config)).toBe(false);
+  expect(config.GLIMMER_TOKEN).toBeUndefined();
 });
 
 test('flag parsing: --live sets live mode, defaults to mock', () => {
