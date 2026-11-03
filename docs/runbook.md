@@ -76,6 +76,17 @@ The `.github/workflows/release.yml` workflow will:
 
 ## Incident response and alerts
 
+### Shared-memory privacy migration
+
+The 2026-11-03 repair writes memory format 2: salted hashes and geometry, never raw labels,
+normalized labels or model IDs. Old records are ignored, not automatically deleted. Before
+enabling this revision in a project that previously used shared memory, the project owner
+must stop old writers, purge the legacy `kiosk_layouts` records under the project's data
+deletion procedure (including retained exports/backups as applicable), and verify that only
+format-2 records remain. Do not export old document contents to logs or commit a backup.
+Rebuild trust from two distinct attested installs and verify fresh-OCR lookup afterward.
+No production purge or migration is claimed by the local tests.
+
 These are preparation steps, not evidence that production alerts are configured.
 
 - Cloud pause: set `config/runtime.cloudEnabled=false` in the intended Firestore project. Confirm a fresh session and an existing session both refuse new billed calls; retain numeric outcomes only. Accounting failures must keep cloud work paused. Resume only after the cause is resolved and the cap is reviewed.

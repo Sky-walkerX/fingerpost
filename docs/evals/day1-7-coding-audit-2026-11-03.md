@@ -1,5 +1,7 @@
 # Day 1–7 coding audit — 2026-11-03
 
+**Later resolution (2026-11-03):** the user approved both fixes. The five-second model ceiling and hash-only shared-memory format are implemented and locally verified. Earlier decision-pending statements below are historical. See the latest progress log and runbook migration section. Live/device/cloud acceptance remains open.
+
 **Later continuation:** the user explicitly added both optional features. Mock-glasses replay and Android donation coding are now implemented and locally verified; their physical/cloud acceptance remains open. See [deferred-code cleanup](deferred-code-cleanup-2026-11-03.md). The measurements below are the earlier audit snapshot.
 
 

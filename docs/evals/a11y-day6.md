@@ -16,3 +16,7 @@ Status: **NOT_RUN**. Android JVM tests, debug builds and lint pass; none of thos
 | Every screen | Accessibility Scanner and manual TalkBack pass, linked findings | NOT_RUN |
 
 Acceptance requires actual operator results and issue resolution. Do not replace NOT_RUN with PASS from unit tests, browser simulation or a source review.
+
+## 2026-11-03 synthetic PIN observation
+
+Generic USB phone; locale and font scale not recorded. With a local synthetic calculator keypad and earphones, PIN mode entered and digit-under-finger speech was heard intermittently. The fingertip/rectangle lock repeatedly disappeared or did not settle, so further digit announcements were missed. No real PIN, payment, media, transcript, OCR text, or digit values were retained. **PARTIAL / not accepted:** repeat only after stable fingertip and screen lock; earphone-route loss and no-upload checks remain untested.

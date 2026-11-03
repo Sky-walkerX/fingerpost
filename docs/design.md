@@ -322,7 +322,7 @@ JSON text frames, plus binary frames shaped `[u32 headerLen][JSON header][payloa
 | Collection | Contents |
 |---|---|
 | `users/{uid}` | locale, attested, appVersion, quotaDay, tasksToday |
-| `kiosk_layouts/{fp}` | screenType, aspect, elements (normalized boxes, stable labels), transitions[], lsh bands b0–b3, seenCount, sessionsAgreeing, trusted, modelVersion. **No images, uids or dynamic text** (prices, names, numbers stripped). |
+| `kiosk_layouts/{fp}` | screenType, aspect, elements (normalized boxes, roles, salted label hashes), lsh bands b0–b3, seenCount, salted install hashes, trust and formatVersion. **No images, uids or raw text**, including model element IDs, labels and normalized labels. |
 | `spend/{date}/shards/{n}` | costMicros |
 | `metrics/{sessionId}` | aggregate numbers only; 30-day TTL |
 | `donations/{id}` | GCS pointers; 90-day TTL |
@@ -331,6 +331,7 @@ JSON text frames, plus binary frames shaped `[u32 headerLen][JSON header][payloa
 | `feedback/{id}` | user feedback text |
 
 **Kiosk memory trust:**
+- **Privacy repair (2026-11-03):** format 2 stores only salted label candidates, roles and geometry, before and after agreement. Two installs can see the same personal name, so agreement never permits plaintext retention. Token hashes are salted before SimHash too. A lookup reconstructs labels solely from fresh OCR that matches every stored label hash in its box, using session-local `memory-<index>` IDs. EN/HI/ES language metadata is allowlisted. Legacy records are not served and must be purged from any existing deployment before enabling the repaired store; ignoring them does not delete previously retained text.
 - A layout becomes "trusted" when it's agreed by 2 or more **distinct attested installs**. Up to 5 salted SHA-256 hashes of attestation key IDs are stored per layout, never uids. Until then it's only a hint, verified against fresh OCR.
 - **Repeat visits by the same user** are served by the on-device `LocalLayoutCache`: layout structure only, on the user's own phone, clearable in settings. This is what powers the demo's instant re-lock.
 

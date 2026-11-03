@@ -1,5 +1,7 @@
 # Deferred-code cleanup — 2026-11-03
 
+**Later resolution (2026-11-03):** the user approved both fixes. The five-second model ceiling and hash-only shared-memory format are implemented and locally verified. Earlier decision-pending statements below are historical. See the latest progress log and runbook migration section. Live/device/cloud acceptance remains open.
+
 The user requested an implementation check of notes that defer coding to later stages, then explicitly included both optional Day5 features. This overrides their cut condition for coding only. No phone, real media, model API, deployment, GCS upload, account/billing action or release tag was used.
 
 | Deferred or stale note | Actual finding and resolution |

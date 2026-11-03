@@ -44,6 +44,22 @@ Build/install the USB-address debug APK as described above first. **This command
 
 Use the documented cooktop/tablet touchscreen for Day 2's full guidance acceptance. An AC remote with physical buttons can be a non-sensitive camera/tracker practice surface, but physical-button controls are outside `design.md` §3.1 and are not a substitute for touchscreen target/press acceptance. Live recognition requires the gateway's actual model adapters and a successful current-policy provider check; it does not require GCP solely to test the model locally.
 
+For an explicitly requested local live run, stop the mock gateway and run `pnpm dev:phone --live`.
+This reads `META_API_KEY`, `MODEL_TIMEOUT_MS`, `AGENT_PLANNER`, `SIM_TOKEN` and the three
+`GLIMMER_*` settings from the private root `.env`. It stays bound to laptop loopback with
+development authentication disabled; it is not a production-authentication check. Meta calls
+consume API credits. Private mode becomes available only with all of `GLIMMER_URL`,
+`GLIMMER_TOKEN` and `GLIMMER_MODEL`; a partial set fails configuration validation. Actual
+private calls require the deployed Modal endpoint and may incur GPU charges. The default
+`pnpm dev:phone` continues to ignore these credentials and uses only mock models.
+
+The restored B4-0 model timeout defaults to 5000 ms and accepts only 1000–5000 ms.
+Remove an older `MODEL_TIMEOUT_MS=30000` setting from your private `.env`, or change it to
+5000, before starting a live gateway. Longer values now fail startup rather than silently
+overriding the plan. The SDK does not retry; the existing router owns fallback. Prior live
+screen reads exceeded five seconds, so remeasure actual provider behavior before claiming
+usable live guidance. Warm Glimmer before measuring its five-second request budget.
+
 ## TypeScript on this laptop
 
 Node 24 is available in the bundled runtime. Pinned pnpm 11.10.0 is installed persistently in `~/.local/share/fingerpost/node-tools`:
