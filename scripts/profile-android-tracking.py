@@ -99,8 +99,8 @@ def summarize(rows, delegate, hands):
 def meets_budget(report):
     if report["actual_configuration"]["delegate"] != "GPU":
         raise ValueError("Budget acceptance requires the default GPU delegate")
-    if report["actual_configuration"]["max_hands"] != 2:
-        raise ValueError("Budget acceptance requires the default two-hand configuration")
+    if report["actual_configuration"]["max_hands"] != 1:
+        raise ValueError("Budget acceptance requires the default one-hand configuration")
     return (report["tracker"]["fps"]["min"] >= 25
             and report["tracker"]["window_inference_max_ms"] <= 25)
 
@@ -130,14 +130,14 @@ def bounded_seconds(minimum, maximum):
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Launches a debug profiling session and leaves it foreground. Relaunch without "
-        "profiling extras to restore GPU/two-hand defaults. Outputs numeric JSON only."
+        "profiling extras to restore GPU/one-hand defaults. Outputs numeric JSON only."
     ))
     parser.add_argument("--delegate", choices=("GPU", "CPU"), default="GPU")
-    parser.add_argument("--hands", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--hands", type=int, choices=(1, 2), default=1)
     parser.add_argument("--warmup-seconds", type=bounded_seconds(0, 60), default=5)
     parser.add_argument("--seconds", type=bounded_seconds(1, 600), default=15)
     parser.add_argument("--serial-file", type=Path, help="read the target device privately from a file; defaults to adb -d")
-    parser.add_argument("--check-budget", action="store_true", help="check 25 FPS/25 ms with GPU, two hands and a complete awake measurement window")
+    parser.add_argument("--check-budget", action="store_true", help="check 25 FPS/25 ms with GPU, one hand and a complete awake measurement window")
     return parser
 
 
@@ -240,8 +240,8 @@ def collect(adb, pid, warmup_seconds, seconds, target=None):
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.check_budget and (args.hands != 2 or args.delegate != "GPU"):
-        parser.error("--check-budget requires the default GPU/two-hand configuration")
+    if args.check_budget and (args.hands != 1 or args.delegate != "GPU"):
+        parser.error("--check-budget requires the default GPU/one-hand configuration")
     try:
         adb = find_adb()
         target = adb_target(args.serial_file)

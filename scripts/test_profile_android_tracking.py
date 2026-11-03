@@ -52,7 +52,7 @@ class ParserTest(unittest.TestCase):
                   mock.patch.object(profile, "thermal_status", return_value=0) as thermal,
                   mock.patch.object(profile, "awake_status", return_value=True, create=True) as awake,
                   mock.patch.object(profile, "adb_output", side_effect=["", "Status: ok\n", "123"]) as command,
-                  mock.patch.object(profile, "collect", return_value=[profile.parse_line(TRACKER)]) as collect,
+                  mock.patch.object(profile, "collect", return_value=[profile.parse_line(TRACKER.replace("maxHands=2", "maxHands=1"))]) as collect,
                   redirect_stdout(output)):
                 self.assertEqual(profile.main(["--serial-file", str(path)]), 0)
             expected = ["-s", "synthetic-private-device"]
@@ -179,13 +179,13 @@ class ParserTest(unittest.TestCase):
 
     def test_budget_checks_window_maximum_and_default_hand_count(self):
         good = (TRACKER.replace("fps=10", "fps=25").replace("maxMs=81", "maxMs=25")
-                .replace("inferenceMs=52", "inferenceMs=25"))
-        summary = profile.summarize([profile.parse_line(good)], "GPU", 2)
+                .replace("inferenceMs=52", "inferenceMs=25").replace("maxHands=2", "maxHands=1"))
+        summary = profile.summarize([profile.parse_line(good)], "GPU", 1)
         self.assertTrue(profile.meets_budget(summary))
-        summary = profile.summarize([profile.parse_line(good.replace("maxMs=25", "maxMs=26"))], "GPU", 2)
+        summary = profile.summarize([profile.parse_line(good.replace("maxMs=25", "maxMs=26"))], "GPU", 1)
         self.assertFalse(profile.meets_budget(summary))
-        summary = profile.summarize([profile.parse_line(good.replace("maxHands=2", "maxHands=1"))], "GPU", 1)
-        with self.assertRaisesRegex(ValueError, "two-hand"):
+        summary = profile.summarize([profile.parse_line(good.replace("maxHands=1", "maxHands=2"))], "GPU", 2)
+        with self.assertRaisesRegex(ValueError, "one-hand"):
             profile.meets_budget(summary)
 
     def test_cpu_diagnostic_cannot_pass_gpu_acceptance(self):
@@ -203,7 +203,7 @@ class ParserTest(unittest.TestCase):
 
     def test_budget_requires_awake_evidence_and_enough_measurement_windows(self):
         good = (TRACKER.replace("fps=10", "fps=30").replace("inferenceMs=52", "inferenceMs=20")
-                .replace("maxMs=81", "maxMs=22"))
+                .replace("maxMs=81", "maxMs=22").replace("maxHands=2", "maxHands=1"))
         row = profile.parse_line(good)
         for awake, count in [([True, False], 14), ([None, True], 14), ([True, None], 14), ([True, True], 1)]:
             with self.subTest(awake=awake, count=count):
@@ -220,7 +220,7 @@ class ParserTest(unittest.TestCase):
 
     def test_complete_default_gpu_evidence_can_pass_without_changing_thresholds(self):
         good = (TRACKER.replace("fps=10", "fps=25").replace("inferenceMs=52", "inferenceMs=25")
-                .replace("maxMs=81", "maxMs=25"))
+                .replace("maxMs=81", "maxMs=25").replace("maxHands=2", "maxHands=1"))
         output = StringIO()
         with (mock.patch.object(profile, "find_adb", return_value="synthetic-adb"),
               mock.patch.object(profile, "thermal_status", return_value=0),
@@ -242,7 +242,9 @@ class ParserTest(unittest.TestCase):
         self.assertIsNone(profile.parse_awake_status("Unavailable"))
 
     def test_duration_validation_is_bounded(self):
-        self.assertEqual(profile.build_parser().parse_args([]).seconds, 15)
+        args = profile.build_parser().parse_args([])
+        self.assertEqual(args.seconds, 15)
+        self.assertEqual(args.hands, 1)
         for args in [["--seconds", "0"], ["--seconds", "601"], ["--warmup-seconds", "-1"]]:
             with self.subTest(args=args), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
                 profile.build_parser().parse_args(args)
