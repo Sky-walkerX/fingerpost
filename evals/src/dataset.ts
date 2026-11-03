@@ -3,6 +3,8 @@ import { isAbsolute, relative } from 'node:path';
 import { z } from 'zod';
 import { Box, ElementRole, ScreenType } from '@fingerpost/protocol';
 
+export const DatasetName = z.string().regex(/^(?:private\/)?[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/);
+
 /** evals/datasets/<set>/labels.json. Boxes are normalized to the image (u, v, w, h). */
 export const LabelFile = z.object({
   version: z.literal(1),

@@ -4,15 +4,17 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { createGlimmerClient, createMetaClient, glimmerModels, liveModels, loadConfig, mockModels, PARSE_PROMPT_ID, type ModelPort } from '@fingerpost/gateway/eval-api';
-import { loadLabels } from './dataset.ts';
+import { DatasetName, loadLabels } from './dataset.ts';
+import { numericPinResults } from './pin-image-export.ts';
 import { evaluateItem } from './evaluate.ts';
 import { renderReport, summarize } from './metrics.ts';
 
 const Options = z.object({
-  set: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/),
+  set: DatasetName,
   mode: z.enum(['mock', 'live', 'private']).default('mock'),
   out: z.string().min(1).endsWith('.md'),
   limit: z.string().regex(/^[1-9]\d*$/).transform(Number).refine(Number.isSafeInteger).optional(),
+  'numeric-out': z.string().min(1).endsWith('.json').optional(),
 });
 
 /** Local evaluation CLI. Errors and reports must never expose provider content or private paths. */
@@ -21,10 +23,11 @@ export async function main(args = process.argv.slice(2), env: NodeJS.ProcessEnv 
   try {
     const { values } = parseArgs({ args: args.filter((arg) => arg !== '--'), options: {
       set: { type: 'string' }, mode: { type: 'string', default: 'mock' }, out: { type: 'string' }, limit: { type: 'string' },
+      'numeric-out': { type: 'string' },
     } });
     options = Options.parse(values);
   } catch {
-    writeSync(2, 'usage: --set <dataset dir name> --out <report.md> [--mode mock|live|private] [--limit N]\n');
+    writeSync(2, 'usage: --set <dataset dir name> --out <report.md> [--mode mock|live|private] [--limit N] [--numeric-out <results.json>]\n');
     return 2;
   }
   if (options.mode === 'live' && !env.META_API_KEY?.trim()) {
@@ -53,6 +56,7 @@ export async function main(args = process.argv.slice(2), env: NodeJS.ProcessEnv 
       writeSync(1, '.');
     }
     const summary = summarize(results);
+    if (options['numeric-out']) writeFileSync(resolve(options['numeric-out']), JSON.stringify(numericPinResults(options.mode, results, dir)) + '\n', { flag: 'wx' });
     const out = pathToFileURL(resolve(options.out));
     mkdirSync(new URL('.', out), { recursive: true });
     writeFileSync(out, renderReport(`Eval (${options.mode})`, summary, results,

@@ -29,6 +29,18 @@ test('actual native Node CLI produces the mock baseline without source filenames
   expect(report).toContain('sample-001');
 });
 
+test('native CLI exports anonymous numeric results with mock provenance retained', () => {
+  const root = mkdtempSync(join(tmpdir(), 'fingerpost-numeric-cli-')); roots.push(root);
+  const numeric = join(root, 'numeric.json');
+  const result = run(['--set', 'mock-panel', '--numeric-out', numeric]);
+  expect(result.status).toBe(0);
+  const data = JSON.parse(readFileSync(numeric, 'utf8'));
+  expect(data.mode).toBe('mock'); expect(data.items).toHaveLength(2);
+  expect(data.items[0]).toMatchObject({ id: 'sample-000001', sha256: expect.stringMatching(/^[0-9a-f]{64}$/) });
+  expect(JSON.stringify(data)).not.toContain('panel-a');
+  expect(JSON.stringify(data)).not.toContain('goal');
+});
+
 test.each([
   ['--mode', 'synthetic-private-invalid-mode'],
   ['--limit', '0'], ['--limit', '-1'], ['--limit', 'NaN'], ['--limit', '1.5'],

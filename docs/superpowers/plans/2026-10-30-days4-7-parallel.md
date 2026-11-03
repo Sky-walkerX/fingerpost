@@ -388,10 +388,11 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
 - [ ] **Commit:** `docs(evals): tester session 1`
 
 #### C4-4 🔑: eval report v1 and local PIN-gate recall
-- [ ] **Mock-first:**
+- [x] **Mock-first (locally verified; synthetic DOM tokens only):**
   - C writes `evals/scripts/export-pin-tokens.ts`. It turns each `pinpay` item's DOM labels into `OcrToken` JSON at `evals/out/pinpay-tokens.json`, with `{text, u, v, w, h, expectedPin: boolean}`.
   - A adds `PinGateDatasetTest` (30 min, lane A's directory). It reads that file through a Gradle test system property and asserts recall ≥0.98 on the `expectedPin` items.
   - Run `./scripts/android.sh :core:guidance:test --tests '*PinGateDatasetTest*'` and report the local recall on sim items.
+- [x] **Image-evaluation tooling (coding only):** production OCR/PIN debug instrumentation, anonymous hash-bound bundle preparation and numeric live/private export are implemented and locally tested/compiled. See `docs/evals/pin-image-evaluation.md`. Physical image runs and live recall remain unrun.
 - [ ] **🔑 Live:**
   - `pnpm --filter @fingerpost/evals eval --set pinpay --mode live` and `--set day1 --mode live` → `docs/evals/report-v1.md`;
   - server recall, local recall, OR-recall against the 98% gate;

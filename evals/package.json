@@ -9,7 +9,8 @@
     "eval": "node --conditions=source src/run.ts",
     "flows": "node --conditions=source src/flow-runner.ts",
     "render-sim": "node --conditions=source scripts/render-sim.ts",
-    "export-pin-tokens": "node --conditions=source scripts/export-pin-tokens.ts"
+    "export-pin-tokens": "node --conditions=source scripts/export-pin-tokens.ts",
+    "prepare-pin-images": "node --conditions=source scripts/prepare-pin-images.ts"
   },
   "dependencies": {
     "@fingerpost/gateway": "workspace:*",
