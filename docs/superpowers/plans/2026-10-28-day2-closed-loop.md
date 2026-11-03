@@ -38,7 +38,7 @@
 Everything in Day 1's list still applies, plus:
 - **Voice Transcribe:**
   - `wss://api.meta.ai/v1/asr/realtime`, model `muse-voice-transcribe-1.0`, `ENDPOINTING`, `CUMULATIVE` partials, `PCM_16KHZ`.
-  - `languageBias` takes language **names** (`English`, `Hindi`, `Spanish`); `keywords` holds at most 50 on-screen labels.
+  - `languageBias` takes language **names** (`English`, `Hindi`, `Spanish`); `keywords` holds at most 50 on-screen labels. Live input validation correction (2026-11-03): trim labels and omit blank hints or hints over 30 Unicode characters before applying the 50-hint cap; oversized labels reject the entire provider connection.
   - End of input is `{"type":"endStream"}`; events are `transcript{transcript,final}` and `speechComplete{turnId,transcript}`.
 - **Audio from the phone:** PCM16LE mono 16 kHz in 20–100 ms chunks (640–3 200 bytes).
 - **Sim element ids** are kebab-case forms of their labels (`pay-card` ↔ "Pay by card"). The gateway matches them with token-set ratio ≥ 0.8.
@@ -274,6 +274,10 @@ Everything in Day 1's list still applies, plus:
 ### Task D2-T7: controller, Voice Transcribe relay, sim relay, Day 2 app
 **Status (updated 2026-10-31):** local implementation repaired/verified, including full-frame coordinates, browser relay and mock endpointing. The historical 2026-10-30 Step 4 passed, but the current one-shot full-frame probe fails before target (Spark no ParseResult; ASR handshake and screen SAM pass). Step 4 needs current-policy revalidation. Step 5 remains deferred/blocked on cloud setup and ADR-0003. Preserve this task as blocked.
 
+**Live follow-up (2026-11-03):** the user authorizes a bounded longer recognition budget. A real loopback gateway now reaches targets with typed goals; the deeper list → synthetic spoken goal → actual transcription → target check still exposes speech and localization failures. Long ASR keywords are repaired with three failing-first regressions, but overall Step 4 remains open. See [spoken-image evidence](../../evals/spoken-image-check-2026-11-03.md); no phone or cloud acceptance is inferred.
+
+**Control-grounding follow-up (2026-11-04):** fresh actual-provider speech flows now align the washer and AC sample targets after enclosing-plane and focused-crop repairs. The knob negative asks without a target. The user reaffirms 30s default calls/60s total turns after the pull; 788 TS and 407 Android JVM tests pass. Broader quality, phone guidance, provider latency and Step 4/5 acceptance remain open; see [current numerical evidence](../../evals/control-grounding-repair-2026-11-04.md).
+
 **Files:**
 - `apply.sh 2` with:
   - `services/gateway/package.json` (adds `ws`, and the `exports` for `./eval-api`);
@@ -288,7 +292,7 @@ Everything in Day 1's list still applies, plus:
 - **Finished:** `app.ts` (per-session ordered queue; the sim route is open in mock mode, and in live mode exists **only** when `SIM_TOKEN` is set, compared with `safeEqual`), `config.ts` (+ `SIM_TOKEN`), `mock-asr.ts`, `eval-api.ts`, `util/safe-equal.ts`.
 
 **Interfaces (Produces):**
-- **`handshake(o)`:** exactly the object in `asr.test.ts`. `languageBias` is `o.locales` mapped through `LANGUAGE_NAMES`; `keywords` is `o.keywords.slice(0, 50)`.
+- **`handshake(o)`:** preserve the object shape in `asr.test.ts`. `languageBias` is `o.locales` mapped through `LANGUAGE_NAMES`. Corrected provider input validation: trim `o.keywords`, omit blanks and labels over 30 Unicode characters, then select the first 50 valid hints. Do not truncate labels into different words. `asr-keywords.test.ts` covers the boundary, Unicode counting and filtering before the cap.
 - **`openAsrRelay(o, sink)`:**
   - **On open:** send the handshake, then flush buffered audio (at most 5 s = 160 000 bytes; drop anything beyond that). Send `endStream` if `end()` was already called.
   - **Events:**
@@ -316,7 +320,7 @@ Everything in Day 1's list still applies, plus:
 - [x] **Step 1: Copy and install, then confirm red.** Run `pnpm --filter @fingerpost/gateway test asr e2e`.
 - [x] **Step 2: Implement** `registry.ts`, `relay.ts` and `controller.ts`.
 - [x] **Step 3: Confirm green.** Run `pnpm --filter @fingerpost/gateway test && pnpm --filter @fingerpost/gateway typecheck`. All 206 gateway cases and recursive typecheck/build pass; source/compiled localhost mock exchanges pass.
-- [ ] **Step 4: Live check — revalidation required at the repaired revision.** Historical pass (2026-10-30): real gateway/WS with Standard Spark/SAM/Voice Transcribe, synthetic media, ephemeral JWT/memory stores, protected simulator touch and verification; see [earlier evidence](../../evals/through-day2-t7-2026-10-30.md). Current full-frame diagnostic (2026-10-31): ASR handshake/screen SAM complete, Spark has no ParseResult and no target is emitted, 5,027 ms; exact upstream cause unretained. See [current evidence](../../evals/day2-local-completion-2026-10-31.md). Repeat the full flow under the current five-second policy after resolving the provider failure. Neither local result verifies Firebase/Firestore or GCP.
+- [ ] **Step 4: Live check — revalidation required at the repaired revision.** Historical pass (2026-10-30): real gateway/WS with Standard Spark/SAM/Voice Transcribe, synthetic media, ephemeral JWT/memory stores, protected simulator touch and verification; see [earlier evidence](../../evals/through-day2-t7-2026-10-30.md). Full-frame diagnostic (2026-10-31): ASR handshake/screen SAM complete, Spark has no ParseResult and no target is emitted, 5,027 ms; exact upstream cause unretained. See [earlier local evidence](../../evals/day2-local-completion-2026-10-31.md). The user subsequently chooses bounded longer live recognition; follow guidance-spec §8 rather than the superseded five-second policy. The [spoken-image follow-up](../../evals/spoken-image-check-2026-11-03.md) still fails end to end. No local result verifies Firebase/Firestore or GCP.
   - Voice Transcribe's documented handshake has nine fields. If the server rejects `languageBias` or `keywords`, remove them from `handshake()`, update `asr.test.ts` to match, and record a Deviation.
 - [ ] **Step 5: Redeploy** to the ADR-0003 region with `infra/deploy-gateway.sh fingerpost-dev <region> <signing-digests> --with-sim` (current auth-on script). Finish the cloud/Firebase/IAM setup documented in `docs/local-development.md` first. A human first creates the private `sim-token` secret (`openssl rand -hex 16`) and grants the service account access. `--with-sim` adds the Secret Manager mapping without editing the script; omit it to leave the live sim route disabled. Open the sim with `&token=<value>` locally; never put that value in a report or commit.
   - [x] Revalidated 44 controller/ASR/real-socket tests (2026-10-30). Added two failing-first deployment tests; all seven stubbed deployment tests and shell syntax pass. Auth remains enabled and no real cloud command was run.

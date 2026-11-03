@@ -3,12 +3,15 @@ import { MODELS } from './meta-client.ts';
 import type { Locale } from '@fingerpost/protocol';
 import { parseScreen, type ParseResult } from '../parse/spark-parse.ts';
 import { segmentByBox, segmentByText, type PxBox, type SamImage, type SegmentResult } from '../parse/sam.ts';
+import { groundControl, type ControlGrounding, type GroundRequest } from '../parse/ground-control.ts';
 
 /** Everything the session pipeline needs from models. Live = Meta API; mock = canned answers for dev and CI. */
 export interface ModelPort {
-  parseScreen(image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string }): Promise<ParseResult>;
+  parseScreen(image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string; signal?: AbortSignal }): Promise<ParseResult>;
   segmentByBox(image: SamImage, box: PxBox): Promise<SegmentResult>;
   segmentByText(image: SamImage, phrase: string): Promise<SegmentResult>;
+  /** Meta's focused locator; ports without it retain their existing OCR/mock geometry path. */
+  groundControl?(image: SamImage, options: GroundRequest): Promise<ControlGrounding>;
 }
 
 /** A provider-side failure worth one try on the older Spark: a timeout or a 5xx. Bad requests (4xx) are not. */
@@ -21,10 +24,12 @@ export function liveModels(client: OpenAI): ModelPort {
   return {
     // Days 4–7 plan, B4-1: Spark 1.3, then Spark 1.2 once on a timeout or 5xx. No other retries here (B5-3).
     parseScreen: (img, o) => parseScreen(client, img, o, MODELS.spark).catch((error: unknown) => {
+      o.signal?.throwIfAborted();
       if (!sparkFallbackWorthy(error)) throw error;
       return parseScreen(client, img, o, MODELS.sparkFallback);
     }),
     segmentByBox: (img, box) => segmentByBox(client, img, box),
     segmentByText: (img, phrase) => segmentByText(client, img, phrase),
+    groundControl: (img, opts) => groundControl(client, img, opts),
   };
 }

@@ -83,7 +83,7 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
   - trusted = agreed by ≥2 distinct attested installs, storing ≤5 salted SHA-256 key-id hashes;
   - no images, uids, prices, names or numbers in `kiosk_layouts`.
 - **Latency targets:** first parse p50 ≤2.5 s; re-target on a known layout ≤1.2 s; memory hit ≤0.8 s.
-- **Model calls:** per-call timeout 5 s, no SDK retries. The router owns retry and fallback: Spark 1.3 → Spark 1.2 → Glimmer (if warm) → offline.
+- **Model calls (user revision, 2026-11-03):** configurable30s default per call, including streamed bodies; no SDK retries. A live turn has a60s total deadline and advertises a65s client response window (guidance-spec §8), superseding the original5s limit. The router owns retry and fallback: Spark 1.3 → Spark 1.2 → Glimmer (if warm) → offline.
 - **Languages:** `en`, `hi`, `es` for every spoken string. Spanish may slip past Nov 2 (design §1); Hindi may not.
 - **Release gates (design §5.6):**
   - Hard: PIN/payment recall ≥98% on ≥150 examples; 0 wrong pay taps.
@@ -146,7 +146,7 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
   - `asr-boundaries.test.ts › connect timeout errors after 5 s`: fake timers.
 - [x] **Step 4: Implement:**
   - In `app.ts`, handle `abort` outside the per-session queue. Give `SessionPipeline` an `AbortController` per task and drop results from a cancelled task.
-  - Set `timeout: 5_000, maxRetries: 0` in `createMetaClient`.
+  - Original implementation: `timeout: 5_000, maxRetries: 0` in `createMetaClient`. **User revision2026-11-03:** retain configurable30s/default, bind streamed bodies to that deadline, and negotiate the bounded60s server/65s Android turn budget from guidance-spec §8. The ASR connection bound below stays5s.
   - Use `new WebSocket(url, { handshakeTimeout: 5_000 })` in the relay.
   - In `onKeyframe`, return early when `purpose === 'locate' && !this.goal`.
 - [x] **Step 5: Verify:** `pnpm -r test` → 389 passed; recursive typechecks/builds, 31 tooling cases, Android compatibility and compiled loopback smoke pass. No live/cloud/device acceptance is claimed.
@@ -655,3 +655,23 @@ User explicitly requests this optional coding on 2026-11-03; physical acceptance
 - the 98% recall measurement.
 
 Historical local source completion note (2026-11-02, before the later Day 4/6 build verification): user assigns live gates to teammates. Checked boxes above record implemented/local-verified TS or documentation steps; every deployment, signed APK, real model, Android build/device and footage acceptance remains open. Monitoring runtime source is now wired but defaults off. See docs/evals/local-code-handoff-2026-11-02.md for the final handoff.
+
+## 2026-11-03 follow-up: live-guidance failures (D1-T5 / D2-T6 / B4-0 / D7)
+
+- [x] Reproduce synthetic boundary, fragment/whole-panel/adjacent-target, streamed timeout, protocol-bound and duplicate-billing failures before implementation.
+- [x] Validate appliance display/local/SAM fallback planes against controls; preserve ordinary touchscreen cropping and sensitive routing.
+- [x] Validate SAM refinement area/overlap before replacing the Spark control box; preserve concave targets.
+- [x] Resolve the5s/30s policy with the user; implement total model/turn deadlines, cancellation and compatible TS/Kotlin wait negotiation.
+- [x] Coalesce same-turn locate/explore retries without discarding subsequent goals or verification.
+- [x] Run production-prompt live loopback positive/blank-negative checks; reject worse prompt/semantic alternatives.
+- [x] Follow the typed-goal diagnostic with actual Voice Transcribe speech routing; reproduce and repair oversized screen-label keyword rejection with three failing-first regressions.
+- [x] Run the user-requested broader photo/video/audio diagnostic: eight photos, two actual clips/six sampled frames and ten spoken command flows. Retain raw evidence and score the physical target independently; [results](../../evals/appliance-multimedia-check-2026-11-03.md) remain below acceptance, including an incorrect photo target and no video targets.
+- [x] Reproduce and repair inscribed rounded-corner planes; preserve exact perspective corners and refuse out-of-frame extrapolation.
+- [x] Implement bounded contextual crops, source-coordinate remapping and physical press/turn/slide/not-found confirmation; preserve routed/private isolation and conservative SAM refinement. Record the exact Sharp dependency deviation.
+- [x] Reproduce the missing-button surface-search timeout and implement an early ask. Reconcile the pull with the user's reaffirmed 30s default/60s total-turn policy while preserving incoming hashed memory and diagnostics.
+- [x] Run fresh actual-provider spoken-goal checks: washer button now aligned, AC sample aligned in the preceding check, knob-only negative asks without a target. Post-pull 788 TS/407 Android JVM/80 Python tests, typechecks/builds and debug APK pass; [scope and numerical evidence](../../evals/control-grounding-repair-2026-11-04.md).
+- [ ] General spoken-goal/target accuracy: the original corpus score is not replaced by two successful cases. TV/unknown classification, partial framing, dim video frames, stochastic timeouts and recognition latency remain open. Returning an aligned still-image target does not establish phone guidance acceptance.
+- [ ] Physical phone: panel lock, finger alignment, speech/tone and real press/verify after installing the repaired build. User defers connection until later.
+- [ ] Original quality/latency, performance, cloud and release acceptance. No completion claim from local coding or three images.
+
+Evidence: [initial live-guidance repair](../../evals/live-guidance-repair-2026-11-03.md), [current control-grounding repair](../../evals/control-grounding-repair-2026-11-04.md).

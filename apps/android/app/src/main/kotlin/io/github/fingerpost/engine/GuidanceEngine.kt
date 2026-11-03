@@ -651,6 +651,7 @@ class GuidanceEngine(
     private fun server(message: ServerMessage) {
         if (message is Layout && message.sensitivity != Sensitivity.NONE) protectSpeech()
         if (message is Ready) {
+            machine.serverWaitMs = message.flags.modelWaitMs ?: 6_000L
             if (offline) {
                 // The cloud is back: finish this session in basic mode, then switch.
                 if (message.flags.cloudEnabled) { if (machine.state == GState.IDLE) leaveOffline() else onlineWhenIdle = true }

@@ -53,12 +53,13 @@ consume API credits. Private mode becomes available only with all of `GLIMMER_UR
 private calls require the deployed Modal endpoint and may incur GPU charges. The default
 `pnpm dev:phone` continues to ignore these credentials and uses only mock models.
 
-The restored B4-0 model timeout defaults to 5000 ms and accepts only 1000–5000 ms.
-Remove an older `MODEL_TIMEOUT_MS=30000` setting from your private `.env`, or change it to
-5000, before starting a live gateway. Longer values now fail startup rather than silently
-overriding the plan. The SDK does not retry; the existing router owns fallback. Prior live
-screen reads exceeded five seconds, so remeasure actual provider behavior before claiming
-usable live guidance. Warm Glimmer before measuring its five-second request budget.
+The user reaffirmed bounded longer recognition on 2026-11-04 after the pull restored the
+older five-second policy. `MODEL_TIMEOUT_MS` defaults to 30000 ms and accepts 1000–60000 ms.
+The gateway additionally cancels the whole live turn at 60 seconds, including streamed
+bodies and image preparation, and advertises a 65-second client window. SDK retries remain
+zero; the router owns fallback. Keep real values in the ignored private `.env`. These
+bounds prevent runaway waits; they do not establish the original latency goals or reliable
+guidance. Warm Glimmer before measuring private inference.
 
 ## TypeScript on this laptop
 

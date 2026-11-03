@@ -13,9 +13,12 @@ export interface AsrOptions { apiKey: string; locales: Locale[]; keywords: strin
 
 /** The first text frame (docs: within 10 s of connecting). ENDPOINTING = the model decides when a turn ends. */
 export function handshake(o: AsrOptions) {
+  // The provider rejects the whole stream if even one screen-label hint exceeds 30 characters.
+  const keywords = o.keywords.map((keyword) => keyword.trim())
+    .filter((keyword) => keyword.length > 0 && Array.from(keyword).length <= 30).slice(0, 50);
   return { authorization: { accessToken: `Bearer ${o.apiKey}` }, audioEncoding: 'PCM_16KHZ', model: ASR_MODEL,
     mode: 'ENDPOINTING', partialMode: 'CUMULATIVE', emitAudioProgress: false,
-    languageBias: o.locales.map((locale) => LANGUAGE_NAMES[locale]), keywords: o.keywords.slice(0, 50) };
+    languageBias: o.locales.map((locale) => LANGUAGE_NAMES[locale]), keywords };
 }
 
 /**

@@ -2,7 +2,7 @@ import type { TelemetryCollector } from './telemetry/collector.ts';
 import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import { ulid } from 'ulid';
-import { LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
+import { decodeFrame, LIMITS, parseClientMessage, PROTOCOL } from '@fingerpost/protocol';
 import { privateAvailable, type Config } from './config.ts';
 import { registerLatencyRoute } from './debug/latency.ts';
 import { createMetaClient } from './models/meta-client.ts';
@@ -16,6 +16,7 @@ import { InMemoryStore, type MemoryStore } from './memory/store.ts';
 import { liveModels, type ModelPort } from './models/port.ts';
 import { mockModels } from './models/mock/mock-models.ts';
 import { createSessionController, type AsrFactory } from './session/controller.ts';
+import { MODEL_TURN_TIMEOUT_MS, MODEL_WAIT_MS } from './session/model-budget.ts';
 import { openAsrRelay } from './asr/relay.ts';
 import { mockAsr } from './models/mock/mock-asr.ts';
 import { SimEventBody, SimRegistry } from './sim/registry.ts';
@@ -175,6 +176,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
           type: 'say', id: ulid(), ts: now(), priority: 'safety', text: o.mockNotice,
         }));
       }, models, asr, sims, now, quota, minimumVersion: () => minVersionSource.getMinVersion(), ...(claims ? { claims } : {}),
+        ...(live ? { turnTimeoutMs: MODEL_TURN_TIMEOUT_MS, modelWaitMs: MODEL_WAIT_MS } : {}),
         ...(live && cfg.MONITORING_ENABLED && o.telemetry ? { telemetry: o.telemetry } : {}),
         planner, router, memory, ...(o.transportCounters ? { onInbound: (message) => o.transportCounters!.record(message) } : {}),
         onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
@@ -183,6 +185,8 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
       // Ordinary messages stay ordered; a validated abort cancels the in-flight task and its backlog.
       let queue: Promise<void> = Promise.resolve();
       let generation = 0;
+      let inputTurn = 0;
+      const pendingCaptures = new Set<string>();
       handle = (data, isBinary) => {
         if (expired()) return;
         req.log.debug({ sessionId: hub.id, bytes: data.length, binary: isBinary }, 'ws message');
@@ -192,6 +196,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
           try { json = JSON.parse(data.toString('utf8')); } catch { /* The hub reports malformed messages. */ }
           const parsed = parseClientMessage(json);
           if (parsed.ok && parsed.msg.type === 'hello') { isHello = true; helloQueued = true; }
+          if (parsed.ok && ['goal', 'answer', 'confirm.reply', 'audio.end'].includes(parsed.msg.type)) inputTurn++;
           const interrupts = parsed.ok && (parsed.msg.type === 'abort' ||
             (parsed.msg.type === 'event' && parsed.msg.kind === 'pinModeEntered'));
           if (interrupts && (ready || helloQueued)) {
@@ -205,11 +210,23 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
             return;
           }
         }
+        let captureKey: string | undefined;
+        if (isBinary && (ready || helloQueued)) {
+          const frame = decodeFrame(new Uint8Array(data));
+          const parsed = frame.ok ? parseClientMessage(frame.header) : null;
+          if (frame.ok && parsed?.ok && parsed.msg.type === 'keyframe' && parsed.msg.purpose !== 'verify'
+              && frame.payload.length <= LIMITS.keyframeBytes) {
+            captureKey = `${generation}:${inputTurn}:${parsed.msg.purpose}`;
+            // A retry received while this turn is still running must not become another paid parse later.
+            if (pendingCaptures.has(captureKey)) return;
+            pendingCaptures.add(captureKey);
+          }
+        }
         const receivedIn = generation;
         queue = queue.then(() => {
           if (expired() || (receivedIn !== generation && !(isHello && !ready))) return;
           return isBinary ? hub.onBinary(new Uint8Array(data)) : hub.onText(data.toString('utf8'));
-        });
+        }).finally(() => { if (captureKey !== undefined) pendingCaptures.delete(captureKey); });
       };
       for (const [d, b] of early.splice(0)) handle(d, b);
     })();

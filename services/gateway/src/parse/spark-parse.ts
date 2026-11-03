@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ElementRole, ScreenType, Sensitivity, type Layout, type LayoutElement, type Locale } from '@fingerpost/protocol';
 import { MODELS, toDataUrl } from '../models/meta-client.ts';
 import { normalizeSparkBox } from './geometry.ts';
+import { modelRequest } from '../models/deadline.ts';
 
 export const PARSE_PROMPT_ID = 'parse-screen.v1';
 const SYSTEM_PROMPT = readFileSync(new URL(`../../prompts/${PARSE_PROMPT_ID}.md`, import.meta.url), 'utf8');
@@ -53,10 +54,10 @@ export function toLayout(s: SparkScreen): ParsedLayout {
     language: s.language.slice(0, 16) || 'und', rotation: s.rotation, elements };
 }
 
-export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string },
+export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string; signal?: AbortSignal },
   model: string = MODELS.spark): Promise<ParseResult> {
   const started = performance.now();
-  const response = await client.chat.completions.create({
+  const response = await modelRequest(client, opts.signal, (signal) => client.chat.completions.create({
     model,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -66,7 +67,7 @@ export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mi
       ] },
     ],
     response_format: { type: 'json_schema', json_schema: { name: 'screen_layout', strict: true, schema: SPARK_SCREEN_JSON_SCHEMA } },
-  }, { headers: { 'X-Prompt-Id': PARSE_PROMPT_ID } });  // static system prompt first + stable id: cache-friendly (B5-3)
+  }, { headers: { 'X-Prompt-Id': PARSE_PROMPT_ID }, signal }));
   const content = response.choices[0]?.message.content;
   if (!content) throw new Error('Spark returned no content');
   const layout = toLayout(SparkScreen.parse(JSON.parse(content)));

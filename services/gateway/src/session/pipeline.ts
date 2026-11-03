@@ -8,6 +8,7 @@ import { spokenError, t } from '../i18n/strings.ts';
 import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { describePosition, listLabels } from '../resolve/describe.ts';
 import { fullFrameCoordinates } from './screen-coordinates.ts';
+import { coversApplianceControls, usableRefinement } from './geometry-quality.ts';
 import { AgentSession, type AgentTurn } from '../agent/loop.ts';
 import { inferIntent, type RequestedMode } from '../agent/intent.ts';
 import { rulesPlanner, type Planner } from '../agent/planner.ts';
@@ -22,6 +23,8 @@ import type { StartResult } from './types.ts';
 export type TaskGate = () => Promise<StartResult>;
 export type TaskOutcome = 'success' | 'error' | 'cancelled';
 export interface PipelineDeps {
+  /** Live turn deadline; mock/standalone ports retain their existing local policy. */
+  turnTimeoutMs?: number;
   onTask?: () => (outcome: TaskOutcome) => void;
   models: ModelPort;
   send: (m: ServerMessage) => void;
@@ -109,6 +112,7 @@ export class SessionPipeline {
   private frameModels: ModelPort | null = null;
   /** The current frame's layout came from kiosk memory: its polygons are final, no SAM refinement. */
   private frameFromMemory = false;
+  private groundedTarget: { frameId: string; elementId: string } | null = null;
   private agent: AgentSession | null = null;
   private lookingSpoken = false;
   /** Explore (B5-1): the regions of the last summarized screen and how many were read. null outside explore. */
@@ -258,16 +262,26 @@ export class SessionPipeline {
   }
 
   async onKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
-    const signal = this.task.signal;
+    const task = this.task, signal = task.signal;
+    if (signal.aborted) return;
+    const timer = this.d.turnTimeoutMs === undefined ? undefined : setTimeout(() => {
+      if (task !== this.task || signal.aborted) return;
+      this.completeTask('error', signal);
+      this.target = null;
+      task.abort();
+      this.d.send({ ...this.base(), type: 'mode', mode: 'offline', reason: t(this.locale, 'offline') });
+    }, this.d.turnTimeoutMs);
     try { await this.processKeyframe(h, jpeg); }
     catch (error) {
       if (!signal.aborted) this.completeTask('error', signal);
       throw error;
-    }
+    } finally { clearTimeout(timer); }
   }
 
   private async processKeyframe(h: Keyframe, jpeg: Uint8Array): Promise<void> {
     const signal = this.task.signal;
+    if (signal.aborted) return;
+    this.groundedTarget = null;
     // Nothing to look for yet: don't spend a model call.
     // An explore frame is read like a locate frame: it needs a goal and starts the charged task.
     const reading = h.purpose === 'locate' || h.purpose === 'explore';
@@ -318,9 +332,10 @@ export class SessionPipeline {
       this.lookingSpoken = true;
       this.d.send({ ...this.base(), type: 'say', priority: 'state', text: t(this.locale, 'looking') });
     }
-    const parse = models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}) })
+    const request = this.d.turnTimeoutMs === undefined ? {} : { signal };
+    const parse = models.parseScreen(image, { locale: this.locale, ...(this.goal ? { goal: this.goal } : {}), ...request })
       .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; });
-    const screen = h.kind === 'full' ? models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h }, 'touchscreen display')
+    const screen = h.kind === 'full' ? models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h, ...request }, 'touchscreen display')
       .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null) : Promise.resolve(null);
     let result: Awaited<ReturnType<typeof whileActive<[Awaited<typeof parse>, Awaited<typeof screen>]>>>;
     try {
@@ -334,20 +349,63 @@ export class SessionPipeline {
     }
     if (result === CANCELLED || signal.aborted) return;
     const [parsed, screenMask] = result;
-    const mapped = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
+    // Classification protects later frames even when this frame cannot establish a screen plane.
+    this.sensitive ||= parsed.layout.sensitivity !== 'none';
+    this.privatePlanning ||= this.privacy === 'private' || this.sensitive;
+    let imageElements = parsed.layout.elements;
+    if (parsed.layout.screenType === 'appliance' && parsed.layout.sensitivity === 'none' && models.groundControl
+      && h.purpose !== 'verify' && !this.explore && !this.agent) {
+      const selected = resolveByText(this.goal ?? '', imageElements);
+      if (selected.kind === 'none' && h.kind === 'full') {
+        this.target = null;
+        this.completeTask('error', signal);
+        this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'button_not_found'), options: [] });
+        return;
+      }
+      if (selected.kind === 'match') {
+        const grounded = await this.groundElement(selected.element, h, image, models, signal);
+        if (grounded === CANCELLED || !grounded || signal.aborted) return;
+        imageElements = imageElements.map((element) => element.id === grounded.id ? grounded : element);
+        this.groundedTarget = { frameId: h.id, elementId: grounded.id };
+      }
+    }
+    let mapped = h.kind === 'full' ? fullFrameCoordinates(h.imageSize, screenMask, h.quad, parsed.layout.rotation) : null;
+    if (h.kind === 'full' && parsed.layout.screenType === 'appliance' && parsed.layout.sensitivity === 'none') {
+      const resolved = resolveByText(this.goal ?? '', imageElements);
+      const required = resolved.kind === 'match' ? resolved.element : undefined;
+      const usable = (space: typeof mapped) => coversApplianceControls(space, h.imageSize, imageElements, required);
+      if (!usable(mapped) && models.groundControl) {
+        for (const concept of ['control panel', 'remote control']) {
+          const panel = await whileActive(models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h, ...request }, concept)
+            .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null), signal);
+          if (panel === CANCELLED || signal.aborted) return;
+          mapped = fullFrameCoordinates(h.imageSize, panel, undefined, parsed.layout.rotation);
+          if (usable(mapped)) break;
+        }
+      }
+      if (!usable(mapped)) mapped = fullFrameCoordinates(h.imageSize, null, h.quad, parsed.layout.rotation);
+      if (!usable(mapped)) {
+        // Flat glass touch controls can surround an LCD, or have no display at all.
+        const panel = await whileActive(models.segmentByText({ bytes: jpeg, width: h.imageSize.w, height: h.imageSize.h, ...request }, 'appliance')
+          .then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result.polygon; }).catch(() => null), signal);
+        if (panel === CANCELLED || signal.aborted) return;
+        mapped = fullFrameCoordinates(h.imageSize, panel, undefined, parsed.layout.rotation);
+        if (!usable(mapped)) mapped = null;
+      }
+    }
     coordinates = mapped;
     if (h.kind === 'full' && !mapped) {
       this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'no_screen'), options: [] });
       return;
     }
-    const elements = mapped ? parsed.layout.elements.flatMap((element) => {
+    const elements = mapped ? imageElements.flatMap((element) => {
       const polygon = mapped.toScreen(element.polygon);
       return polygon ? [{ ...element, polygon }] : [];
-    }) : parsed.layout.elements;
+    }) : imageElements;
     layout = Layout.parse({ ...this.base(), type: 'layout', ...parsed.layout, elements,
       ...(mapped ? { screenQuad: mapped.screenQuad } : {}),
       fingerprint: layoutFingerprint(elements), source: 'model' });
-    parsedElements = parsed.layout.elements;
+    parsedElements = imageElements;
     this.remember(h, layout);
     }
     this.layout = layout;
@@ -439,6 +497,24 @@ export class SessionPipeline {
   }
 
   /** Refine the element with SAM from its Spark box, then send the target. */
+  private async groundElement(element: LayoutElement, h: Keyframe, image: { bytes: Uint8Array; mime: 'image/jpeg' },
+    models: ModelPort, signal: AbortSignal): Promise<LayoutElement | null | typeof CANCELLED> {
+    if (!models.groundControl) return element;
+    const result = await whileActive(models.groundControl({ ...image, width: h.imageSize.w, height: h.imageSize.h, signal },
+      { locale: this.locale, goal: this.goal ?? element.label, element })
+      .then(async (result) => { await this.d.onUsage?.({ kind: 'spark', ...result.usage }); return result; })
+      .catch((error: unknown) => { if (error instanceof ModelsUnavailable) return null; throw error; }), signal);
+    if (result === CANCELLED || signal.aborted) return CANCELLED;
+    if (!result || result.actuation !== 'press' || !result.polygon) {
+      this.target = null;
+      this.completeTask('error', signal);
+      const unsupported = result?.actuation === 'turn' || result?.actuation === 'slide';
+      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, unsupported ? 'press_only' : 'target_unclear'), options: [] });
+      return null;
+    }
+    return { ...element, polygon: result.polygon, confidence: Math.min(element.confidence, result.confidence) };
+  }
+
   private async sendTarget(element: LayoutElement, h: Keyframe, image: { bytes: Uint8Array; mime: 'image/jpeg' },
     coordinates: ReturnType<typeof fullFrameCoordinates>, parsedElements: readonly LayoutElement[], signal: AbortSignal): Promise<void> {
     if (isSensitive(element) && !this.agent?.allowsGuide(element)) {
@@ -453,16 +529,32 @@ export class SessionPipeline {
         confidence: element.confidence, say: t(this.locale, 'found', { label: element.label, position: describePosition(element.polygon, this.locale) }) }));
       return;
     }
-    const original = parsedElements.find(({ id }) => id === element.id) ?? element;
+    let original = parsedElements.find(({ id }) => id === element.id) ?? element;
+    const frameModels = this.frameModels ?? this.d.models;
+    if (this.layout?.screenType === 'appliance' && frameModels.groundControl
+      && (this.groundedTarget?.frameId !== h.id || this.groundedTarget.elementId !== element.id)) {
+      const grounded = await this.groundElement(original, h, image, frameModels, signal);
+      if (grounded === CANCELLED || !grounded || signal.aborted) return;
+      const polygon = coordinates ? coordinates.toScreen(grounded.polygon) : grounded.polygon;
+      if (!polygon) {
+        this.target = null;
+        this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'target_unclear'), options: [] });
+        return;
+      }
+      original = grounded;
+      element = { ...grounded, polygon };
+    }
     const us = original.polygon.map(({ u }) => u), vs = original.polygon.map(({ v }) => v);
-    const mask = await whileActive((this.frameModels ?? this.d.models).segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h }, {
+    const mask = await whileActive((this.frameModels ?? this.d.models).segmentByBox({ ...image, width: h.imageSize.w, height: h.imageSize.h,
+      ...(this.d.turnTimeoutMs === undefined ? {} : { signal }) }, {
       left: Math.min(...us) * h.imageSize.w, top: Math.min(...vs) * h.imageSize.h,
       right: Math.max(...us) * h.imageSize.w, bottom: Math.max(...vs) * h.imageSize.h,
     }).then(async (result) => { await this.d.onUsage?.({ kind: 'sam_image', images: 1 }); return result; })
       // Refinement is optional: with SAM unreachable, Spark's own box is still a usable target.
       .catch((error: unknown) => { if (error instanceof ModelsUnavailable) return { polygon: null, confidence: null, latencyMs: 0 }; throw error; }), signal);
     if (mask === CANCELLED || signal.aborted) return;
-    const refined = mask.polygon && (coordinates ? coordinates.toScreen(mask.polygon) : mask.polygon);
+    const accepted = usableRefinement(original.polygon, mask.polygon);
+    const refined = accepted && (coordinates ? coordinates.toScreen(accepted) : accepted);
     const polygon = refined || element.polygon;
     const target = Target.parse({ ...this.base(), type: 'target', elementId: element.id, polygon,
       confidence: Math.min(element.confidence, refined ? mask.confidence ?? element.confidence : element.confidence),

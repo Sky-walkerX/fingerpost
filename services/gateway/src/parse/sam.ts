@@ -3,8 +3,9 @@ import { buildObjectPrompt, decodeMaskToRaster, parseImageStream, recordsOfKind,
 import type { Polygon } from '@fingerpost/protocol';
 import { MODELS, toDataUrl } from '../models/meta-client.ts';
 import { rasterToPolygon, simplifyPolygon, toUV } from './geometry.ts';
+import { modelRequest } from '../models/deadline.ts';
 
-export interface SamImage { bytes: Uint8Array; width: number; height: number; }
+export interface SamImage { bytes: Uint8Array; width: number; height: number; signal?: AbortSignal; }
 export interface PxBox { left: number; top: number; right: number; bottom: number; }
 export interface SegmentResult { polygon: Polygon | null; confidence: number | null; latencyMs: number; }
 type Events = AsyncIterable<{ readonly type: string }>;
@@ -37,17 +38,20 @@ export function maskToPolygon(m: SegmentationMaskRecord, imageW: number, imageH:
 
 async function run(client: OpenAI, image: SamImage, text: string, events?: Events): Promise<SegmentResult> {
   const started = performance.now();
-  const stream = events ?? await client.responses.create({
+  const consume = async (stream: Events) => {
+    const result = await parseImageStream(stream).finalResult;
+    const primary = pickPrimaryMask(result.records);
+    return { polygon: primary ? maskToPolygon(primary.mask, image.width, image.height) : null,
+      confidence: primary?.confidence ?? null, latencyMs: Math.round(performance.now() - started) };
+  };
+  if (events) return consume(events);
+  return modelRequest(client, image.signal, async (signal) => consume(await client.responses.create({
     model: MODELS.sam, stream: true,
     input: [{ role: 'user', content: [
       { type: 'input_text', text },
       { type: 'input_image', image_url: toDataUrl(image.bytes), detail: 'high' },
     ] }],
-  });
-  const result = await parseImageStream(stream).finalResult;
-  const primary = pickPrimaryMask(result.records);
-  return { polygon: primary ? maskToPolygon(primary.mask, image.width, image.height) : null,
-    confidence: primary?.confidence ?? null, latencyMs: Math.round(performance.now() - started) };
+  }, { signal })));
 }
 
 /** Box prompt in image pixels. Coordinates are floored/clamped into the image so buildObjectPrompt never throws. */

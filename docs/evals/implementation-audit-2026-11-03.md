@@ -1,6 +1,6 @@
 # Day 1–7 implementation audit — 2026-11-03
 
-This is a source-and-test audit, not an acceptance report. `Present` means the planned implementation is in source with local regressions; `Partial` means the source exists but a task-specific external result or tester-driven tuning remains. `External` means the plan item is human, device, live, or cloud work rather than missing product code. No `TODO(Dn-Tm)` implementation body remains outside plan assets. The approved five-second/no-retry model bound and hash-only shared-memory rules were retained.
+This is a source-and-test audit, not an acceptance report. `Present` means the planned implementation is in source with local regressions; `Partial` means the source exists but a task-specific external result or tester-driven tuning remains. `External` means the plan item is human, device, live, or cloud work rather than missing product code. No `TODO(Dn-Tm)` implementation body remains outside plan assets. At this checkpoint the five-second/no-retry model bound and hash-only shared-memory rules were retained. **Subsequent user decision,2026-11-04:** after pulling this checkpoint, the user reaffirms a30-second default per call with a60-second total live turn; current bounds are in guidance-spec §8. Hash-only memory and its two-install minimum remain unchanged.
 
 | Task ID | State | Evidence (source / regression) | Remaining coding work | Separate acceptance requirement |
 |---|---|---|---|---|

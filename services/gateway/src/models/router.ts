@@ -52,31 +52,40 @@ export function createRouter(o: RouterOptions): RoutedModels {
   const random = o.random ?? Math.random;
   const warm = o.glimmerWarm ?? (() => true);
 
-  async function resilient<T>(call: (port: ModelPort) => Promise<T>): Promise<T> {
+  async function resilient<T>(call: (port: ModelPort) => Promise<T>, signal?: AbortSignal): Promise<T> {
+    signal?.throwIfAborted();
     if (breaker.allow()) {
       try {
         const result = await call(o.meta);
         breaker.success();
         return result;
       } catch (error) {
+        signal?.throwIfAborted();
         let failed = true;
         let result: T | undefined;
         if (retryWorthy(error)) {
           await sleep(Math.round(200 + random() * 400));
+          signal?.throwIfAborted();
           try { result = await call(o.meta); failed = false; } catch { /* counted below */ }
+          signal?.throwIfAborted();
         }
         if (!failed) { breaker.success(); return result as T; }
         breaker.failure();
       }
     }
+    signal?.throwIfAborted();
     if (o.glimmer && warm()) return call(o.glimmer);
     throw new ModelsUnavailable();
   }
 
   const metaPath: ModelPort = {
-    parseScreen: (img, opts) => resilient((p) => p.parseScreen(img, opts)),
-    segmentByBox: (img, box) => resilient((p) => p.segmentByBox(img, box)),
-    segmentByText: (img, phrase) => resilient((p) => p.segmentByText(img, phrase)),
+    parseScreen: (img, opts) => resilient((p) => p.parseScreen(img, opts), opts.signal),
+    segmentByBox: (img, box) => resilient((p) => p.segmentByBox(img, box), img.signal),
+    segmentByText: (img, phrase) => resilient((p) => p.segmentByText(img, phrase), img.signal),
+    ...(o.meta.groundControl ? { groundControl: (img, opts) => resilient((p) => {
+      if (!p.groundControl) throw new ModelsUnavailable();
+      return p.groundControl(img, opts);
+    }, img.signal) } satisfies Pick<ModelPort, 'groundControl'> : {}),
   };
 
   return {

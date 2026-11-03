@@ -45,7 +45,7 @@ client: abort                          ──► server: finish{result:"aborted"
 ## Server → client
 | type | fields | notes |
 |---|---|---|
-| `ready` | `sessionId`, `quota{tasksLeft}`, `flags{cloudEnabled, privateAvailable}` | |
+| `ready` | `sessionId`, `quota{tasksLeft}`, `flags{cloudEnabled, privateAvailable, modelWaitMs?}` | Optional integer response window, 6,000–65,000 ms. Live advertises 65,000; see guidance-spec §8. Older servers omit it. |
 | `transcript` | `final:boolean`, `text` | partials replace, not append |
 | `goal.ack` | `goal`, `intent` (`guide`\|`task`\|`explore`) | the inferred mode when `hello.mode` is `auto` |
 | `sim.touch` | `runId`, `screenId`, `x`, `y`, `u`, `v`, `elementId` (string or null) | relayed from `POST /v1/sim/events` to the session whose `caps.simRunId` matches |

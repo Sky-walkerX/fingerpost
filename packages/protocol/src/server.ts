@@ -18,7 +18,7 @@ export const Ready = z.object({
   type: z.literal('ready'),
   sessionId: Id,
   quota: z.object({ tasksLeft: z.number().int().nonnegative() }),
-  flags: z.object({ cloudEnabled: z.boolean(), privateAvailable: z.boolean() }),
+  flags: z.object({ cloudEnabled: z.boolean(), privateAvailable: z.boolean(), modelWaitMs: z.number().int().min(6000).max(65_000).optional() }),
 });
 export const Transcript = z.object({ ...base, type: z.literal('transcript'), final: z.boolean(), text: z.string().max(2000) });
 export const GoalAck = z.object({ ...base, type: z.literal('goal.ack'), goal: z.string().min(1).max(500), intent: Intent });

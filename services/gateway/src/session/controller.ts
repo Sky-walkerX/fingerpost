@@ -14,6 +14,9 @@ import { spokenError, t } from '../i18n/strings.ts';
 
 export type AsrFactory = (o: Omit<AsrOptions, 'apiKey'>, sink: AsrSink) => AsrRelay;
 export interface ControllerDeps {
+  /** Live-only negotiated response window (including transport grace). */
+  modelWaitMs?: number;
+  turnTimeoutMs?: number;
   send: (m: ServerMessage) => void; models: ModelPort; asr: AsrFactory; sims: SimRegistry; now?: () => number;
   /** Day 3: present when the socket was authenticated. Without it, quotas are not applied (mock/dev). */
   claims?: SessionClaims; quota?: QuotaPort;
@@ -76,6 +79,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     ? () => quota.startTask(claims.uid, claims.tier)
     : async (): Promise<StartResult> => ((await quota.cloudEnabled()) ? { ok: true, tasksLeft: 0 } : { ok: false, code: 'cloud_paused' }));
   const pipeline = new SessionPipeline({ models, send, ...(d.now ? { now: d.now } : {}), onUsage: usage,
+    ...(d.turnTimeoutMs === undefined ? {} : { turnTimeoutMs: d.turnTimeoutMs }),
     ...((d.onTask || d.telemetry) ? { onTask: () => simulator ? () => {} : (d.onTask?.() ?? d.telemetry!.beginTask()) } : {}),
     ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}),
     ...(d.planner ? { planner: d.planner } : {}), ...(route ? { route } : {}),
@@ -89,7 +93,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     awaitingEnd = false;
     old?.close();
   };
-  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}),
+  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}), ...(d.modelWaitMs === undefined ? {} : { modelWaitMs: d.modelWaitMs }),
     ...(d.minimumVersion ? { minimumVersion: d.minimumVersion } : {}), privateAvailable: d.router?.privateAvailable ?? false, handlers: {
     onVersionUnsupported() { closeRelay(); pipeline.abort(); },
     onHello(message) {

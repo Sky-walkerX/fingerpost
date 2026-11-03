@@ -256,9 +256,10 @@ JSON text frames, plus binary frames shaped `[u32 headerLen][JSON header][payloa
 - **State:** goal, screen history (layout summaries only) and steps taken. Held in memory, pinned to the WS. On reconnect the client sends a state digest.
 
 ### 4.4 Model router and fallbacks
+- **Public appliance grounding repair (2026-11-04):** the Meta port can inspect a transient contextual crop for the selected control (`ground-control.v1`). Its structured result distinguishes pressing from turning/sliding and maps the corrected area back into the original frame before SAM refinement. Control-panel masks precede whole-appliance fallbacks; enclosing contour edges preserve rounded-panel controls. Sharp performs bounded asynchronous JPEG preparation in the gateway; no new upload endpoint or persistent image store is added. Glimmer/private ports never fall back to this public capability. See guidance-spec §§2.0,4 for bounds and refusal behavior.
 - **Normal mode:** Meta API: Spark 1.3 (fallback 1.2), SAM 3.1, Voice Transcribe in `ENDPOINTING` mode.
   - `languageBias=[en,hi,es]`.
-  - `keywords` = labels on the current screen, which biases ASR toward on-screen words.
+  - `keywords` = labels on the current screen, which biases ASR toward on-screen words. Provider input bound observed 2026-11-03: trim labels, omit blank hints and hints over 30 Unicode characters, then select at most 50. Do not truncate a long label into a different term; oversized hints must not reject the whole speech connection. Keywords bias recognition; they do not guarantee an exact transcription.
 - **Private mode:** Glimmer on Modal, with on-device OCR geometry. SAM 3.1 open weights on the same GPU is a stretch goal.
 - **Meta outage:** retries with jitter, then a circuit breaker. Then Glimmer if it's warm, then offline basic mode. Every failure comes with a spoken message.
 - **Prompt caching:** static system prompts first; cached input costs $0.15/M vs $1.25/M.

@@ -8,9 +8,11 @@ export interface ScreenCoordinates {
 /** A full image's model polygons must use the same screen plane as the phone's homography. */
 export function fullFrameCoordinates(size: { w: number; h: number }, mask: Polygon | null,
   hint: Point[] | undefined, rotation: 0 | 90 | 180 | 270): ScreenCoordinates | null {
-  const fromMask = mask ? quadOf(mask.map(({ u, v }) => ({ x: u * size.w, y: v * size.h }))) : null;
-  const fallback = hint?.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)
-    && p.x >= 0 && p.x <= size.w && p.y >= 0 && p.y <= size.h) ? quadOf(hint) : null;
+  const inFrame = (p: Point) => Number.isFinite(p.x) && Number.isFinite(p.y)
+    && p.x >= 0 && p.x <= size.w && p.y >= 0 && p.y <= size.h;
+  const candidate = mask ? quadOf(mask.map(({ u, v }) => ({ x: u * size.w, y: v * size.h }))) : null;
+  const fromMask = candidate?.every(inFrame) ? candidate : null;
+  const fallback = hint?.every(inFrame) ? quadOf(hint) : null;
   const geometric = fromMask ?? fallback;
   if (!geometric) return null;
   const screenQuad = geometric.map((_, i) => geometric[(i + rotation / 90) % 4]!);
@@ -51,7 +53,7 @@ const area = (points: Point[]) => Math.abs(points.reduce((sum, p, i) => {
   const next = points[(i + 1) % points.length]!; return sum + p.x * next.y - next.x * p.y;
 }, 0)) / 2;
 
-/** Largest inscribed quadrilateral of the convex mask; model polygons have at most 32 points. */
+/** Extend neighbouring contour edges instead of cutting rounded corners off the control surface. */
 function quadOf(points: Point[]): Point[] | null {
   if (points.length < 4 || points.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) return null;
   const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y), lower: Point[] = [], upper: Point[] = [];
@@ -63,16 +65,30 @@ function quadOf(points: Point[]): Point[] | null {
     }
     half.pop();
   }
-  const hull = [...lower, ...upper];
+  let hull = [...lower, ...upper];
   if (hull.length < 4) return null;
-  let best: Point[] | null = null, bestArea = EPS;
-  for (let a = 0; a < hull.length - 3; a++) for (let b = a + 1; b < hull.length - 2; b++)
-    for (let c = b + 1; c < hull.length - 1; c++) for (let d = c + 1; d < hull.length; d++) {
-      const candidate = [hull[a]!, hull[b]!, hull[c]!, hull[d]!], value = area(candidate);
-      if (value > bestArea) { bestArea = value; best = candidate; }
+  const original = hull;
+  while (hull.length > 4) {
+    let best: Point[] | null = null, bestArea = Infinity;
+    for (let i = 0; i < hull.length; i++) {
+      const n = hull.length, a = hull[(i + n - 1) % n]!, b = hull[i]!, c = hull[(i + 1) % n]!, d = hull[(i + 2) % n]!;
+      const ab = { x: b.x - a.x, y: b.y - a.y }, cd = { x: d.x - c.x, y: d.y - c.y };
+      const determinant = ab.x * cd.y - ab.y * cd.x;
+      if (Math.abs(determinant) <= EPS) continue;
+      const t = ((c.x - a.x) * cd.y - (c.y - a.y) * cd.x) / determinant;
+      const snap = (v: number) => Math.abs(v - Math.round(v)) <= EPS ? Math.round(v) : v;
+      const corner = { x: snap(a.x + t * ab.x), y: snap(a.y + t * ab.y) };
+      const candidate = hull.flatMap((p, j) => j === i ? [corner] : j === (i + 1) % n ? [] : [p]);
+      if (candidate.some((p, j) => cross(p, candidate[(j + 1) % candidate.length]!, candidate[(j + 2) % candidate.length]!) <= EPS)) continue;
+      if (original.some((p) => candidate.some((a, j) => cross(a, candidate[(j + 1) % candidate.length]!, p) < -EPS))) continue;
+      const value = area(candidate);
+      if (Number.isFinite(value) && value < bestArea) { bestArea = value; best = candidate; }
     }
-  if (!best) return null;
-  const quad = best;
+    if (!best) return null;
+    hull = best;
+  }
+  if (area(hull) <= EPS) return null;
+  const quad = hull;
   let start = 0;
   for (let i = 1; i < 4; i++) if (quad[i]!.x + quad[i]!.y < quad[start]!.x + quad[start]!.y) start = i;
   return quad.map((_, i) => quad[(start + i) % 4]!);

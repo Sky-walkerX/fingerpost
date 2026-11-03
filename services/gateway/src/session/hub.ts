@@ -10,7 +10,7 @@ export interface HubHandlers {
   onVersionUnsupported?(): void;
 }
 
-export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; minimumVersion?: () => Promise<string>; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
+export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; minimumVersion?: () => Promise<string>; modelWaitMs?: number; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
 
 
 /**
@@ -88,7 +88,8 @@ export class SessionHub {
         this.d.handlers?.onHello?.(msg);
         this.helloed = true;
         this.d.send({ type: 'ready', id: ulid(), ts: this.now(), sessionId: this.id,
-          quota: { tasksLeft: 30 }, flags: { cloudEnabled: true, privateAvailable: this.d.privateAvailable ?? false } });
+          quota: { tasksLeft: 30 }, flags: { cloudEnabled: true, privateAvailable: this.d.privateAvailable ?? false,
+            ...(this.d.modelWaitMs === undefined ? {} : { modelWaitMs: this.d.modelWaitMs }) } });
       } else {
         await this.d.handlers?.onMessage?.(msg, payload);
       }

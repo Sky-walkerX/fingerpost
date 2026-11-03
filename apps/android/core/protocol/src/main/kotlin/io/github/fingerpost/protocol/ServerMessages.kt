@@ -7,7 +7,9 @@ import kotlinx.serialization.Serializable
 @Serializable sealed class ServerMessage { abstract val id: String; abstract val ts: Long }
 
 @Serializable data class QuotaInfo(val tasksLeft: Int) { init { require(tasksLeft >= 0) } }
-@Serializable data class Flags(val cloudEnabled: Boolean, val privateAvailable: Boolean)
+@Serializable data class Flags(val cloudEnabled: Boolean, val privateAvailable: Boolean, val modelWaitMs: Long? = null) {
+    init { require(modelWaitMs == null || modelWaitMs in 6_000L..65_000L) }
+}
 
 @Serializable @SerialName("ready")
 data class Ready(override val id: String, override val ts: Long, val sessionId: String, val quota: QuotaInfo, val flags: Flags) : ServerMessage()

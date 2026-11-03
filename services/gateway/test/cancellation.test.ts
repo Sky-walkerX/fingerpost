@@ -204,3 +204,36 @@ test('a malformed abort cannot cancel an in-flight target or skip validation', a
     expect(sent.some((m) => m.type === 'finish')).toBe(false);
   } finally { pending.resolve(); ws.terminate(); }
 });
+
+test('locate retry uploads received during an in-flight parse are not billed again from the socket backlog', async () => {
+  const models = mockModels(), original = models.parseScreen, pending = deferred<void>();
+  models.parseScreen = vi.fn<ModelPort['parseScreen']>(async (image, options) => { await pending.promise; return original(image, options); });
+  const { ws, next } = await socket(models);
+  try {
+    const ack = next('goal.ack'); ws.send(JSON.stringify({ type: 'goal', id: 'g', ts: 0, source: 'typed', text: 'start' })); await ack;
+    ws.send(encodeFrame(frame(), jpeg)); await vi.waitFor(() => expect(models.parseScreen).toHaveBeenCalledOnce());
+    ws.send(encodeFrame(frame('locate', 'retry-a'), jpeg)); ws.send(encodeFrame(frame('locate', 'retry-b'), jpeg));
+    const barrier = next('goal.ack'); ws.send(JSON.stringify({ type: 'goal', id: 'barrier', ts: 0, source: 'typed', text: 'timer' }));
+    await new Promise<void>((resolve) => { ws.once('pong', () => resolve()); ws.ping(); });
+    pending.resolve(); await barrier;
+    expect(models.parseScreen).toHaveBeenCalledOnce();
+  } finally { pending.resolve(); ws.terminate(); }
+});
+
+test('coalescing a slow locate preserves a subsequent goal and its fresh keyframe', async () => {
+  const models = mockModels(), original = models.parseScreen, pending = deferred<void>(); let calls = 0;
+  models.parseScreen = vi.fn<ModelPort['parseScreen']>(async (image, options) => { if (++calls === 1) await pending.promise; return original(image, options); });
+  const { ws, next, sent } = await socket(models);
+  try {
+    const ack = next('goal.ack'); ws.send(JSON.stringify({ type: 'goal', id: 'g', ts: 0, source: 'typed', text: 'start' })); await ack;
+    ws.send(encodeFrame(frame(), jpeg)); await vi.waitFor(() => expect(calls).toBe(1));
+    ws.send(JSON.stringify({ type: 'goal', id: 'next', ts: 0, source: 'typed', text: 'timer' }));
+    ws.send(encodeFrame(frame('locate', 'fresh'), jpeg));
+    const barrier = next('goal.ack');
+    await new Promise<void>((resolve) => { ws.once('pong', () => resolve()); ws.ping(); });
+    pending.resolve(); await barrier;
+    await vi.waitFor(() => expect(sent.filter((m) => m.type === 'target')).toHaveLength(2));
+    expect(sent.filter((m) => m.type === 'target')).toMatchObject([{ elementId: 'e5' }, { elementId: 'e2' }]);
+    expect(models.parseScreen).toHaveBeenCalledTimes(2);
+  } finally { pending.resolve(); ws.terminate(); }
+});

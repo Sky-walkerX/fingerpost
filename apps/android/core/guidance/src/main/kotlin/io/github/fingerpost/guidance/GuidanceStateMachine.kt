@@ -83,6 +83,9 @@ object Prompts {
  * entered from any active state by the local PIN gate and never asks for a keyframe.
  */
 class GuidanceStateMachine(var locale: Locale = Strings.EN) {
+    /** Live gateways advertise a bounded wait; older/mock gateways keep the original timers. */
+    var serverWaitMs: Long = 6_000L
+        set(value) { field = value.coerceIn(6_000L, 65_000L) }
     var chestMount: Boolean = false
     private fun prompt(key: Key): String = Strings.get(if (chestMount && key == Key.FRAMING_TIPS) Key.CHEST_FRAME else key, locale)
     var state = GState.IDLE; private set
@@ -290,7 +293,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             }
             GState.LOCATING -> when {
                 serverTurn(ev, now, out) -> Unit
-                timed && now - enteredAt >= 6000 -> if (!retried) {
+                timed && now - enteredAt >= serverWaitMs -> if (!retried) {
                     out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                     retried = true
                     enteredAt = now
@@ -335,11 +338,11 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             }
             GState.VERIFYING -> when {
                 ev is GEvent.VerifyArrived -> verify(ev.result, ev.say, now, out)
-                timed && now - enteredAt >= 4000 -> verify(VerifyResult.NOCHANGE, prompt(Key.SCREEN_NO_CHANGE), now, out)
+                timed && now - enteredAt >= (if (serverWaitMs > 6_000L) serverWaitMs else 4_000L) -> verify(VerifyResult.NOCHANGE, prompt(Key.SCREEN_NO_CHANGE), now, out)
             }
             GState.AWAIT_NEXT -> when {
                 serverTurn(ev, now, out) -> Unit
-                timed && now - enteredAt >= 6000 -> if (!awaitResent) {
+                timed && now - enteredAt >= serverWaitMs -> if (!awaitResent) {
                     out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                     awaitResent = true
                     enteredAt = now
@@ -430,7 +433,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                 out += Effect.Say(prompt(Key.TOUCH_EXPLORE_ON), Priority.STATE)
                 go(GState.TOUCH_EXPLORE, now)
             } else out += Effect.Say(prompt(Key.TOUCH_EXPLORE_NEEDS_SCREEN), Priority.STATE)
-            !summaryHeard && timed && now - enteredAt >= 6000 -> if (!retried) {
+            !summaryHeard && timed && now - enteredAt >= serverWaitMs -> if (!retried) {
                 out += Effect.SendKeyframe(KeyframePurpose.EXPLORE)
                 retried = true
                 enteredAt = now

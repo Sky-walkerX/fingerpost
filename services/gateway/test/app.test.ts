@@ -21,11 +21,11 @@ test('defaults: port 8080, mock mode', () => {
   expect(loadConfig({})).toMatchObject({ PORT: 8080, MODEL_MODE: 'mock', GIT_SHA: 'dev' });
 });
 
-test('model timeout defaults to 5 s and cannot exceed the plan', () => {
-  expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(5_000);
+test('model timeout defaults to 30 s and remains bounded at 60 s', () => {
+  expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(30_000);
   expect(loadConfig({ MODEL_TIMEOUT_MS: '3000' }).MODEL_TIMEOUT_MS).toBe(3_000);
-  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '30000' })).toThrow(/MODEL_TIMEOUT_MS/);
-  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '5001' })).toThrow(/MODEL_TIMEOUT_MS/);
+  expect(loadConfig({ MODEL_TIMEOUT_MS: '60000' }).MODEL_TIMEOUT_MS).toBe(60_000);
+  expect(() => loadConfig({ MODEL_TIMEOUT_MS: '60001' })).toThrow(/MODEL_TIMEOUT_MS/);
   expect(() => loadConfig({ MODEL_TIMEOUT_MS: '500' })).toThrow(/MODEL_TIMEOUT_MS/);
   expect(() => loadConfig({ MODEL_TIMEOUT_MS: '90000' })).toThrow(/MODEL_TIMEOUT_MS/);
 });
