@@ -449,8 +449,11 @@ If the gate failed, apply the cut column in **Cut lines** before starting.
   - `feat(android): crash reporting and update check`
 
 #### A5-4 (stretch, ≤4 h): DAT mock glasses source
-- [ ] **Add the `FrameSource` interface** with `PhoneCameraSource` and `MockGlassesSource` (replays a recorded MP4 from the sim). Cut it first if Day 5 slips.
-- [ ] **Commit:** `feat(android): FrameSource with mock glasses`
+
+User explicitly requests this optional coding on 2026-11-03; physical acceptance is not waived.
+- [x] **Add the `FrameSource` interface** with `PhoneCameraSource` and `MockGlassesSource` (replays a recorded MP4 from the sim). Cut it first if Day 5 slips.
+- [x] **Commit coding:** `feat(android): FrameSource with mock glasses`
+- [ ] **Physical acceptance:** approved local MP4 decode/preview alignment, corrupt/missing file, pause/resume cleanup and release-flag rejection. See `docs/mock-glasses.md`.
 
 ### Lane B
 #### B5-1: explore on the gateway

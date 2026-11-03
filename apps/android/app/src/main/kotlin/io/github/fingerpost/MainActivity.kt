@@ -80,12 +80,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Guidance stays visible while the user's hands are on another screen.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val replayFile = io.github.fingerpost.camera.MockGlassesSource.selected(this,
+            intent.getBooleanExtra("fingerpost.mockGlasses", false))
         val trackingOptions = TrackingOptions.fromIntent(intent)
         val simRunId = if (BuildConfig.DEBUG) intent.getStringExtra("fingerpost.simRunId")?.takeIf { it.length in 1..64 } else null
         setContent {
             FingerpostTheme {
                 OnboardingGate {
-                    var cameraGranted by remember { mutableStateOf(hasCameraPermission()) }
+                    var cameraGranted by remember { mutableStateOf(replayFile != null || hasCameraPermission()) }
                     var requested by rememberSaveable { mutableStateOf(false) }
                     var denied by rememberSaveable { mutableStateOf(false) }
                     val view = LocalView.current
@@ -101,7 +103,7 @@ class MainActivity : ComponentActivity() {
                     DisposableEffect(lifecycleOwner) {
                         val observer = LifecycleEventObserver { _, event ->
                             if (event == Lifecycle.Event.ON_RESUME) {
-                                cameraGranted = hasCameraPermission()
+                                cameraGranted = replayFile != null || hasCameraPermission()
                                 if (cameraGranted) denied = false
                             }
                         }
@@ -146,6 +148,7 @@ class MainActivity : ComponentActivity() {
                             SessionScreen(
                                 trackingOptions = trackingOptions,
                                 simRunId = simRunId,
+                                replayFile = replayFile,
                                 settings = settings,
                                 availableUpdate = availableUpdate,
                                 onUpdateAnnounced = { tag -> updateCheck.announced(tag); availableUpdate = null },

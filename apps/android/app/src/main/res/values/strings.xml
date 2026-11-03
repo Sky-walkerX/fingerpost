@@ -65,4 +65,6 @@
     <string name="done">Done</string>
     <string name="reading_screen">Reading the screen</string>
     <string name="touch_explore">Touch explore</string>
+    <string name="mock_glasses_status">Mock glasses replay. %1$s</string>
+    <string name="replay_unavailable">Replay unavailable. Add an approved simulator MP4 to the app’s private replay file and reopen.</string>
 </resources>

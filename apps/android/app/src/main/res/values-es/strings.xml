@@ -64,4 +64,6 @@
     <string name="done">Hecho</string>
     <string name="reading_screen">Leyendo la pantalla</string>
     <string name="touch_explore">Explorar al tocar</string>
+    <string name="mock_glasses_status">Reproducción de gafas simuladas. %1$s</string>
+    <string name="replay_unavailable">Reproducción no disponible. Añade un MP4 aprobado del simulador al archivo privado de reproducción de la app y vuelve a abrirla.</string>
 </resources>

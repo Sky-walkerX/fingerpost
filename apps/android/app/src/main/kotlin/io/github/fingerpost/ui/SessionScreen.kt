@@ -2,6 +2,11 @@ package io.github.fingerpost.ui
 
 import android.Manifest
 import android.view.View
+import android.view.SurfaceView
+import java.io.File
+import io.github.fingerpost.camera.FrameSource
+import io.github.fingerpost.camera.PhoneCameraSource
+import io.github.fingerpost.camera.MockGlassesSource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
@@ -44,6 +49,7 @@ fun SessionScreen(
     onToggle: () -> Unit = {},
     trackingOptions: TrackingOptions = TrackingOptions(),
     simRunId: String? = null,
+    replayFile: File? = null,
     settings: Settings = Settings(),
     availableUpdate: String? = null,
     onUpdateAnnounced: (String) -> Unit = {},
@@ -60,13 +66,16 @@ fun SessionScreen(
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         isClickable = false; isFocusable = false
     } }
+    val replayPreview = remember(context) { SurfaceView(context).apply {
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+    } }
     var engine by remember { mutableStateOf<GuidanceEngine?>(null) }
     var cameraUnavailable by remember { mutableStateOf(false) }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         engine?.micPermissionResult(it)
     }
-    DisposableEffect(preview, lifecycleOwner, trackingOptions, simRunId) {
-        var pipeline: CameraPipeline? = null
+    DisposableEffect(preview, lifecycleOwner, trackingOptions, simRunId, replayFile) {
+        var pipeline: FrameSource? = null
         fun stop() {
             val previous = engine
             engine = null
@@ -83,10 +92,12 @@ fun SessionScreen(
                         micPermission.launch(Manifest.permission.RECORD_AUDIO)
                     }
                     engine = current
-                    pipeline = CameraPipeline(context, lifecycleOwner, preview,
+                    pipeline = if (replayFile != null) MockGlassesSource(replayFile, replayPreview,
+                        onFrame = current::submit, onError = { cameraUnavailable = true })
+                    else PhoneCameraSource(CameraPipeline(context, lifecycleOwner, preview,
                         onFrame = { bitmap, ts -> current.hands.submit(bitmap, ts) },
-                        onError = { cameraUnavailable = true },
-                        onAnalysisFrame = current::submit).also { it.start() }
+                        onError = { cameraUnavailable = true }, onAnalysisFrame = current::submit))
+                    pipeline?.start()
                 }
                 Lifecycle.Event.ON_STOP -> stop()
                 else -> Unit
@@ -100,11 +111,12 @@ fun SessionScreen(
     val samples = current?.hands?.samples?.collectAsStateWithLifecycle()?.value.orEmpty()
     val trackingUnavailable = current?.hands?.unavailable?.collectAsStateWithLifecycle()?.value == true
     val error = when {
+        cameraUnavailable && replayFile != null -> stringResource(R.string.replay_unavailable)
         cameraUnavailable -> stringResource(R.string.camera_unavailable)
         trackingUnavailable -> stringResource(R.string.tracking_unavailable)
         else -> status.message
     }
-    val label = when {
+    val baseLabel = when {
         status.basicMode -> resources.getString(R.string.basic_mode)
         status.cloudOff -> resources.getString(R.string.cloud_off)
         !status.connected -> resources.getString(R.string.connecting)
@@ -125,6 +137,7 @@ fun SessionScreen(
             GState.TOUCH_EXPLORE -> resources.getString(R.string.touch_explore)
         }
     }
+    val label = if (replayFile != null) resources.getString(R.string.mock_glasses_status, baseLabel) else baseLabel
     LaunchedEffect(current, status.state, availableUpdate, settings.speech) {
         if (availableUpdate != null && settings.speech && current != null) {
             while (!current.announceUpdateIfIdle { onUpdateAnnounced(availableUpdate) })
@@ -146,7 +159,7 @@ fun SessionScreen(
             stateDescription = label
             onClick(label = toggleLabel) { toggle(); true }
         }) {
-            AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+            AndroidView(factory = { if (replayFile != null) replayPreview else preview }, modifier = Modifier.fillMaxSize())
             Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
                 status.quad?.let { quad ->
                     val path = Path()

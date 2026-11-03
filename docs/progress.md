@@ -4,11 +4,11 @@ Agents and people both update this file. Keep each line short. Status values are
 
 **Current phase:** user-requested Day 1–7 coding audit/repairs (2026-11-03), preserving unfinished earlier gates; GCP acceptance and phone tests remain deferred. All unfinished Day 1/2 checks remain open · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
 
-**Coding checkpoint (2026-11-03 audit):** 705 TS tests,381 Android JVM tests and78 Python tests pass, as do recursive typecheck/build, debug APK/test APK and lint (0 errors/16 existing warnings). Required launch/speech/session/payment/min-version repairs and actual-image evaluation tooling are implemented. B5-2 has a newly reproduced name-retention specification/test conflict awaiting the user's decision; optional glasses/donation work stays cut. This is **not Day 1–7 acceptance**: device/performance, live quality, cloud, signed release, tester and footage gates remain open. See the [per-day audit](evals/day1-7-coding-audit-2026-11-03.md).
+**Coding checkpoint (2026-11-03 audit):** 705 TS tests,381 Android JVM tests and78 Python tests pass, as do recursive typecheck/build, debug APK/test APK and lint (0 errors/16 existing warnings). Required launch/speech/session/payment/min-version repairs and actual-image evaluation tooling are implemented. B5-2 has a newly reproduced name-retention specification/test conflict awaiting the user's decision; The user subsequently authorized both optional features; replay and Android donation code now pass local checks, with physical/cloud acceptance still open. This is **not Day 1–7 acceptance**: device/performance, live quality, cloud, signed release, tester and footage gates remain open. See the [per-day audit](evals/day1-7-coding-audit-2026-11-03.md).
 
 **Previous priority (2026-10-31, superseded by Day 4 repair request):** user requests the remaining Day 2 development followed by completion through Day 3. Proceed with available Day 3 coding while retaining unfinished prerequisite acceptance; use local checks where possible and defer GCP-only tests until an account is available. Pause further Day 4 development. Ask the user to attach a phone before future mobile testing; JVM/browser checks never establish device acceptance. No device, quality or release gate is waived. See [revalidation checklist](evals/cloud-revalidation.md).
 
-**Latest priority (2026-11-03):** audit the Day 1–7 plans against implementation and implement remaining required coding gaps. The previous “Not now; finish available local coding” phone preference remains in force. Preserve every unmet device/live/cloud/release gate; do not reclassify optional cut work as a required feature or claim an acceptance result from local tests.
+**Latest priority (2026-11-03):** find and implement deferred coding gaps; the user explicitly includes A5-4 mock-glasses replay and C5-4 Android donation upload, overriding their optional cut condition for coding only. The previous “Not now; finish available local coding” phone preference remains in force. Preserve every unmet device/live/cloud/release gate; do not reclassify optional cut work as a required feature or claim an acceptance result from local tests.
 
 **Historical completion audit (2026-10-28):** [all 37 tasks](task-audit.md); its implementation counts predate the incoming work recorded in [the sync inventory](evals/repository-sync-2026-10-30.md). D2-T1 was pulled forward as a Day 1 CI foundation; D2-T2–T6 are complete under the user-directed phase exception. [Testing through T7 (2026-10-30)](evals/through-day2-t7-2026-10-30.md) verifies the live gateway flow; T7 still requires regional redeployment. Unfinished Day 1 requirements remain open. A blocker blocks dependents only, under AGENTS.md §3.
 
@@ -70,7 +70,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 
 | Task | What | Lane | Needs | Status | Owner |
 |---|---|---|---|---|---|
-| B4-0 | Flow contracts + review hardening | B | – | done | Codex |
+| B4-0 | Flow contracts + review hardening | B | – | blocked | Codex |
 | A4-0 | Single-hand tracking + thermal stride | A | – | blocked | Codex |
 | A4-1 | Task turns, confirm, PIN mode states | A | B4-0 | blocked | Codex |
 | A4-2 | Device pay-confirm policy | A | – | blocked | Codex |
@@ -89,7 +89,7 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | A5-1 | Explore summary + touch-explore | A | B5-0 | blocked | Codex |
 | A5-2 | On-device layout cache | A | – | blocked | Codex |
 | A5-3 | Tuning, Crashlytics, update check | A | C4-3 | blocked | Codex |
-| A5-4 | (stretch) Mock glasses source | A | – | todo | |
+| A5-4 | (stretch) Mock glasses source | A | – | blocked | Codex |
 | B5-1 | Explore summary on gateway | B | B5-0 | done | Codex |
 | B5-2 | Kiosk memory | B | – | blocked | Codex |
 | B5-3 | Breaker + fallback chain | B | B4-1 | done | Codex |
@@ -114,6 +114,10 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 - Live loopback testing on 2026-10-30 also verifies token-protected simulator delivery and authenticated session traffic. No cloud deployment is claimed.
 
 ## Blockers
+
+- B4-0 timeout policy (2026-11-03 deferred-code audit) · Local config/client probe returns `{"configMs":30000,"clientMs":30000}`. The plan says “Set `timeout: 5_000, maxRetries: 0` in `createMetaClient`”; current `model-policy.test.ts` requires `expect(client.timeout).toBe(30_000)` and `app.test.ts` requires `expect(loadConfig({}).MODEL_TIMEOUT_MS).toBe(30_000)`. Current `.env.example` explicitly documents 30 seconds. AGENTS.md §4 requires stopping on the spec/test conflict. Asked whether to retain configurable30s or restore5s; no policy/test was silently changed.
+
+- A5-4/C5-4 (2026-11-03) · User explicitly authorizes both previously cut optional coding tasks. Replay/consent/redaction/buffer/upload source is locally verified, not accepted complete. No phone run, actual MP4 decoding/preview check, real redaction/no-upload trial, bucket IAM/lifecycle/signing validation or cloud upload was performed. User's phone-test deferral remains in force; see [replay procedure](mock-glasses.md) and [donation acceptance](donations.md).
 
 - B5-2 privacy audit (2026-11-03) · `node --conditions=source /tmp/fingerpost-memory-audit.mjs` with a synthetic button name returns `{"untrustedNameStored":true}` after one install. Design §4.9 requires “No images, uids or dynamic text (prices, names, numbers stripped)”; `memory.test.ts` requires first-install raw control labels via `expect(entry!.elements.map((e) => e.label)).toEqual(['Small', 'Medium', 'Large', 'Back', 'Table'])`. Static-text hashing does not cover control names. AGENTS.md §4 says “If a test contradicts the spec, stop, write a Blocker that quotes both, and leave the task blocked.” Asked whether to extend two-install hash-only candidates to every control label; decision pending. Existing assertions retained; no potentially conflicting memory rewrite made. Other independent repairs continue.
 _(task id · exact command · last lines of output · what you tried)_
@@ -519,3 +523,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-03 Android entry/speech audit (D1-T7b/D2-T10b/c): three declarative tests reproduce missing Quick Settings/static shortcut entry points. Added a system-bound tile with unlock-before-launch and explicit immutable PendingIntent on API34+, plus localized static shortcut, both using MainActivity's existing onboarding/settings/permission flow. A failing-first speech-policy case adds local recognition fallback during speech turns only, without resetting the current task/reply. Full JVM/debug/test-APK/lint verification passes (381 JVM cases across the audit, 0 errors/16 existing warnings). API29–33's only available tile-launch overload has a narrowly guarded deprecation lint annotation; modern devices always use PendingIntent. Late cloud transcripts are ignored in local/private/PIN/basic speech modes. Physical launch/lock/TalkBack/speech acceptance remains unrun.
 
 - 2026-11-03 D3-T10/C4-4 image-evaluation coding: five failing-first pure count/validation cases and seven missing-module export cases now pass, plus native CLI and amount-summary/unknown-evidence regressions. Debug instrumentation feeds actual private images through production OCR/PIN; preparation strips source names and binds SHA-256 to numeric live/private predictions. Mock server evidence is refused, missing/failed OCR remains unknown, and invalid runs cannot retain a stale result file. Source-path/hash/bounds validation and decode limits precede evaluation. Local validation: 705 TS cases (59 protocol/53 web/527 gateway/66 evals), recursive typecheck/build,381 Android JVM cases/debug/test APK/lint (0 errors/16 existing warnings),78 Python cases. Physical OCR/live/real-photo recall remains unrun. No device/API/cloud action or new dependency; all live acceptance statuses retained.
+
+- 2026-11-03 A5-4 coding (user-authorized optional scope): four missing-API replay cases fail first, then pass. Added FrameSource/PhoneCameraSource and a debug-only local simulator MP4 source, bounded decode/metadata, no audio, source labeling, frame-drop/loop timeline with monotonic inference time, lifecycle drain and unchanged camera defaults. Current full Android JVM/debug/test APK/lint checks pass; no MP4/phone acceptance claimed.

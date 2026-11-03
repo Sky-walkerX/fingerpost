@@ -64,4 +64,6 @@
     <string name="done">पूरा हुआ</string>
     <string name="reading_screen">स्क्रीन पढ़ रहा है</string>
     <string name="touch_explore">छूकर जानें</string>
+    <string name="mock_glasses_status">नकली चश्मे का वीडियो रीप्ले। %1$s</string>
+    <string name="replay_unavailable">वीडियो रीप्ले उपलब्ध नहीं है। ऐप की निजी रीप्ले फ़ाइल में अनुमोदित सिम्युलेटर MP4 जोड़ें और फिर खोलें।</string>
 </resources>
