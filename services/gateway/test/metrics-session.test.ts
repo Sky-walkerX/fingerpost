@@ -39,7 +39,7 @@ test('mock app cannot enable production telemetry through an injected collector'
   const ws = await app.injectWS('/v1/session'); let targeted = false;
   ws.on('message', (data: Buffer) => { if (JSON.parse(data.toString()).type === 'target') targeted = true; });
   try {
-    ws.send(JSON.stringify({ type: 'hello', id: 'h1', ts: 1, protocol: 'fp.v1', appVersion: 'test', locale: 'en', mode: 'guide', privacy: 'normal', caps: {} }));
+    ws.send(JSON.stringify({ type: 'hello', id: 'h1', ts: 1, protocol: 'fp.v1', appVersion: '0.1.0', locale: 'en', mode: 'guide', privacy: 'normal', caps: {} }));
     ws.send(JSON.stringify({ type: 'goal', id: 'g1', ts: 1, source: 'typed', text: 'start' }));
     ws.send(encodeFrame({ type: 'keyframe', id: 'k1', ts: 1, kind: 'screen', purpose: 'locate', imageSize: { w: 1000, h: 500 }, ocrTokens: [] }, new Uint8Array([0xff, 0xd8])));
     await vi.waitFor(() => expect(targeted).toBe(true));

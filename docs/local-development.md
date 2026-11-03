@@ -158,3 +158,7 @@ Offline tooling checks make no cloud calls:
 python3 -m unittest discover -s scripts -p 'test_*.py' -v
 bash -n infra/deploy-gateway.sh
 ```
+
+### Minimum-version retirement
+
+`/v1/config` and WebSocket `hello` use the same 30-second cached minimum app version. The gateway compares validated SemVer (including prerelease precedence), refuses retired/malformed client versions with `version_unsupported`, and cancels the previous session context on a rejected repeated hello. Remote Config refresh is coalesced and bounded to five seconds (initial operational value); failures preserve the last valid version, initially `0.1.0`. An uncancellable provider cannot accumulate refresh work or replace policy after its timeout. Test/development clients must send a compatible app version too. Production Remote Config propagation remains a deployment acceptance check.

@@ -1,14 +1,16 @@
 import { ulid } from 'ulid';
 import { spokenError } from '../i18n/strings.ts';
+import { satisfiesMinimum } from '../min-version/version.ts';
 import { decodeFrame, LIMITS, parseClientMessage, PROTOCOL, type ClientMessage, type ErrorCode, type Locale, type ServerMessage } from '@fingerpost/protocol';
 
 /** What the hub hands work to. Day 1 runs with none; Day 2 wires SessionPipeline + ASR. */
 export interface HubHandlers {
   onHello?(m: Extract<ClientMessage, { type: 'hello' }>): void;
   onMessage?(m: ClientMessage, payload: Uint8Array | null): Promise<void> | void;
+  onVersionUnsupported?(): void;
 }
 
-export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
+export interface HubDeps { send: (m: ServerMessage) => void; handlers?: HubHandlers; now?: () => number; minimumVersion?: () => Promise<string>; /** B4-3: reported in ready.flags. */ privateAvailable?: boolean; }
 
 
 /**
@@ -76,6 +78,12 @@ export class SessionHub {
     try {
       if (msg.type === 'hello') {
         this.locale = msg.locale;
+        if (this.d.minimumVersion && !satisfiesMinimum(msg.appVersion, await this.d.minimumVersion())) {
+          this.helloed = false;
+          this.d.handlers?.onVersionUnsupported?.();
+          this.error('version_unsupported');
+          return;
+        }
         this.simRunId = msg.caps.simRunId ?? null;
         this.d.handlers?.onHello?.(msg);
         this.helloed = true;

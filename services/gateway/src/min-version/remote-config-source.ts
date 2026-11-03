@@ -1,5 +1,6 @@
 import type { RemoteConfig } from 'firebase-admin/remote-config';
 import type { MinVersionSource } from './source.ts';
+import { AppVersion } from './version.ts';
 
 export interface RemoteConfigTemplateLike {
   parameters?: Record<string, {
@@ -34,7 +35,7 @@ export class RemoteConfigMinVersionSource implements MinVersionSource {
         typeof def === 'object' &&
         'value' in def &&
         typeof def.value === 'string' &&
-        def.value.trim().length > 0
+        AppVersion.safeParse(def.value.trim()).success
       ) {
         this.lastGood = def.value.trim();
       }

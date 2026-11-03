@@ -78,6 +78,7 @@ export class AgentSession {
 
   get done() { return this.finished; }
   get awaiting(): Pending { return this.pending; }
+  allowsGuide(element: LayoutElement): boolean { return this.policy.allowGuide(element).ok; }
 
   /** Reply to an ask. False when nothing with this id is pending (the caller treats the text as a new goal). */
   onAnswer(re: string, text: string): boolean {

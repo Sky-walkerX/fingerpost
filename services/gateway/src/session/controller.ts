@@ -19,6 +19,7 @@ export interface ControllerDeps {
   claims?: SessionClaims; quota?: QuotaPort;
   onTask?: PipelineDeps['onTask'];
   telemetry?: TelemetryCollector;
+  minimumVersion?: () => Promise<string>;
   /** Day 4 task planner; the pipeline falls back to the rules planner when absent or failing. */
   planner?: Planner; onPlannerError?: (plannerId: string) => void;
   /** B4-1 model router (Meta / Glimmer). Without it every frame uses `models`. */
@@ -32,7 +33,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
   let disposed = false, relay: AsrRelay | null = null, unsubscribe: (() => void) | undefined;
   let turn = 0, audioBytes = 0, audioEnded = false, awaitingEnd = false;
   let keywords: string[] = [], accountingFailed = false;
-  let simulator = false;
+  let simulator = false, pinMode = false;
   const observe = (port: ModelPort): ModelPort => ({
     ...port,
     async parseScreen(image, opts) {
@@ -86,7 +87,9 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     awaitingEnd = false;
     old?.close();
   };
-  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}), privateAvailable: d.router?.privateAvailable ?? false, handlers: {
+  const hub = new SessionHub({ send, ...(d.now ? { now: d.now } : {}),
+    ...(d.minimumVersion ? { minimumVersion: d.minimumVersion } : {}), privateAvailable: d.router?.privateAvailable ?? false, handlers: {
+    onVersionUnsupported() { closeRelay(); pipeline.abort(); },
     onHello(message) {
       if (disposed) return;
       simulator = !!message.caps.simRunId;
@@ -103,6 +106,8 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     },
     async onMessage(message, payload) {
       if (disposed) return;
+      if (pinMode && message.type !== 'abort' && message.type !== 'audio.end' &&
+          !(message.type === 'event' && message.kind === 'pinModeExited')) return;
       if (accountingFailed && message.type !== 'abort' && message.type !== 'audio.end') return;
       switch (message.type) {
         case 'goal': closeRelay(); pipeline.onGoal(message.text); break;
@@ -113,7 +118,9 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
         case 'confirm.reply': pipeline.onConfirmReply(message.re, message.accepted); break;
         case 'event':
           // PIN entry is local: stop listening at once, and close the task's cloud part.
-          if (message.kind === 'pinModeEntered') { closeRelay(); pipeline.onPinModeEntered(); }
+          if (message.kind === 'pinModeEntered') {
+            pinMode = true; keywords = []; closeRelay(); pipeline.onPinModeEntered();
+          } else if (message.kind === 'pinModeExited') pinMode = false;
           break;
         case 'audio': {
           if (!payload || audioEnded || awaitingEnd) break;

@@ -11,6 +11,7 @@ import { fullFrameCoordinates } from './screen-coordinates.ts';
 import { AgentSession, type AgentTurn } from '../agent/loop.ts';
 import { inferIntent, type RequestedMode } from '../agent/intent.ts';
 import { rulesPlanner, type Planner } from '../agent/planner.ts';
+import { isSensitive } from '../agent/policy.ts';
 import { firstSay, isMore, nextSay, summarize } from '../explore/summary.ts';
 import type { MemoryService } from '../memory/service.ts';
 
@@ -204,10 +205,13 @@ export class SessionPipeline {
 
   /** The device entered PIN mode after a confirmed payment press: the cloud part of the task is done. */
   onPinModeEntered(): void {
+    this.task.abort();
+    this.task = new AbortController();
+    this.target = null;
     if (this.agent?.pinEntered()) {
       this.completeTask('success');
       this.d.send({ ...this.base(), type: 'finish', result: 'done', say: t(this.locale, 'pin_ready') });
-    }
+    } else this.completeTask('cancelled');
   }
 
   private paymentDeclined(): void {
@@ -437,6 +441,11 @@ export class SessionPipeline {
   /** Refine the element with SAM from its Spark box, then send the target. */
   private async sendTarget(element: LayoutElement, h: Keyframe, image: { bytes: Uint8Array; mime: 'image/jpeg' },
     coordinates: ReturnType<typeof fullFrameCoordinates>, parsedElements: readonly LayoutElement[], signal: AbortSignal): Promise<void> {
+    if (isSensitive(element) && !this.agent?.allowsGuide(element)) {
+      this.target = null;
+      this.d.send({ ...this.base(), type: 'say', priority: 'safety', text: t(this.locale, 'confirm_first') });
+      return;
+    }
     if (this.frameFromMemory) {
       // Stored polygons are already final: answering a known screen needs no model call at all.
       this.target = element;

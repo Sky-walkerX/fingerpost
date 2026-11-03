@@ -1,3 +1,5 @@
+import { AppVersion } from './version.ts';
+
 export interface MinVersionSource {
   getMinVersion(): Promise<string>;
 }
@@ -27,12 +29,14 @@ export class CachedMinVersionSource implements MinVersionSource {
   private readonly now: () => number;
   private cached: { value: string; at: number } | null = null;
   private lastGood: string;
+  private pending: Promise<string> | undefined;
+  private workPending = false;
 
   constructor(source: MinVersionSource, ttlMs = 30_000, now: () => number = Date.now, initialDefault = '0.1.0') {
     this.source = source;
     this.ttlMs = ttlMs;
     this.now = now;
-    this.lastGood = initialDefault;
+    this.lastGood = AppVersion.parse(initialDefault);
   }
 
   async getMinVersion(): Promise<string> {
@@ -40,17 +44,30 @@ export class CachedMinVersionSource implements MinVersionSource {
     if (this.cached && t - this.cached.at < this.ttlMs) {
       return this.cached.value;
     }
-    try {
-      const v = await this.source.getMinVersion();
-      if (typeof v === 'string' && v.trim().length > 0) {
-        this.lastGood = v.trim();
-      }
+    if (this.pending) return this.pending;
+    // An SDK operation may ignore cancellation: never accumulate more refresh work behind it.
+    if (this.workPending) {
       this.cached = { value: this.lastGood, at: t };
-    } catch {
-      // If it fails, keep the last good value.
-      this.cached = { value: this.lastGood, at: t };
+      return this.lastGood;
     }
-    return this.lastGood;
+    this.workPending = true;
+    let active = true;
+    const work = Promise.resolve().then(() => this.source.getMinVersion()).then(value => {
+      const parsed = AppVersion.safeParse(typeof value === 'string' ? value.trim() : value);
+      if (active && parsed.success) this.lastGood = parsed.data;
+    }).catch(() => {}).finally(() => { this.workPending = false; });
+    this.pending = new Promise<string>(resolve => {
+      let timer: ReturnType<typeof setTimeout>;
+      const finish = () => {
+        if (!active) return;
+        active = false; clearTimeout(timer);
+        this.cached = { value: this.lastGood, at: this.now() };
+        resolve(this.lastGood);
+      };
+      timer = setTimeout(finish, 5000);
+      void work.then(finish);
+    }).finally(() => { this.pending = undefined; });
+    return this.pending;
   }
 }
 

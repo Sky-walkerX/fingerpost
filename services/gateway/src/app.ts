@@ -165,11 +165,12 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
       const session = createSessionController({ send: (m) => {
         if (expired()) return;
         if (m.type === 'ready') { ready = true; markReady(); }
+        if (m.type === 'error' && m.code === 'version_unsupported') markReady();
         socket.send(JSON.stringify(m));
         if (m.type === 'ready' && !live && o.mockNotice) socket.send(JSON.stringify({
           type: 'say', id: ulid(), ts: now(), priority: 'safety', text: o.mockNotice,
         }));
-      }, models, asr, sims, now, quota, ...(claims ? { claims } : {}),
+      }, models, asr, sims, now, quota, minimumVersion: () => minVersionSource.getMinVersion(), ...(claims ? { claims } : {}),
         ...(live && cfg.MONITORING_ENABLED && o.telemetry ? { telemetry: o.telemetry } : {}),
         planner, router, memory, onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
       dispose = session.dispose;
@@ -186,10 +187,12 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
           try { json = JSON.parse(data.toString('utf8')); } catch { /* The hub reports malformed messages. */ }
           const parsed = parseClientMessage(json);
           if (parsed.ok && parsed.msg.type === 'hello') { isHello = true; helloQueued = true; }
-          if (parsed.ok && parsed.msg.type === 'abort' && (ready || helloQueued)) {
+          const interrupts = parsed.ok && (parsed.msg.type === 'abort' ||
+            (parsed.msg.type === 'event' && parsed.msg.kind === 'pinModeEntered'));
+          if (interrupts && (ready || helloQueued)) {
             generation++;
             const abortedIn = generation;
-            // An early abort must wait for hello, but never for the queued model work after it.
+            // Cancellation/PIN entry waits for hello, never for queued model work.
             queue = (ready ? Promise.resolve() : handshake).then(() => {
               if (expired() || abortedIn !== generation) return;
               return hub.onText(data.toString('utf8'));
