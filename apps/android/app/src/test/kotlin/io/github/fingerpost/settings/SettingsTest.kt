@@ -34,6 +34,7 @@ class SettingsTest {
         assertEquals("en", defaultSettings.locale)
         assertFalse(defaultSettings.privateMode)
         assertFalse(defaultSettings.volumeKeys)
+        assertFalse(defaultSettings.offerDonations)
 
         val job = SupervisorJob()
         val data = PreferenceDataStoreFactory.create(
@@ -61,7 +62,8 @@ class SettingsTest {
             holdMode = HoldMode.CHEST_MOUNT,
             locale = "es",
             privateMode = true,
-            volumeKeys = true
+            volumeKeys = true,
+            offerDonations = true
         )
 
         val firstJob = SupervisorJob()

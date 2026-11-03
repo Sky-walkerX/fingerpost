@@ -172,6 +172,14 @@ fun SettingsScreen(
             )
 
             SettingToggle(
+                label = resources.getString(R.string.offer_donations),
+                checked = settings.offerDonations,
+                enabled = !settings.privateMode,
+                onCheckedChange = { onUpdate(settings.copy(offerDonations = it)) }
+            )
+            Text(resources.getString(R.string.donation_details), modifier = Modifier.padding(horizontal = 16.dp))
+
+            SettingToggle(
                 label = resources.getString(R.string.volume_keys),
                 checked = settings.volumeKeys,
                 onCheckedChange = { onUpdate(settings.copy(volumeKeys = it)) }

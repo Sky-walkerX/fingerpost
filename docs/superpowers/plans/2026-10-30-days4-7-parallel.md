@@ -517,7 +517,9 @@ User explicitly requests this optional coding on 2026-11-03; physical acceptance
 - [ ] **Commit:** `docs: README v1`
 
 #### C5-4 (cut first): donation pipeline
-- Only if Day 5 is on track. B adds `POST /v1/donate` (signed URL, 90-day lifecycle) and C adds the consent copy. Otherwise move it to post-hackathon in the known-issues list.
+- [x] **User-authorized coding continuation (2026-11-03):** Android off-by-default setting, redacted memory buffer, versioned local consent, numeric replay and cancellable signed PUTs implemented against the existing gateway API; pure/loopback/copy/build/lint checks pass. The user explicitly overrides the cut condition for coding.
+- [ ] **Acceptance:** physical consent/TalkBack/voice/face/card/PIN/lifecycle checks plus actual restricted bucket, signatures, expiry and90-day deletion. No device/cloud/upload acceptance is claimed. See `docs/donations.md`.
+- Original cut rule (superseded for this coding continuation): Only if Day 5 is on track. B adds `POST /v1/donate` (signed URL, 90-day lifecycle) and C adds the consent copy. Otherwise move it to post-hackathon in the known-issues list.
 
 ---
 

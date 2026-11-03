@@ -42,7 +42,8 @@ class GuidanceEngine(
 ) {
     data class Status(val state: GState = GState.IDLE, val connected: Boolean = false, val cloudOff: Boolean = false,
         val message: String? = null, val quad: List<Vec2>? = null, val frameWidth: Int = 1, val frameHeight: Int = 1,
-        val tracking: Boolean = false, val basicMode: Boolean = false, val targetOutline: List<Vec2> = emptyList())
+        val tracking: Boolean = false, val basicMode: Boolean = false, val targetOutline: List<Vec2> = emptyList(),
+        val donationQuestion: String? = null, val donationUploading: Boolean = false)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableStatus = MutableStateFlow(Status())
     val status = mutableStatus.asStateFlow()
@@ -63,6 +64,18 @@ class GuidanceEngine(
      * A6-1 basic mode: no network, mode{offline} or the kill switch. Goals come from on-device speech, targets from
      * on-device OCR boxes, and nothing is uploaded. It lasts until the session ends while the cloud is back.
      */
+    private val donations = DonationSession()
+    private var donationStartedAt = 0L
+    private var donationOfferedAt = 0L
+    private var donationPromptFinished = false
+    private var donationMicRequested = false
+    private var donationOutcome = "failed"
+    private val donationUploader = io.github.fingerpost.donation.DonationUploader(token = { auth.token() },
+        allowed = { donations.uploadAllowed && !guard.pinMode })
+    private val donationAsr = OfflineAsr(context, onFinal = { text ->
+        val ticket = donations.ticket
+        post { if (ticket == donations.ticket && donations.awaitingConsent) respondDonation(donationConsent(text)) }
+    }, onUnavailable = { post { donationPromptFinished = false } })
     private var offline = false
     private val speechPrivacy = SpeechPrivacy(settings.privateMode)
     /**
@@ -138,7 +151,7 @@ class GuidanceEngine(
         onAuthExpired = { auth.invalidate() },
     )
     private val guard: UploadGuard = UploadGuard(
-        onEnter = { mic.stop(); post { pinEntered() } },
+        onEnter = { mic.stop(); donationUploader.cancel(); donations.protect(); post { pinEntered() } },
         onExit = { post { pinExited() } },
     )
     private val mic: MicStreamer = MicStreamer(client, guard)
@@ -146,6 +159,7 @@ class GuidanceEngine(
     private val speaker = TtsSpeaker(context, onDone = { finished -> post {
         if (speech.onDone(finished)) {
             updateNotice.succeeded(finished)
+            if (finished.completionId == DONATION_PROMPT_ID) donationPromptFinished = true
             finished.completionId?.let { dispatch(GEvent.SpeechDone(time(), it)) }
             pumpSpeech()
         }
@@ -197,6 +211,7 @@ class GuidanceEngine(
 
     fun updateSettings(newSettings: Settings) {
         settings = newSettings.safeOutputs()
+        if (!settings.offerDonations || settings.privateMode) cancelDonation()
         if (settings.privateMode) protectSpeech()
         speaker.setRate(settings.speechRate)
         pinHelp.setRate(settings.speechRate)
@@ -208,7 +223,7 @@ class GuidanceEngine(
     }
 
     fun toggle() {
-        if (guard.pinMode) return
+        if (guard.pinMode || donations.awaitingConsent || donations.uploadAllowed) return
         if (machine.state == GState.IDLE) {
             wantsStart = true
             if (ready || offline) { wantsStart = false; dispatch(GEvent.Start(time())) }
@@ -219,6 +234,7 @@ class GuidanceEngine(
     }
 
     fun micPermissionResult(granted: Boolean) {
+        if (donations.awaitingConsent) return
         wantsMic = granted && (ready || offline) && !guard.pinMode && machine.state in LISTENING_STATES
         if (!granted) {
             wantsMic = false
@@ -226,7 +242,8 @@ class GuidanceEngine(
         }
     }
 
-    private fun reset() {
+    private fun reset(preserveDonation: Boolean = false) {
+        if (!preserveDonation) cancelDonation()
         generation++
         lastCue = null
         wantsMic = false
@@ -271,7 +288,7 @@ class GuidanceEngine(
                     Purpose.LOCATE -> KeyframePurpose.LOCATE
                     Purpose.VERIFY -> KeyframePurpose.VERIFY
                     Purpose.EXPLORE -> KeyframePurpose.EXPLORE
-                }, generation)
+                }, generation, donations.ticket.takeIf { donations.collecting })
                 if (effect.purpose == Purpose.LOCATE) tryRelock()
             }
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
@@ -306,6 +323,7 @@ class GuidanceEngine(
                 is SpeechAction.Speak, is SpeechAction.Interrupt -> {
                     val u = if (action is SpeechAction.Speak) action.u else (action as SpeechAction.Interrupt).u
                     if (speech.onDone(u)) {
+                        if (u.completionId == DONATION_PROMPT_ID) donationPromptFinished = true
                         u.completionId?.let { dispatch(GEvent.SpeechDone(time(), it)) }
                         pumpSpeech()
                     }
@@ -335,6 +353,14 @@ class GuidanceEngine(
                 dispatch(GEvent.Frame(now, false, false, null))
         }
         pumpSpeech()
+        if (donations.awaitingConsent) {
+            if (now - donationOfferedAt >= 60_000) respondDonation(null)
+            else if (donationPromptFinished && speech.current == null && !donationAsr.isListening) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                    donationAsr.listen(asrLanguage(settings.locale))
+                else if (!donationMicRequested) { donationMicRequested = true; requestMicPermission() }
+            }
+        }
         // guidance-spec §11b: 5 s without the gateway (no network) → basic mode.
         if (!offline && !guard.pinMode && disconnectedSince?.let { now - it >= 5_000 } == true) enterOffline()
         val input = speechPrivacy.input(offline, guard.pinMode)
@@ -509,6 +535,7 @@ class GuidanceEngine(
     }
 
     private fun protectSpeech() {
+        cancelDonation()
         if (speechPrivacy.localOnly) return
         speechPrivacy.requireLocal()
         mic.stop(); offlineAsr.stop(); speaker.stop(); speech.clear(); updateNotice.clear()
@@ -606,12 +633,19 @@ class GuidanceEngine(
     }
 
     private fun encoded(value: KeyframeCapture) {
-        if (value.generation != generation || !ready || guard.pinMode) return
+        if (value.generation != generation || !ready || guard.pinMode) { value.donationJpeg?.fill(0); return }
         val sent = guard.sendIfAllowed { client.send(value.encoded.header, value.encoded.jpeg) }
         if (sent) {
+            value.donationJpeg?.let { jpeg ->
+                val hand = selectedHand(hands.samples.value)
+                val point = hand?.let { Vec2(it.tipX.toDouble()/it.frameW, it.tipY.toDouble()/it.frameH) }
+                    ?.takeIf { it.x in 0.0..1.0 && it.y in 0.0..1.0 }
+                donations.record(jpeg, DonationPose((time()-donationStartedAt).coerceAtLeast(0), value.quad, point),
+                    value.donationTicket ?: -1)
+            }
             capture = value
             if (value.encoded.header.purpose == KeyframePurpose.VERIFY) verifyId = value.encoded.header.id
-        }
+        } else value.donationJpeg?.fill(0)
     }
 
     private fun server(message: ServerMessage) {
@@ -647,6 +681,9 @@ class GuidanceEngine(
                 else -> Unit
             }
             is GoalAck -> {
+                cancelDonation()
+                donations.begin(settings.offerDonations && !settings.privateMode && !speechPrivacy.localOnly && !offline && !guard.pinMode)
+                donationStartedAt = time(); donationOutcome = "failed"
                 goalText = message.goal; goalIntent = message.intent.name.lowercase()
                 if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
                 dispatch(GEvent.IntentArrived(time(), message.intent.name.lowercase()))
@@ -667,7 +704,10 @@ class GuidanceEngine(
             }
             is ServerTarget -> target(message)
             is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options))
-            is Verify -> if (message.re == verifyId) { verifyId = null; dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
+            is Verify -> if (message.re == verifyId) { verifyId = null
+                if (message.result == io.github.fingerpost.protocol.VerifyOutcome.WRONG) donationOutcome = "wrong"
+                if (message.result == io.github.fingerpost.protocol.VerifyOutcome.NOCHANGE) donationOutcome = "nochange"
+                dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
             is SimTouch -> if (simRunId != null && message.runId == simRunId) dispatch(GEvent.PressDetected(time(), Evidence.SIM))
             is Say -> {
                 say(message.text, SpeechPriority.valueOf(message.priority.name))
@@ -687,7 +727,8 @@ class GuidanceEngine(
                     say(message.say, SpeechPriority.STATE)
                     return
                 }
-                reset(); say(message.say, SpeechPriority.STATE)
+                if (message.code == ErrorCode.MODEL_UNAVAILABLE) failedTask(message.say)
+                else { reset(); say(message.say, SpeechPriority.STATE) }
                 if (message.code in setOf(ErrorCode.CLOUD_PAUSED, ErrorCode.QUOTA_EXHAUSTED, ErrorCode.VERSION_UNSUPPORTED)) {
                     ready = false
                     mutableStatus.value = mutableStatus.value.copy(cloudOff = true)
@@ -695,11 +736,56 @@ class GuidanceEngine(
                 if (message.code == ErrorCode.AUTH_EXPIRED) scope.launch { auth.invalidate(); client.reconnect() }
             }
             is Finish -> when {
-                machine.state == GState.IDLE -> Unit  // already ended here (e.g. the user said no to paying)
-                message.result == FinishResult.DONE -> { tone.stop(); dispatch(GEvent.FinishArrived(time(), "done", message.say)) }
+                message.result == FinishResult.DONE -> {
+                    cancelDonation(); tone.stop()
+                    if (machine.state != GState.IDLE) dispatch(GEvent.FinishArrived(time(), "done", message.say))
+                }
+                message.result == FinishResult.FAILED -> if (!donations.awaitingConsent && !donations.uploadAllowed) failedTask(message.say)
                 else -> { reset(); say(message.say, SpeechPriority.STATE) }
             }
             else -> Unit
+        }
+    }
+
+    private fun donationText(id: Int): String {
+        val config = android.content.res.Configuration(context.resources.configuration)
+        config.setLocale(guidanceLocale(settings.locale))
+        return context.createConfigurationContext(config).getString(id)
+    }
+
+    private fun cancelDonation() {
+        donationUploader.cancel(); donations.clear(); donationAsr.stop()
+        donationPromptFinished = false
+        mutableStatus.value = mutableStatus.value.copy(donationQuestion = null, donationUploading = false)
+    }
+
+    private fun failedTask(reason: String) {
+        if (!donations.offer(donationOutcome)) { reset(); say(reason, SpeechPriority.STATE); return }
+        reset(preserveDonation = true)
+        donationOfferedAt = time(); donationPromptFinished = false; donationMicRequested = false
+        val question = donationText(R.string.donation_question)
+        mutableStatus.value = mutableStatus.value.copy(donationQuestion = question)
+        say(question, SpeechPriority.STATE, DONATION_PROMPT_ID)
+    }
+
+    fun respondDonation(answer: Boolean?) {
+        val packet = donations.accept(answer) ?: run {
+            if (mutableStatus.value.donationQuestion != null) {
+                cancelDonation(); speaker.stop(); speech.clear()
+                say(donationText(R.string.donation_declined), SpeechPriority.STATE)
+            }
+            return
+        }
+        donationAsr.stop(); speaker.stop(); speech.clear()
+        mutableStatus.value = mutableStatus.value.copy(donationQuestion = null, donationUploading = true)
+        say(donationText(R.string.donation_uploading), SpeechPriority.STATE)
+        val ticket = donations.ticket
+        scope.launch {
+            val success = donationUploader.upload(packet, settings.locale)
+            if (!closed && ticket == donations.ticket) {
+                cancelDonation()
+                say(donationText(if (success) R.string.donation_uploaded else R.string.donation_failed), SpeechPriority.STATE)
+            }
         }
     }
 
@@ -735,6 +821,7 @@ class GuidanceEngine(
     }
 
     private fun pinEntered() {
+        cancelDonation()
         generation++; relockKey = null
         wantsMic = false
         updateNotice.clear()
@@ -769,7 +856,8 @@ class GuidanceEngine(
     }
 
     fun announceUpdateIfIdle(onDone: () -> Unit): Boolean {
-        if (machine.state != GState.IDLE || speech.current != null || !settings.speech) return false
+        if (machine.state != GState.IDLE || speech.current != null || !settings.speech ||
+            donations.awaitingConsent || donations.uploadAllowed) return false
         val utterance = Utterance(Strings.get(Key.UPDATE_AVAILABLE, machine.locale), SpeechPriority.STATE, time())
         updateNotice.track(utterance, onDone)
         act(speech.offer(utterance))
@@ -785,7 +873,8 @@ class GuidanceEngine(
 
     /** Foreground hardware actions never open the mic or request a keyframe. PIN speech stays isolated. */
     fun hardwareCue(cue: HardwareCue): Boolean {
-        if (closed || guard.pinMode || settings.hardwareCue(true, false, cue) == null) return false
+        if (closed || guard.pinMode || donations.awaitingConsent || donations.uploadAllowed ||
+            settings.hardwareCue(true, false, cue) == null) return false
         when (cue) {
             HardwareCue.REPEAT -> lastCue?.let { say(it, SpeechPriority.INFO) }
             HardwareCue.UNDER_FINGER -> {
@@ -811,13 +900,14 @@ class GuidanceEngine(
         updateNotice.clear()
         if (closed) return
         closed = true
-        reset(); client.close(); sensorManager.unregisterListener(gravity)
+        reset(); donationAsr.close(); donationUploader.close(); client.close(); sensorManager.unregisterListener(gravity)
         hands.close(); tone.release(); haptics.release(); earcons.release(); offlineAsr.close(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
     }
     fun closeVision() { router.close() }
 
     private fun framingText(cue: FramingCue): String = Strings.framing(cue, machine.locale, settings.holdMode == HoldMode.CHEST_MOUNT)
     private companion object {
+        const val DONATION_PROMPT_ID = Long.MIN_VALUE
         val openCvReady by lazy { OpenCVLoader.initLocal() }
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */
         val TURN_STATES = setOf(GState.LOCATING, GState.AWAIT_NEXT)

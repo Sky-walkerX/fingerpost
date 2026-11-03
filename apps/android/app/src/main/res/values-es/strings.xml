@@ -65,5 +65,14 @@
     <string name="reading_screen">Leyendo la pantalla</string>
     <string name="touch_explore">Explorar al tocar</string>
     <string name="mock_glasses_status">Reproducción de gafas simuladas. %1$s</string>
+    <string name="offer_donations">Ofrecer donaciones de sesión</string>
+    <string name="donation_details">Desactivado inicialmente. Al activarlo, guarda hasta 20 imágenes ocultadas en memoria durante una tarea. Tras un fallo, pregunta antes de subirlas. Nunca en sesiones privadas ni de PIN.</string>
+    <string name="donation_question">Eso no funcionó. ¿Quieres donar las imágenes de pantalla de esta sesión para ayudarnos a mejorar? Antes se difuminan las caras y los números de tarjeta, y todo se borra a los 90 días. Di sí o no.</string>
+    <string name="donation_yes">Donar esta sesión</string>
+    <string name="donation_no">No donar</string>
+    <string name="donation_uploading">Gracias. Subiendo ahora.</string>
+    <string name="donation_declined">De acuerdo, no se guardó nada.</string>
+    <string name="donation_uploaded">Donación subida.</string>
+    <string name="donation_failed">La subida no se completó.</string>
     <string name="replay_unavailable">Reproducción no disponible. Añade un MP4 aprobado del simulador al archivo privado de reproducción de la app y vuelve a abrirla.</string>
 </resources>

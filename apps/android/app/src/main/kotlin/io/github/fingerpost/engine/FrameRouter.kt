@@ -22,8 +22,9 @@ data class VisionFrame(
     val anchorApplied: Boolean = false,
 )
 
-data class CaptureRequest(val purpose: KeyframePurpose, val generation: Long)
-data class KeyframeCapture(val encoded: EncodedKeyframe, val quad: List<Vec2>?, val generation: Long)
+data class CaptureRequest(val purpose: KeyframePurpose, val generation: Long, val donationTicket: Long? = null)
+data class KeyframeCapture(val encoded: EncodedKeyframe, val quad: List<Vec2>?, val generation: Long,
+    val donationTicket: Long? = null, val donationJpeg: ByteArray? = null)
 
 /** Camera analysis owns the tracker; one separate worker owns OCR and encoding, with no bitmap backlog. */
 class FrameRouter(
@@ -39,6 +40,7 @@ class FrameRouter(
     private val ocr = Ocr()
     private val faces = FaceCover()
     private val keyframer = Keyframer(guard, faces)
+    private val donationRedactor = io.github.fingerpost.donation.DonationRedactor(faces)
     private val capturePolicy = CapturePolicy()
     private val worker = Executors.newSingleThreadExecutor()
     private val busy = AtomicBoolean(false)
@@ -51,7 +53,9 @@ class FrameRouter(
     private var lastOcr = Long.MIN_VALUE / 2
     private var dimensions: Pair<Int, Int>? = null
 
-    fun requestKeyframe(purpose: KeyframePurpose, generation: Long) { request.set(CaptureRequest(purpose, generation)) }
+    fun requestKeyframe(purpose: KeyframePurpose, generation: Long, donationTicket: Long? = null) {
+        request.set(CaptureRequest(purpose, generation, donationTicket))
+    }
     fun cancelKeyframes() { request.set(null) }
 
     /** Server corners are in the uploaded full image; carry them through the tracked motion since capture. */
@@ -137,8 +141,12 @@ class FrameRouter(
                                     val kind = if (capturePolicy.kind(quadPx != null, purpose) == CaptureKind.SCREEN) KeyframeKind.SCREEN else KeyframeKind.FULL
                                     val encoded = keyframer.encode(full, quadPx, kind, next.purpose, tokens,
                                         SystemClock.elapsedRealtime(), gateTokens, gateAspect)
-                                    if (encoded != null && !closed.get() && request.compareAndSet(next, null))
-                                        onKeyframe(KeyframeCapture(encoded, normalized, next.generation))
+                                    if (encoded != null && !closed.get() && request.compareAndSet(next, null)) {
+                                        val donation = if (next.donationTicket != null && !guard.pinMode)
+                                            runCatching { donationRedactor.encode(full, tokens) }.getOrNull() else null
+                                        if (!closed.get()) onKeyframe(KeyframeCapture(encoded, normalized, next.generation,
+                                            next.donationTicket, donation)) else donation?.fill(0)
+                                    }
                                 }
                             } catch (_: Exception) {
                                 if (!closed.get()) onError()

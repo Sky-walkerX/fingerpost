@@ -28,7 +28,8 @@ data class Settings(
     val holdMode: HoldMode = HoldMode.HANDHELD,
     val locale: String = "en",
     val privateMode: Boolean = false,
-    val volumeKeys: Boolean = false
+    val volumeKeys: Boolean = false,
+    val offerDonations: Boolean = false
 ) {
     fun safeOutputs(): Settings = if (!speech && !tone && !haptics) copy(speech = true) else this
     fun canDisableOutput(output: Output): Boolean = when (output) {
@@ -73,7 +74,8 @@ class SettingsStore(private val store: DataStore<Preferences>) {
             holdMode = holdMode,
             locale = locale,
             privateMode = prefs[PRIVATE_MODE] ?: false,
-            volumeKeys = prefs[VOLUME_KEYS] ?: false
+            volumeKeys = prefs[VOLUME_KEYS] ?: false,
+            offerDonations = prefs[OFFER_DONATIONS] ?: false
         ).safeOutputs()
     }
 
@@ -90,6 +92,7 @@ class SettingsStore(private val store: DataStore<Preferences>) {
             prefs[LOCALE] = settings.locale
             prefs[PRIVATE_MODE] = settings.privateMode
             prefs[VOLUME_KEYS] = settings.volumeKeys
+            prefs[OFFER_DONATIONS] = settings.offerDonations
         }
     }
 
@@ -104,6 +107,7 @@ class SettingsStore(private val store: DataStore<Preferences>) {
         val LOCALE = stringPreferencesKey("locale")
         val PRIVATE_MODE = booleanPreferencesKey("private_mode")
         val VOLUME_KEYS = booleanPreferencesKey("volume_keys")
+        val OFFER_DONATIONS = booleanPreferencesKey("offer_donations")
 
         val SUPPORTED_LOCALES = setOf("en", "hi", "es")
     }

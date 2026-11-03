@@ -192,6 +192,11 @@ If cloud speech fails during LISTENING, ASK, CONFIRM or EXPLORING, the device sw
 - **Re-lock:** when a guide-intent locate keyframe is sent, a hit is resolved with the gateway's `resolveByText` rules. It guides at once only for a plain control (not pay/confirm/submit, icon or text) whose label fresh OCR inside its box agrees with (§11). OCR disagreement drops the entry. The keyframe still goes to the gateway: its target confirms the re-lock, or replaces the target (and the entry) if it names another element.
 - **Target:** "Found …" in < 0.8 s on a known screen.
 
+## 11d. Optional session donation (initial values, 2026-11-03)
+
+Offers default off. If enabled, ordinary tasks may buffer at most 20 already-redacted JPEG keyframes (≤409,600 bytes each) and a numeric finger/quad replay (≤256 KiB), in memory only. After a failed/wrong/nochange task, present the exact EN/HI/ES `donate.v1` question in `docs/donations.md` once. Local-only speech listens after the question finishes; explicit buttons are also available. Only a single affirmative word or the Donate button grants consent; unclear/missing replies, dismissal and a **60-second** deadline from offering decline. PIN at any point in that task, private/sensitive/basic mode, task cancellation and lifecycle exit disqualify the task, cancel requests and clear the buffer. Update/hardware speech cannot interrupt this turn. No automatic upload retry or file persistence; successful tasks clear buffers without asking. Signed storage URLs expire after 15 minutes, stored objects after 90 days; HTTP requests have a 30-second operational bound. These limits do not establish physical redaction/no-upload or cloud lifecycle acceptance.
+
+
 ## 12. Performance budget (mid-range Android, 2021 or newer)
 | Stage | Budget |
 |---|---|

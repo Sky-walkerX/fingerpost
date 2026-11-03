@@ -66,5 +66,14 @@
     <string name="reading_screen">Reading the screen</string>
     <string name="touch_explore">Touch explore</string>
     <string name="mock_glasses_status">Mock glasses replay. %1$s</string>
+    <string name="offer_donations">Offer session donations</string>
+    <string name="donation_details">Off by default. When enabled, keep at most 20 redacted pictures in memory during a task. After a failure, ask before uploading. Never for PIN or private sessions.</string>
+    <string name="donation_question">That didn\'t work. Would you like to donate this session\'s screen pictures to help us improve? Faces and card numbers are blurred first, and everything is deleted after 90 days. Say yes or no.</string>
+    <string name="donation_yes">Donate this session</string>
+    <string name="donation_no">Do not donate</string>
+    <string name="donation_uploading">Thank you. Uploading now.</string>
+    <string name="donation_declined">Okay, nothing was saved.</string>
+    <string name="donation_uploaded">Donation uploaded.</string>
+    <string name="donation_failed">Upload did not finish.</string>
     <string name="replay_unavailable">Replay unavailable. Add an approved simulator MP4 to the app’s private replay file and reopen.</string>
 </resources>

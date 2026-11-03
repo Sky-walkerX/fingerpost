@@ -85,6 +85,8 @@ android {
         }
     }
     buildFeatures { compose = true; buildConfig = true }
+    // Local/offline consent must keep all three languages available without a Play language download.
+    bundle { language { enableSplit = false } }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21

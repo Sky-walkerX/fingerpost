@@ -1,6 +1,6 @@
 # Session donations (C5-4)
 
-By default Fingerpost keeps nothing (ADR 0005). After a task fails, the app may ask once whether the user wants to **donate** that session to help improve it. Nothing is uploaded unless the user says yes to this exact text. The text is version `donate.v1`. If you change any wording below, bump the version in `services/gateway/src/donate/donation.ts` in the same commit; the gateway refuses an old version.
+Donation offers are off by default (ADR 0005). Enabling “Offer session donations” in settings permits a bounded, memory-only buffer of redacted keyframes during ordinary tasks; it is not upload consent. After a task fails, the app may ask once whether the user wants to **donate** that session to help improve it. Nothing is uploaded unless the user says yes to this exact text. The text is version `donate.v1`. If you change any wording below, bump the version in `services/gateway/src/donate/donation.ts` in the same commit; the gateway refuses an old version.
 
 ## When the app may ask
 - Only after a task ended in `failed`, `wrong` (wrong control pressed) or `nochange` (press not seen).
@@ -61,6 +61,17 @@ Errors: 400 `bad_request`, 401 auth, 429 (3 per user and 10 per IP per hour), 50
 - **`donations/{id}`** pointer: id, created/deleteAfter times, consent version, locale, outcome and the object list (name, kind, type, size). No uid, key id, IP, labels or text. Firestore TTL on `expireAt` removes it at 90 days.
 - Set up with `infra/setup-donations.sh` (human step), then set `DONATE_BUCKET` on the gateway.
 
-## Not done yet
-- **Android (lane A):** the ask/answer turn, face blur and card-number masking before upload, and the PUTs. Until then the tester protocol's "do not offer donations" rule stands.
+## Android implementation and acceptance
+
+The Android setting, per-task capture buffer, consent dialog/local spoken reply, redaction, numeric replay and signed PUT transport are implemented. No images are written to disk. The worker covers faces before retaining a frame and masks every OCR word containing a digit (conservative protection for split and Unicode card numbers); failed OCR blocks capture. At most 20 JPEGs of 409,600 bytes each are held, with at most one 256-KiB numeric replay. Oldest entries are zeroed on eviction. The buffer is cleared after success, decline, cancellation, mode protection, lifecycle exit or completed/failed upload.
+
+Consent uses the exact versioned question above in EN/HI/ES. Voice replies use the on-device recognizer only, after prompt completion; only a single affirmative word accepts, while mixed/unclear answers decline. Accessible buttons also permit consent/decline when local speech is unavailable. Dismissal or no answer within 60 seconds of offering (initial value, including prompt time) declines. Update/hardware speech is suppressed during the consent/upload turn. There is no automatic donation retry.
+
+Before each request, the client rechecks the grant's consent epoch and PIN protection. PIN entry, private/sensitive mode or leaving the screen cancels outstanding requests and erases buffered frames. A task that entered PIN mode cannot donate earlier captures either. Already transmitted bytes cannot be recalled; physical cancellation/no-upload evidence remains required.
+
+The metadata POST uses only the configured gateway and its session token. The entire response is validated before any PUT: bounded JSON, exact indices/kinds/headers/sizes, current 15-minute expiry and 90-day retention, HTTPS Google Storage URLs with no userinfo or fragments. Redirects are disabled, and the session token is never attached to storage. Each HTTP call is bounded to 30 seconds (initial operational value). Mock donation URLs are intentionally non-uploadable.
+
+Pure consent/buffer/redaction tests, real loopback HTTP tests (including no credential forwarding, invalid later destination and cancellation during a stalled body), persisted-setting tests, versioned-copy checks, APK builds and lint pass. No real media or cloud upload was used. Device consent/TalkBack/voice/redaction/PIN/lifecycle checks and actual bucket IAM, expiry and deletion remain **unrun**. Keep donation offers off in tester sessions until these checks are accepted.
+
+## Remaining human/cloud work
 - **Deletion on request:** pointers carry no user id, so a single user's donation can't be found later. Deletion is by the 90-day expiry.

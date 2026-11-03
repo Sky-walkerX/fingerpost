@@ -15,6 +15,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -117,6 +121,7 @@ fun SessionScreen(
         else -> status.message
     }
     val baseLabel = when {
+        status.donationUploading -> resources.getString(R.string.donation_uploading)
         status.basicMode -> resources.getString(R.string.basic_mode)
         status.cloudOff -> resources.getString(R.string.cloud_off)
         !status.connected -> resources.getString(R.string.connecting)
@@ -143,6 +148,16 @@ fun SessionScreen(
             while (!current.announceUpdateIfIdle { onUpdateAnnounced(availableUpdate) })
                 kotlinx.coroutines.delay(1000)
         }
+    }
+    status.donationQuestion?.let { question ->
+        AlertDialog(onDismissRequest = { current?.respondDonation(null) },
+            text = { Text(question, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = { TextButton(onClick = { current?.respondDonation(true) }) {
+                Text(stringResource(R.string.donation_yes))
+            } },
+            dismissButton = { TextButton(onClick = { current?.respondDonation(false) }) {
+                Text(stringResource(R.string.donation_no))
+            } })
     }
     val toggleLabel = stringResource(if (status.state == GState.IDLE) R.string.start_session else R.string.stop_session)
     val toggle = { current?.toggle(); onToggle() }

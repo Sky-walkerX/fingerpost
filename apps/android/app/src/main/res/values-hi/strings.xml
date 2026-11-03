@@ -65,5 +65,14 @@
     <string name="reading_screen">स्क्रीन पढ़ रहा है</string>
     <string name="touch_explore">छूकर जानें</string>
     <string name="mock_glasses_status">नकली चश्मे का वीडियो रीप्ले। %1$s</string>
+    <string name="offer_donations">सत्र दान करने का विकल्प दें</string>
+    <string name="donation_details">शुरू में बंद है। चालू करने पर काम के दौरान ज़्यादा से ज़्यादा 20 छिपाई गई तस्वीरें मेमोरी में रखता है। असफल होने पर अपलोड से पहले पूछता है। PIN या निजी सत्र में कभी नहीं।</string>
+    <string name="donation_question">यह काम नहीं हुआ। क्या आप सुधार में मदद के लिए इस सत्र की स्क्रीन की तस्वीरें दान करना चाहेंगे? पहले चेहरे और कार्ड नंबर धुंधले किए जाते हैं, और 90 दिन बाद सब कुछ मिटा दिया जाता है। हाँ या नहीं बोलिए।</string>
+    <string name="donation_yes">यह सत्र दान करें</string>
+    <string name="donation_no">दान न करें</string>
+    <string name="donation_uploading">धन्यवाद। अभी अपलोड हो रहा है।</string>
+    <string name="donation_declined">ठीक है, कुछ भी सेव नहीं किया गया।</string>
+    <string name="donation_uploaded">दान अपलोड हो गया।</string>
+    <string name="donation_failed">अपलोड पूरा नहीं हुआ।</string>
     <string name="replay_unavailable">वीडियो रीप्ले उपलब्ध नहीं है। ऐप की निजी रीप्ले फ़ाइल में अनुमोदित सिम्युलेटर MP4 जोड़ें और फिर खोलें।</string>
 </resources>
