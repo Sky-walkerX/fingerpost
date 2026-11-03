@@ -1,10 +1,11 @@
 /** Synthetic B-roll only. Start the built web app on loopback port 4173 first. */
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 
 const output = fileURLToPath(new URL('../../video/out/sim-demo/', import.meta.url));
+await mkdir(dirname(output), { recursive: true });
 await mkdir(output); // Refuse to overwrite an existing take.
 const browser = await chromium.launch();
 try {
