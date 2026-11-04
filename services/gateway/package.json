@@ -21,7 +21,7 @@
     "@fastify/websocket": "11.3.4",
     "@fingerpost/protocol": "workspace:*",
     "@meta-sam/parser": "0.1.0",
-    "asn1js": "3.0.10",
+    "asn1js": "4.0.0",
     "fastify": "5.12.7",
     "firebase-admin": "14.5.0",
     "jose": "6.2.12",
