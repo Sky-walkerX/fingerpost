@@ -20,14 +20,57 @@ export function sparkFallbackWorthy(error: unknown): boolean {
   return error instanceof OpenAI.APIError && typeof error.status === 'number' && error.status >= 500;
 }
 
-export function liveModels(client: OpenAI): ModelPort {
+/** guidance-spec §8 (initial value, 2026-11-04): a 1.3 parse still unanswered this long also starts 1.2. */
+export const SPARK_HEDGE_MS = 15_000;
+
+type ParseImage = Parameters<ModelPort['parseScreen']>[0];
+type ParseOptions = Parameters<ModelPort['parseScreen']>[1];
+
+/**
+ * Days 4–7 plan, B4-1: Spark 1.3, then Spark 1.2 once on a timeout or 5xx. Cluttered photos keep 1.3 busy for
+ * about the whole per-call bound, so 1.2 also starts once 1.3 has been silent for `hedgeMs`; the first valid
+ * parse wins and the other request is cancelled. A 4xx before the hedge still fails without 1.2.
+ */
+function hedgedParse(client: OpenAI, img: ParseImage, o: ParseOptions, hedgeMs: number): Promise<ParseResult> {
+  const parent = o.signal;
+  const primary = new AbortController(), backup = new AbortController();
+  const scoped = (c: AbortController) => (parent ? AbortSignal.any([parent, c.signal]) : c.signal);
+  return new Promise<ParseResult>((resolve, reject) => {
+    let settled = false, backupStarted = false, primaryFailed = false, backupFailed = false, backupError: unknown;
+    const finish = (settle: () => void, winner?: AbortController) => {
+      if (settled) return;
+      settled = true; clearTimeout(timer); parent?.removeEventListener('abort', onParentAbort);
+      for (const c of [primary, backup]) if (c !== winner) c.abort();
+      settle();
+    };
+    const onParentAbort = () => finish(() => reject(parent!.reason));
+    const startBackup = () => {
+      if (backupStarted || settled) return;
+      backupStarted = true;
+      parseScreen(client, img, { ...o, signal: scoped(backup) }, MODELS.sparkFallback).then(
+        (result) => finish(() => resolve(result), backup),
+        (error: unknown) => { backupFailed = true; backupError = error; if (primaryFailed) finish(() => reject(error)); });
+    };
+    const timer = setTimeout(startBackup, hedgeMs);
+    if (parent?.aborted) { onParentAbort(); return; }
+    parent?.addEventListener('abort', onParentAbort, { once: true });
+    parseScreen(client, img, { ...o, signal: scoped(primary) }, MODELS.spark).then(
+      (result) => finish(() => resolve(result), primary),
+      (error: unknown) => {
+        primaryFailed = true;
+        if (backupFailed) { finish(() => reject(backupError)); return; }
+        if (backupStarted) return;
+        if (!sparkFallbackWorthy(error)) { finish(() => reject(error)); return; }
+        clearTimeout(timer); startBackup();
+      });
+  });
+}
+
+export function liveModels(client: OpenAI, options: { hedgeMs?: number } = {}): ModelPort {
+  const hedgeMs = options.hedgeMs ?? SPARK_HEDGE_MS;
   return {
-    // Days 4–7 plan, B4-1: Spark 1.3, then Spark 1.2 once on a timeout or 5xx. No other retries here (B5-3).
-    parseScreen: (img, o) => parseScreen(client, img, o, MODELS.spark).catch((error: unknown) => {
-      o.signal?.throwIfAborted();
-      if (!sparkFallbackWorthy(error)) throw error;
-      return parseScreen(client, img, o, MODELS.sparkFallback);
-    }),
+    // No other retries here (B5-3): the router owns the one jittered retry and the Glimmer step.
+    parseScreen: (img, o) => hedgedParse(client, img, o, hedgeMs),
     segmentByBox: (img, box) => segmentByBox(client, img, box),
     segmentByText: (img, phrase) => segmentByText(client, img, phrase),
     groundControl: (img, opts) => groundControl(client, img, opts),

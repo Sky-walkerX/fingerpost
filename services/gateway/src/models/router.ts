@@ -42,7 +42,7 @@ const retryWorthy = (error: unknown) =>
 /**
  * Days 4–7 plan, B4-1 + B5-3 (design §4.4). Routing: a private session never touches the Meta API; a screen
  * marked financial or identity sends later frames to Glimmer, refusing when it is unavailable.
- * Resilience on the Meta path: Spark 1.3 → 1.2 (inside liveModels) → one jittered retry (200–600 ms) →
+ * Resilience on the Meta path: Spark 1.3 → 1.2 (inside liveModels, hedged after 15 s) → one jittered retry (200–600 ms) →
  * warm Glimmer → ModelsUnavailable, which the session turns into offline mode. A breaker (5 failures in
  * 30 s, 20 s open) stops hammering a provider that is down.
  */
