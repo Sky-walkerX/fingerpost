@@ -11,10 +11,10 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', ''];
 const PHONE = { x: 1215, y: 190 }, CLOUD = { x: 1760, y: 150 };
 
 /** Scene 6: a PIN pad appears, uploads visibly stop and the microphone turns off. Nothing leaves the phone. */
-export const Privacy: React.FC = () => {
+export const Privacy: React.FC<{ beats?: number[] }> = (props) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const beats = beatsWithin('privacy');
+  const beats = props.beats ?? beatsWithin('privacy');
   const at = (min: number) => beats.find((b) => b >= min) ?? min;
   const padIn = at(24), detect = at(padIn + 90), headline = at(detect + 40);
   const pad = spring({ frame: frame - padIn, fps, config: springs.snappy });

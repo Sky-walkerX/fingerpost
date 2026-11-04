@@ -1,0 +1,42 @@
+{
+  "voice": "Sulafat",
+  "style": "",
+  "segments": [
+    {
+      "id": "hook",
+      "text": "More and more of the world now sits behind flat glass. Self-checkouts, ticket machines, airport check-in, even washing machines. For a blind person, a touchscreen has nothing to feel."
+    },
+    {
+      "id": "problem",
+      "text": "So they wait for help, or they walk away. And at the payment screen, they often have to hand their card, and their PIN, to a stranger."
+    },
+    {
+      "id": "intro",
+      "text": "Fingerpost changes that. Point your phone at the screen, say what you want, and it guides your finger to the right button."
+    },
+    {
+      "id": "how",
+      "text": "It speaks short directions, plays a tone that rises as you get closer, and buzzes when you're on target. Then it looks again, to check the press worked. Because it reads the whole screen, it can walk you through an entire order, one step at a time."
+    },
+    {
+      "id": "models",
+      "text": "Meta's models do the seeing. Voice Transcribe turns your words into a goal. Muse Spark reads every button on the screen. SAM 3.1 outlines the exact one you need. And the phone tracks your finger at camera speed, so guidance keeps up with your hand."
+    },
+    {
+      "id": "safety",
+      "text": "Safety is built in. Before any pay button, Fingerpost reads the amount and waits for your yes, and it warns you if the total isn't what you chose. On a PIN pad, it stops uploading and turns the microphone off. Your PIN never leaves your phone."
+    },
+    {
+      "id": "everyone",
+      "text": "It works with TalkBack, and speaks English, Hindi and Spanish. There's a vibration-only mode for deafblind users, a basic offline mode for when there's no signal, and it remembers the appliances in your home."
+    },
+    {
+      "id": "glasses",
+      "text": "Every camera feeds Fingerpost through one interface. So next, it moves to Meta's camera glasses: the same guidance, completely hands-free."
+    },
+    {
+      "id": "close",
+      "text": "Fingerpost. Free, open source, and built for blind and low-vision people. Let's see it live."
+    }
+  ]
+}

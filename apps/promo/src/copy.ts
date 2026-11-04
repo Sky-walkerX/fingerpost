@@ -4,6 +4,7 @@ export const appQuote = {
   sayYesToPay: 'Say yes to pay, or no to cancel.',
   done: 'Done.',
   pinPad: "PIN pad detected. I'll stay offline while you enter it.",
+  overcharge: 'Warning: the screen says {shown}, but you chose {expected}. Say yes to continue, or cancel.',
 } as const;
 
 /** Guidance directions as the app composes them from its direction words. */

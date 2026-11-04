@@ -13,10 +13,10 @@ const LINES = [directions[0], directions[1], appQuote.pressNow, appQuote.done];
 const LEVELS = [0.4, 0.72, 1, 1];
 
 /** Scene 5: directions as you move, a tone that rises, a buzz on target, the press, then a check that it worked. */
-export const Guide: React.FC = () => {
+export const Guide: React.FC<{ beats?: number[] }> = (props) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const beats = beatsWithin('guide');
+  const beats = props.beats ?? beatsWithin('guide');
   const at = (min: number) => beats.find((b) => b >= min) ?? min;
   const t = [at(10)];
   t.push(at(t[0]! + 110)); t.push(at(t[1]! + 100)); t.push(at(t[2]! + 110));

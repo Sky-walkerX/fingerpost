@@ -12,6 +12,7 @@ test("app quotes are the app's exact English strings", () => {
   expect(appQuote.sayYesToPay).toBe(english('SAY_YES_OR_NO'));
   expect(appQuote.done).toBe(english('DONE'));
   expect(appQuote.pinPad).toBe(english('PIN_PAD_DETECTED'));
+  expect(appQuote.overcharge).toBe(english('OVERCHARGE_WARNING'));
 });
 
 test('src has no nondeterminism', () => {

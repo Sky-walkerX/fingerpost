@@ -46,11 +46,11 @@ const Bracket: React.FC<{ x: number; y: number; corner: number; scale: number }>
 };
 
 /** Scene 3: the phone rises in front of the kiosk, focus racks to it, and its camera finds and locks onto the display. */
-export const Scan: React.FC = () => {
+export const Scan: React.FC<{ duration?: number; beats?: number[] }> = (props) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { duration } = sceneOf('scan');
-  const beats = beatsWithin('scan');
+  const duration = props.duration ?? sceneOf('scan').duration;
+  const beats = props.beats ?? beatsWithin('scan');
   const riseAt = beats.find((b) => b >= 18) ?? 18;
   const lockAt = beats.find((b) => b >= duration * 0.5) ?? Math.round(duration * 0.5);
   const up = spring({ frame: frame - riseAt, fps, config: { damping: 16, mass: 1.1 } });

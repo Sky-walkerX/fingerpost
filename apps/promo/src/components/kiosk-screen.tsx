@@ -4,7 +4,7 @@ const ITEMS = [['Sparkling water', '1.80'], ['Rye bread', '3.40'], ['Apples, 1 k
 export const KIOSK_TOTAL = '12.40';
 
 /** The fictional, unbranded self-checkout screen. Drawn at 600 × 800 and scaled to `width`. */
-export const KioskScreen: React.FC<{ width: number; highlight?: boolean; pressed?: number; dim?: number; totalGlow?: number }> = ({ width, highlight = false, pressed = 0, dim = 0, totalGlow = 0 }) => {
+export const KioskScreen: React.FC<{ width: number; highlight?: boolean; pressed?: number; dim?: number; totalGlow?: number; total?: string }> = ({ width, highlight = false, pressed = 0, dim = 0, totalGlow = 0, total = KIOSK_TOTAL }) => {
   const s = width / 600;
   return (
     <div style={{ width, height: 800 * s, overflow: 'hidden', position: 'relative' }}>
@@ -21,7 +21,7 @@ export const KioskScreen: React.FC<{ width: number; highlight?: boolean; pressed
           ))}
         </div>
         <div style={{ marginTop: 'auto', marginBottom: 22, display: 'flex', justifyContent: 'space-between', fontSize: 36, fontWeight: 700, padding: '10px 14px', borderRadius: 16, background: `rgba(255,185,143,${0.45 * totalGlow})` }}>
-          <span>Total</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{KIOSK_TOTAL}</span>
+          <span>Total</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{total}</span>
         </div>
         <div style={{
           position: 'relative', borderRadius: 28, padding: '34px 0', textAlign: 'center', fontSize: 40, fontWeight: 700,
