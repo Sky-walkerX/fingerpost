@@ -1,4 +1,4 @@
-import { AbsoluteFill, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { color, font } from '../tokens.ts';
 import { Chapter, GlassesDrawing, Grid, Icon, MiniWave, pop, ramp, RevealText, Ring, smooth } from './graphics.tsx';
 import { guideState, type SensorySceneId } from './story.ts';
@@ -12,18 +12,27 @@ const Tension: React.FC = () => {
   const local = f - cuts[i]!;
   const text = ['FLAT', 'GLASS.', 'NOTHING', 'TO FEEL.'][i]!;
   return <AbsoluteFill style={{ background: '#02050c', overflow: 'hidden' }}>
-    <div style={{ position: 'absolute', inset: -80, opacity: 0.43, filter: 'grayscale(1) contrast(1.55)', transform: `scale(${1.25 + local * 0.0009}) translateX(${i % 2 ? -70 : 30}px)` }}>
-      <Sequence from={0} durationInFrames={132}><OffthreadVideo muted src={staticFile('demo/live-demo.mp4')} trimBefore={Math.round(11.8 * 60)} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '80% 70%' }} /></Sequence>
-      <Sequence from={132}><OffthreadVideo muted src={staticFile('demo/live-demo.mp4')} trimBefore={Math.round(39.5 * 60)} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '70% 65%' }} /></Sequence>
+    <div style={{ position: 'absolute', inset: 0, filter: 'saturate(0.88) contrast(1.08)' }}>
+      <Sequence from={0} durationInFrames={60}>
+        <Img src={staticFile('sensory/stock/restaurant-ordering.jpg')} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '57% 46%', transform: `scale(${1.025 + local * 0.0007})`, transformOrigin: '69% 37%' }} />
+      </Sequence>
+      <Sequence from={60} durationInFrames={72}>
+        <OffthreadVideo muted src={staticFile('sensory/stock/ordering-at-bar.mp4')} trimBefore={30} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${1.06 + local * 0.0005})`, transformOrigin: '49% 28%' }} />
+      </Sequence>
+      <Sequence from={132} durationInFrames={36}>
+        <Img src={staticFile('sensory/stock/restaurant-ordering.jpg')} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${1.29 + local * 0.001})`, transformOrigin: '68% 35%' }} />
+      </Sequence>
+      <Sequence from={168} durationInFrames={72}>
+        <Img src={staticFile('sensory/stock/restaurant-ordering.jpg')} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${1.09 + local * 0.00065})`, transformOrigin: '67% 39%' }} />
+      </Sequence>
     </div>
-    <AbsoluteFill style={{ background: 'linear-gradient(90deg,rgba(2,5,12,0.12),rgba(2,5,12,0.65))' }} />
+    <AbsoluteFill style={{ background: 'linear-gradient(90deg,rgba(2,5,12,0.65) 0%,rgba(2,5,12,0.32) 33%,rgba(2,5,12,0.03) 68%),linear-gradient(0deg,rgba(2,5,12,0.75),transparent 35%,transparent 80%,rgba(2,5,12,0.5))' }} />
     <Chapter number="00" text="A WORLD BEHIND GLASS" />
-    <div style={{ position: 'absolute', left: 90, top: 300, right: 70, transform: `translateX(${(1 - smooth(local, 0, 7)) * 90}px) scale(${1.035 - ramp(local, 0, 45) * 0.035})`, opacity: ramp(local, 0, 4) }}>
-      <div style={{ fontFamily: font.body, fontWeight: 850, fontSize: i < 2 ? 272 : 225, letterSpacing: '-0.075em', lineHeight: 0.95, color: i === 3 ? color.peach : '#fff' }}>{text}</div>
-      <div style={{ width: 160 + ramp(local, 0, 35) * 550, height: 9, background: i === 3 ? color.peach : color.periwinkle, marginTop: 36 }} />
+    <div style={{ position: 'absolute', left: 90, top: 580, right: 70, transform: `translateX(${(1 - smooth(local, 0, 7)) * 55}px)`, opacity: ramp(local, 0, 4) }}>
+      <div style={{ fontFamily: font.body, fontWeight: 850, fontSize: i < 2 ? 166 : 142, letterSpacing: '-0.065em', lineHeight: 0.98, color: i === 3 ? color.peach : '#fff', textShadow: '0 3px 28px rgba(0,0,0,0.22)' }}>{text}</div>
+      <div style={{ width: 100 + ramp(local, 0, 35) * 300, height: 6, background: i === 3 ? color.peach : color.periwinkle, marginTop: 25 }} />
     </div>
-    <div style={{ position: 'absolute', right: 90, bottom: 200, color: color.nightText, fontFamily: font.body, fontSize: 28 }}>For a blind person, where is the button?</div>
-    <div style={{ position: 'absolute', inset: 0, border: '24px solid #02050c', pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', left: 94, bottom: 218, color: '#fff', fontFamily: font.body, fontSize: 27 }}>For a blind person, where is the button?</div>
   </AbsoluteFill>;
 };
 

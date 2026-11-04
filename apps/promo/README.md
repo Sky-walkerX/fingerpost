@@ -4,6 +4,8 @@
 
 `SensoryPromo` is the 56-second, 1920×1080/60 fps cut requested on November 5. Its nine scenes use kinetic close-ups, six seconds of the real Juniper Grill phone recording, a separately labeled payment illustration, spoken amount confirmation, spatial rising guidance, a double haptic hit, a hard PIN lock and an explicitly future glasses concept. Every voice line has burned-in captions; SRT, VTT and a transcript are exported too.
 
+The revised opening uses real restaurant ordering stock imagery with warm natural color, smaller typography and beat-cut close-ups. Sources and download URLs are in [sources/sensory-opening.md](sources/sensory-opening.md); stock stays in ignored `public/sensory/stock/`. The revised delivery is `out/sensory/fingerpost-sensory-v2.mp4`; its mastered audio is copied unchanged from the first delivery.
+
 The phone recording remains local in ignored `public/demo/`. New generated media stays in ignored `public/sensory/`; final renders stay in ignored `out/`. These are local exports, not hosted assets or device acceptance evidence. Narrator, user and app roles use distinct prebuilt Gemini voices. No voice cloning.
 
 From the repository root, after explicit authorization for paid TTS:

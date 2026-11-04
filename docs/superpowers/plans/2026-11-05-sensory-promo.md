@@ -16,3 +16,12 @@ Creative constraints: real Juniper Grill footage is labeled recorded; the pay fl
 Verified export: 56.000 s, 1920×1080, 60 fps, H.264/yuv420p, stereo AAC/48 kHz, 11,571,540 bytes; whole-file decode passes. Final measured loudness −15.88 LUFS integrated, −1.48 dBTP, LRA 4.9 LU. Music duck strengthened to 75% against the immediately preceding bed. Promo tests 20/20; seven existing Python promo tests and four new sound/TTS tests pass; recursive typecheck and whitespace checks pass. All 14 measured voices fit their slots. Captions include the sound cues in SRT/VTT and the text transcript. Final MP4 and sidecars copied to Downloads; source/destination SHA-256 match.
 
 Production notes: the first TTS request read the prefixed direction and was rejected by the slot check. The new adapter uses Gemini 3.8's documented `speechMetadata` and verbatim text fields; the original pitch adapter is unchanged. Fourteen replacement takes succeed (15 total paid requests). An audio-only export required excluding video CRF/pixel settings from WAV renders. No dependencies, guidance/runtime behavior, public hosting or device acceptance changed.
+
+## Opening revision — user follow-up
+
+- [x] Source and visually inspect actual restaurant ordering photo/video stock; record creators, source URLs and licenses without adding media to Git.
+- [x] Replace only frames 0–239 with a natural-color montage; keep text left of the hand/screen, preserve existing beat cuts.
+- [x] Render and inspect the revision, verify 56 s/1080p/60 fps, retain the exact mastered audio and check a representative later frame remains identical.
+- [x] Save a separate `fingerpost-sensory-v2.mp4` in Downloads and record the checks.
+
+Revision verification: all four opening beats inspected from the final export; 56.000 s, 1920×1080, 60 fps, H.264/stereo AAC, 12,240,879 bytes; whole-file decode passes. Original and v2 compressed-audio SHA-256 match exactly; the full-resolution glasses still at frame 2760 also matches exactly. Existing promo 20/20 and recursive typecheck pass; no new dependency, synthesis request or runtime change. Source stock and output MP4 stay ignored. Delivered separately in Downloads, preserving v1.
