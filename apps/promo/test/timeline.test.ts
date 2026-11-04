@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import beats from '../src/beats.json' with { type: 'json' };
-import { musicVolume, scenes, TOTAL_FRAMES } from '../src/timeline.ts';
+import { beatsWithin, musicVolume, scenes, TOTAL_FRAMES } from '../src/timeline.ts';
 
 const ORDER = ['problem', 'answer', 'scan', 'confirm', 'guide', 'privacy', 'close'];
 
@@ -29,4 +29,12 @@ test('music fades out and never stops early', () => {
   expect(musicVolume(TOTAL_FRAMES - 1)).toBeLessThan(0.05);
   for (let f = TOTAL_FRAMES - 90; f < TOTAL_FRAMES - 1; f++) expect(musicVolume(f + 1)).toBeLessThanOrEqual(musicVolume(f));
   expect(beats.beats.at(-1)! + 60 / beats.bpm).toBeGreaterThanOrEqual(TOTAL_FRAMES / 60);
+});
+
+test('beatsWithin gives scene-relative beat frames inside the scene', () => {
+  for (const s of scenes) {
+    const local = beatsWithin(s.id);
+    expect(local.length, s.id).toBeGreaterThan(0);
+    for (const f of local) { expect(f).toBeGreaterThanOrEqual(0); expect(f).toBeLessThan(s.duration); }
+  }
 });

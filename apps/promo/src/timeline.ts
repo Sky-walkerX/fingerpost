@@ -36,3 +36,9 @@ export function musicVolume(frame: number): number {
   if (frame < fadeStart) return LEVEL;
   return Math.max(0, LEVEL * (1 - (frame - fadeStart) / (FADE_FRAMES - 1)));
 }
+
+/** Beat frames inside a scene, relative to the scene's first frame, for beat-synced entrances. */
+export function beatsWithin(id: SceneId): number[] {
+  const s = sceneOf(id);
+  return beatFrames.filter((f) => f >= s.from && f < s.from + s.duration).map((f) => f - s.from);
+}
