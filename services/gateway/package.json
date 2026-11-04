@@ -18,7 +18,7 @@
     "latency:region": "node --conditions=source scripts/region-latency.ts"
   },
   "dependencies": {
-    "@fastify/websocket": "11.3.4",
+    "@fastify/websocket": "11.3.6",
     "@fingerpost/protocol": "workspace:*",
     "@meta-sam/parser": "0.1.0",
     "asn1js": "3.0.10",
