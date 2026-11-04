@@ -287,6 +287,7 @@ class GuidanceEngine(
         effects.forEach(::effect)
         if (machine.state != before) {
             if (machine.state == GState.FRAMING) { framingSince = time(); fallbackSent = false }
+            if (machine.state == GState.GUIDING) latest?.gray?.let(change::setReference)
             if (machine.state == GState.ON_TARGET) {
                 latest?.gray?.let(change::setReference)
                 onSince = time(); occluded = false
@@ -462,7 +463,9 @@ class GuidanceEngine(
         if (frame.glare && frame.stable && now - lastGlareAt >= 5000) {
             lastGlareAt = now; say(Strings.get(Key.GLARE_WARNING, machine.locale), SpeechPriority.GUIDE)
         }
-        if (machine.state == GState.ON_TARGET && frame.tracking == TrackState.TRACKING && frame.gray != null && frame.handMask != null) {
+        if (machine.state == GState.GUIDING && frame.tracking == TrackState.TRACKING && frame.gray != null && frame.handMask != null) {
+            if (change.update(frame.gray, frame.handMask)) dispatch(GEvent.PressDetected(now, Evidence.SCREEN_CHANGE))
+        } else if (machine.state == GState.ON_TARGET && frame.tracking == TrackState.TRACKING && frame.gray != null && frame.handMask != null) {
             if (change.update(frame.gray, frame.handMask)) dispatch(GEvent.PressDetected(now, Evidence.SCREEN_CHANGE))
             else if (now - onSince >= 800 && polygon.isNotEmpty()) {
                 var covered = 0; var total = 0

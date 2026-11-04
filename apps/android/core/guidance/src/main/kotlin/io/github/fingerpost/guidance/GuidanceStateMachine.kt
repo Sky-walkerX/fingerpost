@@ -341,6 +341,15 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                     go(GState.LOCATING, now)
                     return out
                 }
+                // The screen changed before the finger settled on target (e.g. the press came early): verify it
+                // rather than keep guiding to a spot on a screen that is no longer there.
+                if (ev is GEvent.PressDetected && ev.evidence == Evidence.SCREEN_CHANGE) {
+                    out += Effect.ToneOff
+                    out += Effect.SendTapDetected(ev.evidence)
+                    out += Effect.SendKeyframe(KeyframePurpose.VERIFY)
+                    go(GState.VERIFYING, now)
+                    return out
+                }
                 if (ev is GEvent.Frame) guidingFrame(ev, out)
                 if (timed && state == GState.GUIDING) {
                     noHandCheck(now, out)
