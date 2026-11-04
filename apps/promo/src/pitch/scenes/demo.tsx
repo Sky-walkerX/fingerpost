@@ -4,19 +4,19 @@ import demo from '../demo.json' with { type: 'json' };
 
 /** Step captions for the recorded take, in clip seconds. They describe only what the screen shows. */
 const STEPS: ReadonlyArray<[number, string]> = [
-  [0, 'You say what you want.'],
-  [5.5, 'Fingerpost finds the button on the kiosk.'],
-  [6.6, 'Tones and spoken directions guide the finger to it.'],
-  [17.5, 'It sees the press, then checks that the screen changed.'],
-  [26.4, 'Done. The next screen is open.'],
-  [29.5, 'A new goal: it reads the next screen.'],
-  [33.2, 'Found the Classic Burger. Guiding the finger.'],
-  [41.4, 'Press detected. Checking the screen.'],
-  [47.3, 'The burger’s page opened.'],
-  [57.6, 'Done.'],
+  [0, 'You say what you want: “Start order.”'],
+  [5.1, 'Fingerpost reads the kiosk and finds the button.'],
+  [5.6, 'Tones and spoken directions guide the finger to it.'],
+  [16.5, 'It sees the press, then checks that the screen changed.'],
+  [25.5, 'Done. The next screen is open.'],
+  [27.7, 'Next: “Press Classic Burger.”'],
+  [33.8, 'Found the Classic Burger. Guiding the finger.'],
+  [42.2, 'Press detected. Checking the screen.'],
+  [48.2, 'The burger’s page opened.'],
+  [59.2, 'Done.'],
 ];
 /** Where the two takes join, and how much time the cut skips. */
-const CUT_AT = 29.5, SKIPPED_S = 40;
+const CUT_AT = 27.7, SKIPPED_S = 37;
 
 /** The one-minute live demo slot. Set `file` in demo.json (a path under public/) to drop the recording in. */
 export const Demo: React.FC = () => {

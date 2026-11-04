@@ -1,4 +1,6 @@
-# Fingerpost
+<p align="center">
+  <img src="docs/assets/fingerpost-banner.png" alt="Fingerpost: guides a blind person's finger to the right spot on any touchscreen. Built with Meta's models. Free and open source." width="100%">
+</p>
 
 **Fingerpost guides a blind or low-vision person's finger to the right spot on a flat touchscreen.** Self-checkouts, ticket machines, check-in kiosks and appliance panels have nothing to feel. Point your Android phone at the screen, say what you want, and Fingerpost reads the screen, finds the button and steers your fingertip onto it with tones, spoken directions and vibration. It confirms each press and can walk you through a whole order, one screen at a time.
 
@@ -11,14 +13,9 @@ Free and open source (Apache-2.0). Built with Meta's models.
 3. **It guides your finger.** The phone tracks your fingertip on-device. A tone rises and pans as you get closer, short spoken directions ("right a little", "up") keep you on course, and a buzz says you're on target.
 4. **It checks the press.** When the screen changes, Fingerpost confirms it and moves on to the next step, announcing each new screen.
 
-```mermaid
-flowchart LR
-    Phone[Android phone: camera, on-device OCR, fingertip tracking] --> Gate[Local PIN and payment gate]
-    Gate --> Gateway[Fingerpost gateway: sessions, task agent, safety policy]
-    Gateway --> Meta[Meta models]
-    Gateway --> Phone
-    Phone --> Cues[Speech, tones and vibration]
-```
+<p align="center">
+  <img src="docs/assets/fingerpost-flow.png" alt="How Fingerpost works: you say what you want; the phone camera tracks your fingertip and reads text on the device; a PIN and payment gate keeps frames on the phone during a PIN pad; safe frames go to the Fingerpost gateway, which reads the screen and plans the step with Meta models; the target comes back as tones, short directions and vibration that guide your finger onto the right button." width="100%">
+</p>
 
 | Meta model | What it does in Fingerpost |
 |---|---|
