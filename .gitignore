@@ -40,3 +40,6 @@ evals/datasets/day1/
 
 # generated demo footage
 video/out/
+
+# Live demo recordings show a real room and voice: keep them local.
+apps/promo/public/demo/
