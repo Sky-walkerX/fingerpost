@@ -1,3 +1,4 @@
+import { applianceGoal } from './appliance-task.ts';
 import type { z } from 'zod';
 import type { Intent as IntentSchema, RequestedMode as RequestedModeSchema } from '@fingerpost/protocol';
 
@@ -28,6 +29,7 @@ const INTENT_FILLER = /\b(press|tap|touch|push|click|select|choose|the|a|an|butt
  */
 export function inferIntent(goal: string, mode: RequestedMode): Intent {
   if (mode !== 'auto') return mode;
+  if (applianceGoal(goal)) return 'task';
   if (EXPLORE_RE.test(goal)) return 'explore';
   // Strip filler words before checking task verbs, so "press start order" doesn't match "order"
   const stripped = goal.replace(INTENT_FILLER, ' ').replace(/\s+/g, ' ').trim();

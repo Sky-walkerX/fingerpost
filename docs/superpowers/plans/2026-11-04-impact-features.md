@@ -107,3 +107,20 @@ All state speech (goal prompt, found, errors) is also sent as TalkBack announcem
 3. IF-8, then IF-5 (resolve the keypad/PIN decision first).
 
 After each task: update `docs/progress.md` (status + one log line with numbers), add or extend a `docs/evals/` report, run `pnpm -r typecheck && pnpm -r test`, `python3 -m unittest discover -s scripts -p 'test_*.py'`, and the Android tests/lint/APK via `./scripts/android.sh` (on macOS set `FINGERPOST_JAVA_HOME` to a JDK 21 home and `ANDROID_HOME`), then `git pull --rebase && git push`.
+
+## Implementation checkpoint (2026-11-04)
+
+- [x] IF-0: committed driver, content-free tests/help and paid baseline (4/7 photos, 4/5 touch).
+- [x] IF-1: provisional OCR coding and local checks; conservative label allowlist explicitly approved by the user.
+- [ ] IF-1: phone ten-attempt latency/correctness acceptance.
+- [x] IF-2: existing Modal configuration reviewed against B4-3.
+- [ ] IF-2: human credentials, deployment, private routing measurements and phone press.
+- [x] IF-7: vibration preset/patterns/announcements/tutorial coding and local checks.
+- [ ] IF-7: physical navigation acceptance.
+- [x] IF-6: gateway/local comparison, normal/tampered simulator and confirm-lock checks.
+- [x] IF-8: named storage/lookup/rename/delete/local guidance coding and local checks.
+- [ ] IF-8: phone save/airplane-mode/timing/zero-keyframe acceptance.
+- [x] IF-5: bounded appliance/display tools, safe keypad ask decision, synthetic production-pipeline sequence and batch case preparation.
+- [ ] IF-5: live simulator acceptance (two runs ask; see progress Blockers).
+
+Reports and precise evidence limits: [impact feature verification](../../evals/impact-features-2026-11-04.md). Unchecked acceptance keeps the corresponding task blocked.

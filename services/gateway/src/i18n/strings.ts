@@ -6,6 +6,8 @@ import type { ErrorCode, Locale } from '@fingerpost/protocol';
  * Only spoken text lives here; feedback strings for the planner model stay English.
  */
 const en = {
+  appliance_display: 'Display shows {value}.',
+  appliance_stopped: 'The display is unclear or is not moving toward your goal. Check the appliance mode and say what to do next.',
   overcharge_warning: 'Warning: the screen says {shown}, but you chose {expected}. Say yes to continue, or cancel.',
   local_speech: 'Private speech stays on this phone.',
   found: 'Found {label}, {position}.',
@@ -61,6 +63,8 @@ const en = {
 export type StringKey = keyof typeof en;
 
 const hi: Record<StringKey, string> = {
+  appliance_display: 'डिस्प्ले पर {value} है।',
+  appliance_stopped: 'डिस्प्ले स्पष्ट नहीं है या लक्ष्य की ओर नहीं बदल रहा। उपकरण का मोड जाँचें और अगला कदम बताएँ।',
   overcharge_warning: 'चेतावनी: स्क्रीन पर {shown} है, लेकिन आपने {expected} चुना था। जारी रखने के लिए हाँ कहें, या रद्द करें।',
   local_speech: 'प्राइवेट आवाज़ पहचान इसी फ़ोन पर होती है।',
   found: '{label} मिला, {position}।',
@@ -115,6 +119,8 @@ const hi: Record<StringKey, string> = {
 };
 
 const es: Record<StringKey, string> = {
+  appliance_display: 'La pantalla muestra {value}.',
+  appliance_stopped: 'La pantalla no está clara o no avanza hacia tu objetivo. Comprueba el modo del aparato y di qué hacer.',
   overcharge_warning: 'Aviso: la pantalla dice {shown}, pero elegiste {expected}. Di sí para continuar o cancelar.',
   local_speech: 'El reconocimiento de voz privado se queda en este teléfono.',
   found: 'Encontré {label}, {position}.',

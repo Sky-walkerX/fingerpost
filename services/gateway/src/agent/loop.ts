@@ -5,6 +5,7 @@ import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { listLabels } from '../resolve/describe.ts';
 import { elementKey, isSensitive, Policy } from './policy.ts';
 import { rulesPlanner, screenAmount, type AgentState, type Planner, type ToolCall } from './planner.ts';
+import { ApplianceTask } from './appliance-task.ts';
 import { ExpectedTotal, moneyText } from './overcharge.ts';
 import { layoutSummary } from './tools.ts';
 
@@ -63,6 +64,9 @@ export class AgentSession {
   private loopScreen: string | null = null;
   private paidOn: string | null = null;
   private finished = false;
+  private readonly appliance: ApplianceTask;
+  get applianceTask() {return this.appliance.active;}
+  applianceDisplayChanged(raw:string|null) {return this.appliance.changed(raw);}
   private readonly policy: Policy;
   private readonly expectedTotal = new ExpectedTotal();
   private readonly fallback: Planner;
@@ -72,6 +76,7 @@ export class AgentSession {
   constructor(goal: string, d: AgentDeps) {
     this.d = d;
     this.goal = goal;
+    this.appliance = new ApplianceTask(goal);
     this.expectedTotal.expect(goal);
     this.policy = new Policy({ now: d.now });
     this.fallback = d.fallback ?? rulesPlanner();
@@ -126,6 +131,7 @@ export class AgentSession {
   pressed(el: LayoutElement, layout: Layout): void {
     if (isSensitive(el)) this.paidOn = layout.fingerprint;
     else this.expectedTotal.selected(el.label);
+    if (this.appliance.active) this.appliance.pressed();
   }
 
   /** The device entered PIN mode: the task's cloud part is over. */
@@ -135,7 +141,7 @@ export class AgentSession {
     return true;
   }
 
-  async decide(layout: Layout, signal?: AbortSignal): Promise<AgentTurn> {
+  async decide(layout: Layout, signal?: AbortSignal, display: string|null = null): Promise<AgentTurn> {
     const says: AgentTurn['says'] = [];
     const turn = (action: AgentAction): AgentTurn => ({ says, action });
     if (this.finished || this.pending) return turn({ kind: 'wait' });
@@ -163,6 +169,19 @@ export class AgentSession {
       this.pending = { kind: 'loop', id };
       this.loopScreen = layout.fingerprint;
       return turn({ kind: 'ask', id, question: t(this.locale, 'ask_go_back'), options: [t(this.locale, 'yes'), t(this.locale, 'no')] });
+    }
+
+    if (this.appliance.active && layout.screenType === 'appliance') {
+      const step=this.appliance.next(layout,display,this.locale);
+      if(step.readback) says.push({text:step.readback,priority:'state'});
+      if(step.kind==='target') return turn({kind:'target',element:step.element});
+      if(step.kind==='finish') {this.finished=true;return turn({kind:'finish',result:'done',say:t(this.locale,'verify_done')});}
+      const id=ulid();this.pending={kind:'ask',id};
+      return turn({kind:'ask',id,question:t(this.locale,'appliance_stopped'),options:[]});
+    }
+    if (this.appliance.active) {
+      const id=ulid();this.pending={kind:'ask',id};
+      return turn({kind:'ask',id,question:t(this.locale,'appliance_stopped'),options:[]});
     }
 
     let feedback: string | null = null;

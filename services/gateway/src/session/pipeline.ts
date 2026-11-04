@@ -11,6 +11,7 @@ import { fullFrameCoordinates } from './screen-coordinates.ts';
 import { coversApplianceControls, usableRefinement } from './geometry-quality.ts';
 import { AgentSession, type AgentTurn } from '../agent/loop.ts';
 import { inferIntent, type RequestedMode } from '../agent/intent.ts';
+import { readApplianceDisplay } from '../agent/tools.ts';
 import { rulesPlanner, type Planner } from '../agent/planner.ts';
 import { isSensitive } from '../agent/policy.ts';
 import { firstSay, isMore, nextSay, summarize } from '../explore/summary.ts';
@@ -422,12 +423,12 @@ export class SessionPipeline {
     const turn = (layout: Layout) => this.agentTurn(layout, h, image, coordinates, parsedElements, signal);
     if (h.purpose === 'verify') {
       const pressed = this.target;
-      const result = this.verify(h, before, layout);
+      const result = this.verify(h, before, layout, this.agent?.applianceDisplayChanged(this.applianceDisplay(layout,h,coordinates)) ?? false);
       if (!this.agent && result === 'ok') this.completeTask('success', signal);
       if (this.agent && result === 'ok' && pressed) {
         this.agent.pressed(pressed, layout);
         await turn(layout);
-      }
+      } else if(this.agent?.applianceTask && result === 'nochange') await turn(layout);
       return;
     }
     this.target = null;
@@ -473,11 +474,23 @@ export class SessionPipeline {
     void this.d.memory!.record(layout, h.ocrTokens, h.imageSize.w / h.imageSize.h, this.d.keyId ?? 'dev-key').catch(() => {});
   }
 
+  private applianceDisplay(layout: Layout,h:Keyframe,coordinates:ReturnType<typeof fullFrameCoordinates>):string|null {
+    const tokens=h.ocrTokens.flatMap(token=>{
+      if(!coordinates) return [token];
+      const {u,v,w,h}=token.box;
+      const polygon=coordinates.toScreen([{u,v},{u:u+w,v},{u:u+w,v:v+h},{u,v:v+h}]);
+      if(!polygon) return [];
+      const xs=polygon.map(p=>p.u),ys=polygon.map(p=>p.v),left=Math.min(...xs),top=Math.min(...ys);
+      return [{text:token.text,box:{u:left,v:top,w:Math.max(...xs)-left,h:Math.max(...ys)-top}}];
+    });
+    return readApplianceDisplay(layout.elements,tokens);
+  }
+
   /** One agent decision for this screen, sent as fp.v1 messages. */
   private async agentTurn(layout: Layout, h: Keyframe, image: { bytes: Uint8Array; mime: 'image/jpeg' },
     coordinates: ReturnType<typeof fullFrameCoordinates>, parsedElements: readonly LayoutElement[], signal: AbortSignal): Promise<void> {
     const agent = this.agent!;
-    const turn = await whileActive<AgentTurn>(agent.decide(layout, signal), signal).catch(() => null);
+    const turn = await whileActive<AgentTurn>(agent.decide(layout, signal, this.applianceDisplay(layout,h,coordinates)), signal).catch(() => null);
     if (turn === CANCELLED || signal.aborted || agent !== this.agent) return;
     if (!turn) {
       this.completeTask('error', signal);
@@ -564,7 +577,7 @@ export class SessionPipeline {
     this.d.send(target);
   }
 
-  private verify(h: Keyframe, before: Layout | null, after: Layout): 'ok' | 'wrong' | 'nochange' {
+  private verify(h: Keyframe, before: Layout | null, after: Layout, displayChanged=false): 'ok' | 'wrong' | 'nochange' {
     const touched = this.hasSimTouch, actual = this.lastTap.simElementId;
     this.hasSimTouch = false;
     this.lastTap = { keyframeId: null, simElementId: null };
@@ -572,7 +585,7 @@ export class SessionPipeline {
       this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'wrong',
         ...(actual !== null ? { actualElementId: actual } : {}), say: t(this.locale, 'pressed_other', { label: this.target.label }) });
       return 'wrong';
-    } else if (!before || labelJaccard(before.elements, after.elements) < 0.7 || touched) {
+    } else if (!before || labelJaccard(before.elements, after.elements) < 0.7 || touched || displayChanged) {
       this.d.send({ ...this.base(), type: 'verify', re: h.id, result: 'ok', say: t(this.locale, 'verify_done') });
       return 'ok';
     }

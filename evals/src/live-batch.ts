@@ -98,3 +98,20 @@ export function projectToQuad(q: readonly {x:number;y:number}[], p: {u:number;v:
   if(Math.abs(w)<1e-10) throw new Error('Invalid projection');
   return {x:(h[0]!*p.u+h[1]!*p.v+h[2]!)/w,y:(h[3]!*p.u+h[4]!*p.v+h[5]!)/w};
 }
+
+export function matchesExpectedControl(messages: readonly import('@fingerpost/protocol').ServerMessage[], expected:string):boolean {
+  const target=messages.at(-1), layout=[...messages].reverse().find(m=>m.type==='layout');
+  return target?.type==='target'&&layout?.type==='layout'&&
+    layout.elements.find(e=>e.id===target.elementId)?.label.trim().toLowerCase()===expected.toLowerCase();
+}
+
+/** Area centroid, independent of how densely a provider samples each polygon edge. */
+export function polygonCentroid(polygon:readonly {u:number;v:number}[]) {
+  let twiceArea=0,u=0,v=0;
+  for(const [i,a] of polygon.entries()) {
+    const b=polygon[(i+1)%polygon.length]!, cross=a.u*b.v-b.u*a.v;
+    twiceArea+=cross;u+=(a.u+b.u)*cross;v+=(a.v+b.v)*cross;
+  }
+  if(Math.abs(twiceArea)<1e-10) throw new Error('Degenerate target');
+  return {u:u/(3*twiceArea),v:v/(3*twiceArea)};
+}

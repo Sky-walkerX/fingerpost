@@ -1,7 +1,7 @@
 import { hitTest } from './hit.ts';
 import { CANVAS, type Label, type RunState, type SimScene, type SimScreen, type TouchEvent } from './model.ts';
 
-export const newRun = (runId: string, scene: SimScene): RunState => ({ runId, scene, screenId: scene.start, events: [] });
+export const newRun = (runId: string, scene: SimScene): RunState => ({ runId, scene: structuredClone(scene), screenId: scene.start, events: [] });
 export const currentScreen = (s: RunState): SimScreen => {
   const screen = s.scene.screens.find((screen) => screen.id === s.screenId);
   if (!screen) throw new Error(`Unknown simulator screen: ${s.screenId}`);
@@ -16,6 +16,11 @@ export function applyTouch(state: RunState, t: { x: number; y: number; pointerId
     u: Math.min(1, Math.max(0, t.x / CANVAS.w)), v: Math.min(1, Math.max(0, t.y / CANVAS.h)),
     elementId: hit?.id ?? null };
   state.events.push(event);
+  if (state.scene.id === 'cooktop' && hit && ['plus','minus'].includes(hit.id)) {
+    const display=screen.elements.find(e=>e.id==='display');
+    const value=Number(display?.label);
+    if(display&&Number.isInteger(value)) display.label=String(Math.max(0,Math.min(9,value+(hit.id==='plus'?1:-1))));
+  }
   const next = hit ? screen.next[hit.id] : undefined;
   if (next !== undefined) state.screenId = next;
   return event;

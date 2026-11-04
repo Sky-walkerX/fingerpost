@@ -2,7 +2,7 @@
 
 Agents and people both update this file. Keep each line short. Status values are `todo`, `doing`, `blocked` and `done`. Claim ownership in the first real task commit; no separate claim commits (see AGENTS.md §3).
 
-**Current phase:** user-requested post-pull verification, live-quality repair and interactive check (2026-11-04, Owner Claude); the audit's finding of no remaining planned coding still stands. Device, cloud, tester and release gates remain open; tablet/phone checks wait for a connected device · **Plans ready:** Days 1–3, plus Days 4–7 as a three-lane parallel plan
+**Current phase:** user-requested impact features (2026-11-04). IF-0 and IF-6 local acceptance pass; IF-1, IF-7 and IF-8 coding is committed with phone acceptance open; IF-5 coding passes synthetic flows but live display grounding asks. IF-2 awaits human Modal credentials. Earlier Day 1–7 device/cloud/release gates remain open.
 
 **Live-quality repair (2026-11-04, Claude):** per-call diagnosis shows Spark 1.3 reaching the 30 s bound on 6/8 photo parses and SAM masks of large objects shrunk ~0.82× by an unscaled 1024-capped raster. Mask scaling plus a 15 s Spark 1.2 hedge raise single-run aligned photo targets from 2/7 to 4/7 and remove turn-deadline expiries (2 → 0); synthetic touchscreens stay 4/5, and the negative is still refused. 212 paid image requests; no phone/cloud acceptance. [Report](evals/live-quality-2026-11-04.md) · [interactive check](evals/interactive-check-2026-11-04.md).
 
@@ -127,7 +127,7 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 | IF-0 | Committed live batch driver | C | – | done | Maintainer |
 | IF-1 | Instant guidance from on-device OCR | A | – | blocked | Maintainer |
 | IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | Human |
-| IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
+| IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | blocked | Maintainer |
 | IF-6 | Overcharge guard | A+B | – | done | Maintainer |
 | IF-7 | Vibration-only (deafblind) mode | A | – | blocked | Maintainer |
 | IF-8 | "My devices" saved appliances | A | – | blocked | Maintainer |
@@ -140,6 +140,18 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 - Live loopback testing on 2026-10-30 also verifies token-protected simulator delivery and authenticated session traffic. No cloud deployment is claimed.
 
 ## Blockers
+
+- **IF-1 / IF-7 / IF-8 physical acceptance:** coding/local checks pass; live phone timing/correctness, vibration navigation and saved-appliance airplane-mode/zero-keyframe evidence require an attached phone. Earlier phone deferral remains; no gate waived.
+- **IF-2 human prerequisite:** Glimmer URL/token/model/HF id absent; user must create/fund/authenticate Modal. No deployment attempted.
+- **IF-5 live display grounding:** two production batch attempts on the synthetic cooktop returned `ask` before any press. A separate content-free diagnostic classifies appliance + numeric text correctly, but its parsed display does not contain the supplied reference centre. Tried logical display-rectangle OCR then manually annotated visible glyph OCR; stop paid retries under §9. Need validated local OCR/display geometry (and eventual phone acceptance); keep the two-source check.
+
+  Commands (the only output lines, fewer than 30):
+  ```text
+  node --env-file=.env --conditions=source evals/scripts/live-batch.ts --cases evals/datasets/private/impact-cooktop/cases.json --out evals/datasets/private/impact-cooktop/live-task.json --cap 25 --reasoning low
+  {"id":"cooktop-power-3","final":"ask","timeMs":8525,"aligned":null,"calls":1}
+  node --env-file=.env --conditions=source evals/scripts/live-batch.ts --cases evals/datasets/private/impact-cooktop/cases.json --out evals/datasets/private/impact-cooktop/live-task-glyph.json --cap 25 --reasoning low
+  {"id":"cooktop-power-3","final":"ask","timeMs":6037,"aligned":null,"calls":1}
+  ```
 
 - D1-T5 / D2-T7 / D2-T10c broader diagnostic (2026-11-03): speech succeeds on all ten controlled synthetic command cores, but accepted screen planes and physical target placement remain unreliable. Both AC remotes select only their LCD, TV remotes have no usable plane, one washer targets its printed caption and the knob negative mis-types a rotary control as a button. All six actual video-frame locate turns ask without targets; no video identity/phone acceptance inferred. These stress cases do not redefine the locked flat-touchscreen MVP. Improve flat control-surface acquisition and tappable-area validation before acceptance; [full evidence](evals/appliance-multimedia-check-2026-11-03.md).
 
@@ -595,3 +607,7 @@ _(task id · what changed · why · who approved)_
 - 2026-11-04 IF-2 review: existing Modal app matches B4-3 L40S/vLLM/proxy-auth/300 s scale-down/no request logging requirements. Glimmer URL/token/model/HF id are absent from private configuration; account, credits and token remain human-only blockers. No deployment, model availability assertion or README “verified” claim.
 
 - 2026-11-04 IF-8 coding: named appliance persistence, expiry, rename/delete, local-ASR save offer and fresh-OCR offline lookup/verify implemented. Three failing-first JVM cases pass; 822 TS tests/typecheck, 80 Python tests and Android JVM/APK/lint pass. Blocked on phone save/airplane-mode <1 s/zero-keyframe acceptance; no media stored.
+
+- 2026-11-04 IF-5 coding: bounded Plus/Minus/preset tasks, local-OCR display readback, progress stop/ask and unchanged keypad/PIN gate implemented. Eight gateway regressions plus simulator progression and batch wrong-control checks pass; two paid live attempts ask safely, retained as blocked evidence. Task-case preparer and expected final-display/control checks added to IF-0. No phone/live-success claim.
+
+- 2026-11-04 impact final verification: 833 TS cases/typecheck, 427 Android JVM cases/debug APK/lint (0 errors/16 existing warnings), 80 Python cases pass. Correct area-centroid baseline: 62 paid requests, 2/7 positive photos and 4/5 touchscreens aligned; negative asks. Earlier 58-request run was 4/7 and 4/5 using the historical vertex mean. Both washer cases now ask before scoring; recognition varies. Private media/environment excluded, local simulator stopped, blocked acceptance retained.

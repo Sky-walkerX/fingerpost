@@ -236,7 +236,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             if (ev is GEvent.Abort) { go(GState.IDLE, ev.nowMs); return listOf(Effect.ExitPinMode, Effect.ResumeUploads, Effect.ToneOff, Effect.CloseMic) }
             return emptyList()
         }
-        if (ev is GEvent.CloudTurnPending && state in setOf(GState.GUIDING, GState.ON_TARGET)) {
+        if (ev is GEvent.CloudTurnPending && state in setOf(GState.GUIDING, GState.ON_TARGET, GState.VERIFYING)) {
             go(GState.LOCATING,ev.nowMs)
             return listOf(Effect.ToneOff)
         }

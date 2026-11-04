@@ -175,3 +175,15 @@ export function layoutSummary(elements: readonly LayoutElement[]): string {
   return elements.map((el) => `[${el.id}] "${el.label}" role=${el.role}`).join('\n');
 }
 
+
+/** Read only a unique local OCR token inside the parsed appliance display. */
+export function readApplianceDisplay(elements: readonly LayoutElement[], tokens: readonly {text:string;box:{u:number;v:number;w:number;h:number}}[]): string|null {
+  const displays=elements.filter(e=>e.role==='text'&&/^(?:P?[0-9]|\d{1,2}:[0-5]\d)$/i.test(e.label.trim()));
+  if(displays.length!==1) return null;
+  const display=displays[0]!, xs=display.polygon.map(p=>p.u),ys=display.polygon.map(p=>p.v);
+  const found=tokens.filter(token=>{
+    const x=token.box.u+token.box.w/2,y=token.box.v+token.box.h/2;
+    return x>=Math.min(...xs)&&x<=Math.max(...xs)&&y>=Math.min(...ys)&&y<=Math.max(...ys)&&token.text.trim()===display.label.trim();
+  });
+  return found.length===1?found[0]!.text.trim():null;
+}

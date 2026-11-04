@@ -760,6 +760,7 @@ class GuidanceEngine(
 
     private fun server(message: ServerMessage) {
         if (message is Layout && message.sensitivity != Sensitivity.NONE) { cancelEarlyGuidance(); protectSpeech() }
+        if (message is Ask && goalIntent == "task" && machine.state in setOf(GState.ON_TARGET,GState.VERIFYING)) dispatch(GEvent.CloudTurnPending(time()))
         if (message is Ask || message is Confirm || message is ErrorMessage || message is Mode ||
             (message is Say && message.priority == io.github.fingerpost.protocol.Priority.SAFETY)) cancelEarlyGuidance()
         if (message is Ready) {

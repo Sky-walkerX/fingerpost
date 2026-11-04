@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createFetchRecorder, projectToQuad } from '../src/live-batch.ts';
+import { createFetchRecorder, projectToQuad, matchesExpectedControl, polygonCentroid } from '../src/live-batch.ts';
 
 describe('content-free live measurement', () => {
   it('records streamed completion and usage without request or response content', async () => {
@@ -30,4 +30,20 @@ describe('content-free live measurement', () => {
     expect(projectToQuad(quad, {u:0.5,v:0.5}).y).toBeCloseTo(70);
     expect(() => projectToQuad(Array(4).fill({x:0,y:0}), {u:0,v:0})).toThrow();
   });
+});
+
+it('does not advance prepared task frames after a wrong or absent control target',()=>{
+  expect(matchesExpectedControl([], 'Plus')).toBe(false);
+  const messages: import('@fingerpost/protocol').ServerMessage[] = [
+    {type:'layout',id:'l',ts:0,screenType:'appliance',sensitivity:'none',rotation:0,language:'en',source:'model',fingerprint:'f',elements:[{id:'plus',label:'Plus',role:'button',confidence:1,polygon:[{u:0,v:0},{u:1,v:0},{u:1,v:1}]}]},
+    {type:'target',id:'t',ts:0,elementId:'plus',polygon:[{u:0,v:0},{u:1,v:0},{u:1,v:1}],confidence:1,say:'Synthetic target'},
+  ];
+  expect(matchesExpectedControl(messages,'Plus')).toBe(true);
+  expect(matchesExpectedControl(messages,'Minus')).toBe(false);
+});
+
+it('uses an area centroid rather than the mean of sampled vertices',()=>{
+ const center=polygonCentroid([{u:0,v:0},{u:1,v:0},{u:1,v:1},{u:0,v:.5}]);
+ expect(center.u).toBeCloseTo(5/9);expect(center.v).toBeCloseTo(7/18);
+ expect(()=>polygonCentroid([{u:0,v:0},{u:0,v:0},{u:0,v:0}])).toThrow();
 });
