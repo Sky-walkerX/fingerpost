@@ -29,13 +29,13 @@ export interface ControlGrounding {
 }
 
 /** A focused second look must confirm a pressable area; uncertainty never restores the coarse box. */
-export function groundControl(client: OpenAI, image: SamImage, options: GroundRequest): Promise<ControlGrounding> {
+export function groundControl(client: OpenAI, image: SamImage, options: GroundRequest, model: string = MODELS.spark): Promise<ControlGrounding> {
   const started = performance.now();
   return modelRequest(client, image.signal, async (signal) => {
     const crop = await controlCrop({ ...image, signal }, options.element.polygon);
     try {
       signal.throwIfAborted();
-      const response = await client.chat.completions.create({ model: MODELS.spark, messages: [
+      const response = await client.chat.completions.create({ model, messages: [
         { role: 'system', content: PROMPT },
         { role: 'user', content: [
           { type: 'text', text: JSON.stringify({ locale: options.locale, label: options.element.label,

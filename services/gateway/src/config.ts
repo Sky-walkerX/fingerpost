@@ -16,6 +16,8 @@ const Env = z
     MODEL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(MODEL_TIMEOUT_LIMIT_MS).default(MODEL_TIMEOUT_DEFAULT_MS),
     /** guidance-spec §8 (initial value, 2026-11-04): Spark screen-parse reasoning; `default` omits the field. */
     SPARK_PARSE_REASONING: z.enum(['default', 'low', 'medium', 'high']).default('low'),
+    /** guidance-spec §8 (2026-11-04, user choice for the live demo): model for the screen read and focused grounding. */
+    VISION_MODEL: z.enum(['muse-spark-1.3', 'muse-wonder-1.0']).default('muse-spark-1.3'),
     /** Kiosk memory: distinct attested installs that must agree before a screen is served from memory (design §4.9). */
     MEMORY_MIN_INSTALLS: z.coerce.number().int().min(2).max(5).default(2),
     /** Salt for install and text hashes in kiosk_layouts. Unset: a random per-process salt (memory then lasts one run). */

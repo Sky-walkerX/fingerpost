@@ -64,7 +64,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   const live = cfg.MODEL_MODE === 'live';
   const client = live ? createMetaClient(cfg.META_API_KEY!, cfg.MODEL_TIMEOUT_MS) : null;
   const parseReasoning = cfg.SPARK_PARSE_REASONING === 'default' ? {} : { parseReasoning: cfg.SPARK_PARSE_REASONING };
-  const models = o.models ?? (client ? liveModels(client, parseReasoning) : mockModels());
+  const models = o.models ?? (client ? liveModels(client, { ...parseReasoning, visionModel: cfg.VISION_MODEL }) : mockModels());
   // Glimmer is a paid GPU: only live mode calls it. Mock/dev private sessions use an injected port or are refused.
   const glimmer = o.glimmer ?? (live && privateAvailable(cfg) ? glimmerModels(createGlimmerClient(cfg), cfg.GLIMMER_MODEL!) : undefined);
   const router = createRouter({ meta: models, glimmer, ...(o.routerSleep ? { sleep: o.routerSleep } : {}) });

@@ -332,6 +332,8 @@ class GuidanceEngine(
 
     private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline && !usingSavedDevice) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
     private fun say(text: String, priority: SpeechPriority, completion: Long? = null) {
+        // Speaking cuts the mic; low-priority cues (framing, glare, "still reading") would drop the user's words.
+        if (completion == null && priority.rank < SpeechPriority.STATE.rank && (mic.isRunning || offlineAsr.isListening)) return
         if (!guard.pinMode) lastCue = text
         if (mic.isRunning) mic.stop()
         if (offlineAsr.isListening) offlineAsr.stop()
@@ -411,7 +413,10 @@ class GuidanceEngine(
             else { wantsMic = false; requestMicPermission() }
         }
         if (input == SpeechInput.CLOUD && wantsMic && ready && speech.current == null && !mic.isRunning) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) mic.start()
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                if (settings.tone) earcons.listening()
+                mic.start()
+            }
             else { wantsMic = false; requestMicPermission() }
         }
     }

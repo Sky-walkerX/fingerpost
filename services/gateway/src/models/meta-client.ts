@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { MODEL_TIMEOUT_DEFAULT_MS, MODEL_TIMEOUT_LIMIT_MS } from '../config.ts';
 
 export const META_BASE_URL = 'https://api.meta.ai/v1';
-export const MODELS = { spark: 'muse-spark-1.3', sparkFallback: 'muse-spark-1.2', sam: 'sam-3.1' } as const;
+export const MODELS = { spark: 'muse-spark-1.3', sparkFallback: 'muse-spark-1.2', wonder: 'muse-wonder-1.0', sam: 'sam-3.1' } as const;
 
 /** Standard mode only. Never use a "-contributor" model id: frames show users' surroundings. */
 export function createMetaClient(apiKey: string, timeoutMs = MODEL_TIMEOUT_DEFAULT_MS): OpenAI {
