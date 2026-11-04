@@ -124,7 +124,7 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
-| IF-0 | Committed live batch driver | C | – | todo | |
+| IF-0 | Committed live batch driver | C | – | done | Maintainer |
 | IF-1 | Instant guidance from on-device OCR | A | – | todo | |
 | IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | |
 | IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
@@ -581,3 +581,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-03 spoken-image follow-up (Codex): real gateway/Standard Spark/SAM/Voice Transcribe checks expose oversized-keyword rejection, transcription errors and target misalignment. The keyword repair passes three failing-first synthetic regressions and the fresh live provider handshake; it does not resolve speech or grounding accuracy. Current local rerun:733 TS cases (67 protocol/53 web/547 gateway/66 evals), recursive typechecks and gateway build pass. Earlier Android checks are not a new device run. No phone, account, private-env, deployment, commit or push action. [Results and evidence limits](evals/spoken-image-check-2026-11-03.md).
 
 - 2026-11-03 multimedia diagnostic (Codex): completed eight appliance/remote photos, two actual public video sequences (six distinct sampled frames) and ten synthetic spoken goals through the real Standard adapters and loopback gateway.86 image requests started/11 ASR connections include two retained interrupted attempts; all ten selected cases finish without harness errors. Speech cores match10/10; one positive photo aligns, one target misses, remaining photo/video flows ask. The knob negative is not a semantic-refusal pass. Production Kotlin replay compiles and eight direction checks pass; no full-suite or device rerun claimed. Raw inputs/results and source licensing stay ignored locally; no runtime/dependency/private-env change, commit or push. [Detailed results](evals/appliance-multimedia-check-2026-11-03.md).
+
+- 2026-11-04 IF-0: committed production batch driver reproduces 4/7 positive photos and 4/5 synthetic touchscreens; negative asks, 58 paid requests, 60 s deadline. Four recorder/projection regressions pass, recursive typecheck and 810 TS tests pass (including final additional cap regression), 80 Python tests and baseline Android JVM/APK/lint pass. No device/cloud acceptance. See [impact report](evals/impact-features-2026-11-04.md).

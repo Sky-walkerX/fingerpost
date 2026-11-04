@@ -8,3 +8,7 @@ export { createGlimmerClient, glimmerModels } from './parse/glimmer-parse.ts';
 export { loadConfig } from './config.ts';
 export { buildApp } from './app.ts';
 export type { ParsedLayout } from './parse/spark-parse.ts';
+export { createRouter } from './models/router.ts';
+export { SessionPipeline } from './session/pipeline.ts';
+export { MODEL_TURN_TIMEOUT_MS } from './session/model-budget.ts';
+export { jpegSize } from './debug/jpeg.ts';
