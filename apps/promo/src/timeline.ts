@@ -29,7 +29,7 @@ export const sceneOf = (id: SceneId) => scenes.find((s) => s.id === id)!;
 export const music = { offsetSec: beats.offsetSec, bpm: beats.bpm, beatFrames };
 
 const FADE_FRAMES = 90;
-const LEVEL = 0.9;
+const LEVEL = 0.55;
 /** Full level, then a linear fade to silence over the final 1.5 s so the track never cuts off. */
 export function musicVolume(frame: number): number {
   const fadeStart = TOTAL_FRAMES - FADE_FRAMES;
