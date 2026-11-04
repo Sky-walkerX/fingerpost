@@ -33,7 +33,10 @@ export function maskToPolygon(m: SegmentationMaskRecord, imageW: number, imageH:
   const raster = decodeMaskToRaster(m.mask);
   const polygon = simplifyPolygon(rasterToPolygon(raster, m.mask.width, m.mask.height));
   if (polygon.length < 3) return null;
-  return toUV(polygon.map((p) => ({ x: m.bounds.left + p.x, y: m.bounds.top + p.y })), imageW, imageH);
+  // The raster has its own size: SAM caps large objects (e.g. 281×1024 for a 345×1256 px box), so scale to bounds.
+  const sx = (m.bounds.right - m.bounds.left) / m.mask.width, sy = (m.bounds.bottom - m.bounds.top) / m.mask.height;
+  if (!Number.isFinite(sx) || !Number.isFinite(sy) || sx <= 0 || sy <= 0) return null;
+  return toUV(polygon.map((p) => ({ x: m.bounds.left + p.x * sx, y: m.bounds.top + p.y * sy })), imageW, imageH);
 }
 
 async function run(client: OpenAI, image: SamImage, text: string, events?: Events): Promise<SegmentResult> {
