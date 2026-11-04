@@ -190,6 +190,7 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
         ...(live ? { turnTimeoutMs: MODEL_TURN_TIMEOUT_MS, modelWaitMs: MODEL_WAIT_MS } : {}),
         ...(live && cfg.MONITORING_ENABLED && o.telemetry ? { telemetry: o.telemetry } : {}),
         planner, router, memory, ...(o.transportCounters ? { onInbound: (message) => o.transportCounters!.record(message) } : {}),
+        onAsr: (info) => callLog.info(info, 'speech turn'), announceScreens: true,
         onPlannerError: (id) => req.log.warn({ planner: id }, 'planner failed; rules planner used for this step') });
       dispose = session.dispose;
       const { hub } = session;

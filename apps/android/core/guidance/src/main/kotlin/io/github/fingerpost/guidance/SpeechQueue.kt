@@ -21,7 +21,8 @@ class SpeechQueue(private val minGuideGapMs: Long = 700, private val staleGuideM
     private var lastGuideStartMs = Long.MIN_VALUE / 2
 
     fun offer(u: Utterance): SpeechAction {
-        queued.removeAll { it.priority == u.priority }
+        // Server status messages each carry news (new screen, then its target): keep them in order.
+        if (u.priority != Priority.STATE) queued.removeAll { it.priority == u.priority }
         val playing = current
         val cadenceAllows = u.priority != Priority.GUIDE || u.atMs - lastGuideStartMs >= minGuideGapMs
         if (playing != null && playing.priority != Priority.SAFETY &&

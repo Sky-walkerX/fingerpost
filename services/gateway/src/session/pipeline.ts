@@ -46,6 +46,8 @@ export interface PipelineDeps {
   planner?: Planner;
   /** The planner failed and the rules planner took over for that step. No content is passed. */
   onPlannerError?: (plannerId: string) => void;
+  /** Say "New screen. I see …" when a read shows a screen the user hasn't heard (live gateway). */
+  announceScreens?: boolean;
 }
 
 /** Billed keyframes allowed per charged task (the agent's 20-step budget, design §4.3). */
@@ -413,6 +415,11 @@ export class SessionPipeline {
     this.sensitive = layout.sensitivity !== 'none';
     this.privatePlanning ||= this.privacy === 'private' || this.sensitive;
     this.d.send(layout);
+    // Announce each screen the user hasn't heard yet, before any target or question about it.
+    if (this.d.announceScreens && !this.sensitive && h.purpose !== 'explore' && !this.explore && (!before || labelJaccard(before.elements, layout.elements) < 0.7)) {
+      const labels = listLabels(layout.elements, 6, this.locale);
+      if (labels) this.d.send({ ...this.base(), type: 'say', priority: 'state', text: t(this.locale, 'new_screen', { labels }).slice(0, 500) });
+    }
     // Classification now protects refinement and planning as well as the next frame.
     if (this.sensitive) {
       const protectedModels = this.models();

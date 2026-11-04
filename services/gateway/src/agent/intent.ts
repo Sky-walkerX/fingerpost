@@ -12,13 +12,13 @@ export type RequestedMode = z.infer<typeof RequestedModeSchema>;
 const TASK_VERBS = /\b(buy|pay|book|check\s*in|ticket|और|comprar|pagar|pedir)\b/i;
 /** "order" is a task verb only if it's a standalone verb, not part of a compound label like "start order". */
 const ORDER_VERB = /\border\b/i;
-const ORDER_AS_LABEL = /\b(start|place|my|view|the)\s+order\b/i;
+const ORDER_AS_LABEL = /\b(start|place|my|view|the|review|cancel)\s+order\b|\badd\s+(it\s+)?to\s+(my\s+)?order\b/i;
 /**
  * Two or more distinct nouns joined by "and" (not "start order", which is a compound label).
  * The first and second word groups must differ after stripping filler.
  */
 const MULTI_NOUN_AND = /\b(\w+)\s+.*\band\b\s+(?!\1\b)(\w+)\b/i;
-const EXPLORE_RE = /\b(what('?s|\s+is)\s+on|read the screen|explore|क्या\s+है|qué\s+hay)\b/i;
+const EXPLORE_RE = /\b(what('?s|\s+is)\s+on|read (the|this) screen|read it|describe (the|this) screen|what (do|can) you see|what can i (press|tap)|what are (the|my) options|explore|क्या\s+है|qué\s+hay)\b/i;
 
 /** Filler words that don't count toward task intent detection. */
 const INTENT_FILLER = /\b(press|tap|touch|push|click|select|choose|the|a|an|button|key|please|on|option)\b/gi;

@@ -24,7 +24,9 @@ export interface ControllerDeps {
   telemetry?: TelemetryCollector;
   minimumVersion?: () => Promise<string>;
   /** Day 4 task planner; the pipeline falls back to the rules planner when absent or failing. */
-  planner?: Planner; onPlannerError?: (plannerId: string) => void;
+  planner?: Planner; onPlannerError?: (plannerId: string) => void; announceScreens?: boolean;
+  /** Content-free speech-turn outcome: audio length, level and word count only. */
+  onAsr?: (info: { outcome: 'final' | 'empty' | 'error'; seconds: number; rmsDb: number; peakDb: number; words: number }) => void;
   /** B4-1 model router (Meta / Glimmer). Without it every frame uses `models`. */
   router?: RoutedModels;
   /** B5-2 kiosk memory; records are vouched for by the session's attested key id. */
@@ -36,7 +38,12 @@ export interface ControllerDeps {
 /** Wires one WebSocket: hub (validation) → pipeline (brain) + ASR relay + sim touches. Returns a disposer. */
 export function createSessionController(d: ControllerDeps): { hub: SessionHub; dispose(): void } {
   let disposed = false, relay: AsrRelay | null = null, unsubscribe: (() => void) | undefined;
-  let turn = 0, audioBytes = 0, audioEnded = false, awaitingEnd = false;
+  let turn = 0, audioBytes = 0, audioEnded = false, awaitingEnd = false, sumSq = 0, peak = 0;
+  const level = (v: number) => Math.round(20 * Math.log10(Math.max(v, 1) / 32768));
+  const asrOutcome = (outcome: 'final' | 'empty' | 'error', words = 0) => {
+    const samples = audioBytes / 2;
+    d.onAsr?.({ outcome, seconds: Math.round(audioBytes / 3200) / 10, rmsDb: level(samples ? Math.sqrt(sumSq / samples) : 0), peakDb: level(peak), words });
+  };
   let keywords: string[] = [], accountingFailed = false;
   let simulator = false, pinMode = false;
   const observe = (port: ModelPort): ModelPort => ({
@@ -83,12 +90,12 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
     ...((d.onTask || d.telemetry) ? { onTask: () => simulator ? () => {} : (d.onTask?.() ?? d.telemetry!.beginTask()) } : {}),
     ...(beforeTask ? { beforeTask } : {}), ...(quota ? { cloudEnabled: () => quota.cloudEnabled() } : {}),
     ...(d.planner ? { planner: d.planner } : {}), ...(route ? { route } : {}),
-    ...(d.memory ? { memory: d.memory, keyId: d.claims?.keyId ?? 'dev-key' } : {}), ...(d.onPlannerError ? { onPlannerError: d.onPlannerError } : {}) });
+    ...(d.memory ? { memory: d.memory, keyId: d.claims?.keyId ?? 'dev-key' } : {}), ...(d.onPlannerError ? { onPlannerError: d.onPlannerError } : {}), ...(d.announceScreens ? { announceScreens: true } : {}) });
   const closeRelay = () => {
     turn++;
     const old = relay;
     relay = null;
-    audioBytes = 0;
+    audioBytes = 0; sumSq = 0; peak = 0;
     audioEnded = false;
     awaitingEnd = false;
     old?.close();
@@ -137,6 +144,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
             break;
           }
           audioBytes += payload.length;
+          for (let i = 0; i + 1 < payload.length; i += 2) { const v = (payload[i]! | (payload[i + 1]! << 8)) << 16 >> 16; sumSq += v * v; if (Math.abs(v) > peak) peak = Math.abs(v); }
           if (!relay) {
             // ASR is billed too: a paused cloud refuses the utterance up front.
             const openingTurn = turn;
@@ -155,8 +163,9 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
             if (relay || disposed) break;
             const currentTurn = ++turn;
             const active = () => !disposed && currentTurn === turn;
-            const error = () => {
+            const error = (empty = false) => {
               if (!active()) return;
+              asrOutcome(empty ? 'empty' : 'error');
               const ended = audioEnded;
               closeRelay();
               awaitingEnd = !ended;
@@ -167,7 +176,8 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
                 partial(text) { if (active()) send({ ...base(), type: 'transcript', text, final: false }); },
                 final(text) {
                   if (!active()) return;
-                  if (!text.trim() || text.length > 500) { error(); return; }
+                  if (!text.trim() || text.length > 500) { error(true); return; }
+                  asrOutcome('final', text.trim().split(/\s+/).length);
                   const seconds = audioBytes / 32_000;
                   const ended = audioEnded;
                   closeRelay();
@@ -183,7 +193,7 @@ export function createSessionController(d: ControllerDeps): { hub: SessionHub; d
                   if (recorded) void recorded.then(publish, () => {});
                   else publish();
                 },
-                error,
+                error: () => error(false),
               });
               if (!active()) { opened.close(); break; }
               relay = opened;
