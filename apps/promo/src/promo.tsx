@@ -2,6 +2,7 @@ import { AbsoluteFill, Sequence } from 'remotion';
 import { useFontsReady } from './fonts.ts';
 import { Answer } from './scenes/answer.tsx';
 import { Problem } from './scenes/problem.tsx';
+import { Scan } from './scenes/scan.tsx';
 import { scenes, type SceneId } from './timeline.ts';
 import { color } from './tokens.ts';
 
@@ -10,7 +11,7 @@ const Placeholder: React.FC<{ tone: 'day' | 'night' }> = ({ tone }) => <Absolute
 const SCENE: Record<SceneId, React.FC> = {
   problem: Problem,
   answer: Answer,
-  scan: () => <Placeholder tone="day" />,
+  scan: Scan,
   confirm: () => <Placeholder tone="day" />,
   guide: () => <Placeholder tone="day" />,
   privacy: () => <Placeholder tone="night" />,
