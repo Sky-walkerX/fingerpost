@@ -332,8 +332,8 @@ class GuidanceEngine(
 
     private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline && !usingSavedDevice) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
     private fun say(text: String, priority: SpeechPriority, completion: Long? = null) {
-        // Speaking cuts the mic; low-priority cues (framing, glare, "still reading") would drop the user's words.
-        if (completion == null && priority.rank < SpeechPriority.STATE.rank && (mic.isRunning || offlineAsr.isListening)) return
+        // While waiting for the user's words, low-priority cues (framing, glare) would cut the mic and drop them.
+        if (completion == null && priority.rank < SpeechPriority.STATE.rank && machine.state in QUIET_STATES && (mic.isRunning || offlineAsr.isListening)) return
         if (!guard.pinMode) lastCue = text
         if (mic.isRunning) mic.stop()
         if (offlineAsr.isListening) offlineAsr.stop()
@@ -407,12 +407,16 @@ class GuidanceEngine(
             return
         }
         val input = speechPrivacy.input(offline || usingSavedDevice, guard.pinMode)
-        if (input == SpeechInput.LOCAL && wantsMic && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
+        // The mic is open only while the app waits for words; reading the screen and guiding stay closed.
+        val awaitsWords = machine.state in MIC_STATES
+        if (!awaitsWords && mic.isRunning) mic.stop()
+        if (!awaitsWords && offlineAsr.isListening) offlineAsr.stop()
+        if (input == SpeechInput.LOCAL && wantsMic && awaitsWords && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
                 offlineAsr.listen(asrLanguage(settings.locale))
             else { wantsMic = false; requestMicPermission() }
         }
-        if (input == SpeechInput.CLOUD && wantsMic && ready && speech.current == null && !mic.isRunning) {
+        if (input == SpeechInput.CLOUD && wantsMic && awaitsWords && ready && speech.current == null && !mic.isRunning) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 if (settings.tone) earcons.listening()
                 mic.start()
@@ -1062,6 +1066,8 @@ class GuidanceEngine(
 
     private fun framingText(cue: FramingCue): String = Strings.framing(cue, machine.locale, settings.holdMode == HoldMode.CHEST_MOUNT)
     private companion object {
+        val MIC_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM, GState.EXPLORING)
+        val QUIET_STATES = setOf(GState.LISTENING, GState.ASK, GState.CONFIRM)
         const val DONATION_PROMPT_ID = Long.MIN_VALUE
         val openCvReady by lazy { OpenCVLoader.initLocal() }
         /** States in which the gateway's next turn (target, ask, confirm) is expected. */
