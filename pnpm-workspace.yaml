@@ -2,6 +2,7 @@ packages:
   - packages/*
   - services/*
   - apps/web
+  - apps/promo
   - evals
 
 # One asn1js for both our parser and pkijs (pkijs 3.4.1 allows ^3.0.6).
@@ -10,5 +11,6 @@ overrides:
 
 # firebase-admin pulls these in; their install scripts aren't needed.
 allowBuilds:
+  esbuild: false
   '@firebase/util': false
   protobufjs: false

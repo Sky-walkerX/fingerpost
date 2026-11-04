@@ -1,0 +1,27 @@
+{
+  "name": "@fingerpost/promo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts --port=3418",
+    "still": "remotion still src/index.ts Promo --port=3417",
+    "render": "remotion render src/index.ts Promo out/promo.mp4 --port=3417",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/hanken-grotesk": "5.2.8",
+    "@fontsource/instrument-serif": "5.2.8",
+    "@remotion/cli": "4.0.537",
+    "react": "19.1.10",
+    "react-dom": "19.1.10",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}
