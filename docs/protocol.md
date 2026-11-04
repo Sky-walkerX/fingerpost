@@ -52,7 +52,7 @@ client: abort                          ──► server: finish{result:"aborted"
 | `layout` | `fingerprint`, `screenType` (`menu`\|`form`\|`confirm`\|`payment_entry`\|`pin_pad`\|`appliance`\|`info`\|`unknown`), `rotation` (0\|90\|180\|270), `language`, `sensitivity` (`none`\|`financial`\|`identity`), `screenQuad?` ([4]{x,y} image px, `full` frames only), `elements[]{id, label, labelLocal?, role (`button`\|`pay`\|`confirm`\|`submit`\|`back`\|`cancel`\|`input`\|`text`\|`icon`\|`key`), state?, polygon[]{u,v}, textNorm?, confidence}`, `source` (`memory`\|`model`) | |
 | `target` | `elementId`, `polygon[]{u,v}`, `confidence`, `say` | `say` is speech in the user's locale |
 | `say` | `text`, `priority` (`safety`\|`state`\|`guide`\|`info`) | |
-| `ask` | `question`, `options[]` | the client speaks it, then listens |
+| `ask` | `question`, `options[]`, `reason?` (`reframe`) | the client speaks it, then listens. `reframe` (2026-11-04) means the picture was unusable (no screen plane, or the button too unclear); the client may re-frame and send one fresh keyframe for the same goal before listening. Older servers omit it. |
 | `confirm` | `summary`, `amount?{value, currency}` | the client must get a spoken yes |
 | `expect` | `description` | what verify will look for |
 | `verify` | `re`, `result` (`ok`\|`wrong`\|`nochange`), `actualElementId?`, `say` | |

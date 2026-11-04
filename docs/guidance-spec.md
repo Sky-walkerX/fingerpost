@@ -142,6 +142,10 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 
 **Spark parse hedge (initial value, 2026-11-04):** if Spark 1.3 has not answered a screen parse **15 s** after the request started, the gateway also starts Spark 1.2 on the same image; the first valid parse wins and the other request is cancelled. A 1.3 timeout or 5xx before then still falls back immediately; any other 1.3 error before then fails without 1.2, as before. The per-call bound, zero SDK retries, router retry/Glimmer chain and 60-second turn deadline are unchanged. Measured reason: on 1024-wide appliance photos 1.3 writes about 2,800–3,400 output tokens and reached the 30-second bound in 6 of 8 parses, while 1.2 completed each fallback in 11.6–15.6 s ([evidence](evals/live-quality-2026-11-04.md)). Slow parses may bill one extra, usually cancelled, 1.2 request.
 
+**Progress while reading (initial value, 2026-11-04):** when the negotiated server window exceeds 10 s (live gateways), LOCATING speaks "Still reading the screen. Keep the phone pointed at it." at INFO priority every **10 s** after the keyframe, so a long read is never silent. It uploads nothing and never tells the user to press; legacy six-second windows never reach it.
+
+**Automatic re-frame (initial value, 2026-11-04):** an `ask` with `reason: "reframe"` (no screen plane, or the button too unclear) is spoken and returns to FRAMING with the goal kept and the mic closed, so the next stable frame sends one fresh locate keyframe. This happens **once per goal**; a second re-frame ask, or any ask without the reason, follows the normal path (listen). A new goal restores the allowance.
+
 **Framing coach:** runs every 1.5 s while in FRAMING. Checks run in this order: no quad; **too close** (quad area over 85%, checked first because such a quad always touches the 4% margin); cut off; too far (under 15%); off-centre (over 15%). This order was fixed during planning verification.
 - **Direction:** the screen quad's center offset from the image center gives the direction to move the phone.
 - **Distance:** quad area under 15% of the frame → "move closer"; over 85% → "move back".

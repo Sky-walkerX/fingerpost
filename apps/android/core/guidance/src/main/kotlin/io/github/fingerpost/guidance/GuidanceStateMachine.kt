@@ -29,7 +29,9 @@ sealed interface GEvent {
     data class Tick(override val nowMs: Long) : GEvent
     /** goal.ack intent: "task" turns verified presses into AWAIT_NEXT instead of DONE. */
     data class IntentArrived(override val nowMs: Long, val intent: String) : GEvent
-    data class AskArrived(override val nowMs: Long, val askId: String, val question: String, val options: List<String>) : GEvent
+    /** [reframe]: the picture was unusable; re-frame and resend once for this goal instead of listening. */
+    data class AskArrived(override val nowMs: Long, val askId: String, val question: String, val options: List<String>,
+        val reframe: Boolean = false) : GEvent
     /** [amountSay] is spoken after the summary when the summary doesn't already contain it. */
     data class ConfirmArrived(override val nowMs: Long, val confirmId: String, val summary: String, val amountSay: String?) : GEvent
     /** A final transcript while the app listens for an answer (ASK or CONFIRM). */
@@ -82,6 +84,9 @@ object Prompts {
  * Frame events. Task intent adds ASK, CONFIRM and AWAIT_NEXT (Days 4–7 plan, "Contracts"); PIN_MODE is
  * entered from any active state by the local PIN gate and never asks for a keyframe.
  */
+/** guidance-spec §8 (initial value, 2026-11-04): spoken progress interval while a live read is pending. */
+const val STILL_READING_MS = 10_000L
+
 class GuidanceStateMachine(var locale: Locale = Strings.EN) {
     /** Live gateways advertise a bounded wait; older/mock gateways keep the original timers. */
     var serverWaitMs: Long = 6_000L
@@ -104,6 +109,9 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
     private var finishedInPin: String? = null
     private var enteredAt = 0L
     private var retried = false
+    /** One automatic re-frame per goal (protocol `ask.reason = reframe`). */
+    private var reframed = false
+    private var progressAt = 0L
     private var noHandSince: Long? = null
     private var noHandPrompted = false
     private var offeredExplore = false
@@ -119,6 +127,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
         state = s
         enteredAt = now
         retried = false
+        if (s == GState.LOCATING) progressAt = now
         if (s == GState.ON_TARGET) pressPrompted = false
         if (s == GState.IDLE) {
             debounce.reset()
@@ -132,6 +141,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             exploreIntent = false
             policy.reset()
             askId = null; confirmId = null; finishedInPin = null
+            reframed = false
         }
         if (s == GState.AWAIT_NEXT) awaitResent = false
         if (s == GState.EXPLORING) summaryHeard = false
@@ -193,6 +203,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             is GEvent.AskArrived -> {
                 out += Effect.ToneOff
                 out += Effect.Say(ev.question, Priority.STATE)
+                if (ev.reframe && !reframed) { reframed = true; go(GState.FRAMING, now); return true }
                 out += Effect.OpenMic
                 if (taskIntent) {
                     askId = ev.askId; askQuestion = ev.question
@@ -266,6 +277,7 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             GState.LISTENING -> when {
                 ev is GEvent.GoalHeard -> {
                     out += Effect.CloseMic
+                    reframed = false
                     go(GState.FRAMING, now)
                 }
                 timed && now - enteredAt >= 8000 -> if (!retried) {
@@ -297,9 +309,15 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
                     out += Effect.SendKeyframe(KeyframePurpose.LOCATE)
                     retried = true
                     enteredAt = now
+                    progressAt = now
                 } else {
                     out += Effect.Say(prompt(Key.LOCATE_FAILED), Priority.STATE)
                     go(GState.FRAMING, now)
+                }
+                // Long live reads are silent otherwise; legacy six-second windows never reach this.
+                timed && serverWaitMs > STILL_READING_MS && now - progressAt >= STILL_READING_MS -> {
+                    out += Effect.Say(prompt(Key.STILL_READING), Priority.INFO)
+                    progressAt = now
                 }
             }
             GState.GUIDING -> {

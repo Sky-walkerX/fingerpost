@@ -44,9 +44,13 @@ data class Target(override val id: String, override val ts: Long, val elementId:
 data class Say(override val id: String, override val ts: Long, val text: String, val priority: Priority) : ServerMessage()
 
 @Serializable @SerialName("ask")
-data class Ask(override val id: String, override val ts: Long, val question: String, val options: List<String>) : ServerMessage() {
+data class Ask(override val id: String, override val ts: Long, val question: String, val options: List<String>,
+    val reason: AskReason? = null) : ServerMessage() {
     init { require(options.size <= 8) }
 }
+
+/** `reframe`: the picture was unusable; re-frame and send one fresh keyframe (protocol.md). */
+@Serializable enum class AskReason { @SerialName("reframe") REFRAME }
 
 @Serializable data class Amount(val value: Double, val currency: String) {
     init { require(value >= 0); require(Regex("^[A-Z]{3}$").matches(currency)) { "currency must be ISO 4217" } }

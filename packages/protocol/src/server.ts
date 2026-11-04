@@ -36,7 +36,10 @@ export const Layout = z.object({
 });
 export const Target = z.object({ ...base, type: z.literal('target'), elementId: z.string().min(1).max(32), polygon: Polygon, confidence: Unit, say: Say });
 export const SayMsg = z.object({ ...base, type: z.literal('say'), text: Say, priority: Priority });
-export const Ask = z.object({ ...base, type: z.literal('ask'), question: z.string().min(1).max(300), options: z.array(z.string().min(1).max(100)).max(8) });
+/** `reframe`: the picture was unusable (no screen plane, button too small); the client may re-frame and resend once. */
+export const AskReason = z.enum(['reframe']);
+export const Ask = z.object({ ...base, type: z.literal('ask'), question: z.string().min(1).max(300), options: z.array(z.string().min(1).max(100)).max(8),
+  reason: AskReason.optional() });
 export const Confirm = z.object({
   ...base,
   type: z.literal('confirm'),

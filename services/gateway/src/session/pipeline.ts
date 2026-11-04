@@ -395,7 +395,7 @@ export class SessionPipeline {
     }
     coordinates = mapped;
     if (h.kind === 'full' && !mapped) {
-      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'no_screen'), options: [] });
+      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'no_screen'), options: [], reason: 'reframe' });
       return;
     }
     const elements = mapped ? imageElements.flatMap((element) => {
@@ -509,7 +509,8 @@ export class SessionPipeline {
       this.target = null;
       this.completeTask('error', signal);
       const unsupported = result?.actuation === 'turn' || result?.actuation === 'slide';
-      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, unsupported ? 'press_only' : 'target_unclear'), options: [] });
+      this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, unsupported ? 'press_only' : 'target_unclear'), options: [],
+        ...(unsupported ? {} : { reason: 'reframe' as const }) });
       return null;
     }
     return { ...element, polygon: result.polygon, confidence: Math.min(element.confidence, result.confidence) };
@@ -538,7 +539,7 @@ export class SessionPipeline {
       const polygon = coordinates ? coordinates.toScreen(grounded.polygon) : grounded.polygon;
       if (!polygon) {
         this.target = null;
-        this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'target_unclear'), options: [] });
+        this.d.send({ ...this.base(), type: 'ask', question: t(this.locale, 'target_unclear'), options: [], reason: 'reframe' });
         return;
       }
       original = grounded;

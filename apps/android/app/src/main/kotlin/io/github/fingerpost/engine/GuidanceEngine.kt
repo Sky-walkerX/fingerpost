@@ -704,7 +704,8 @@ class GuidanceEngine(
                 }
             }
             is ServerTarget -> target(message)
-            is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options))
+            is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options,
+                reframe = message.reason == io.github.fingerpost.protocol.AskReason.REFRAME))
             is Verify -> if (message.re == verifyId) { verifyId = null
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.WRONG) donationOutcome = "wrong"
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.NOCHANGE) donationOutcome = "nochange"

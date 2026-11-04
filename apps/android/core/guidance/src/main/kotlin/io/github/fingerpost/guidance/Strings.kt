@@ -103,6 +103,7 @@ enum class Key {
     FRAME_MOVE_RIGHT,
     FRAME_MOVE_UP,
     FRAME_MOVE_DOWN,
+    STILL_READING,
 }
 
 typealias StringKey = Key
@@ -205,6 +206,7 @@ object Strings {
         Key.FRAME_MOVE_RIGHT to "Move the phone right.",
         Key.FRAME_MOVE_UP to "Move the phone up.",
         Key.FRAME_MOVE_DOWN to "Move the phone down.",
+        Key.STILL_READING to "Still reading the screen. Keep the phone pointed at it.",
     )
 
     private val hi: Map<Key, String> = mapOf(
@@ -297,6 +299,7 @@ object Strings {
         Key.FRAME_MOVE_RIGHT to "फ़ोन को दाईं ओर करें।",
         Key.FRAME_MOVE_UP to "फ़ोन को ऊपर करें।",
         Key.FRAME_MOVE_DOWN to "फ़ोन को नीचे करें।",
+        Key.STILL_READING to "अभी भी स्क्रीन पढ़ रहा हूँ। फ़ोन उसी की ओर रखें।",
     )
 
     private val es: Map<Key, String> = mapOf(
@@ -389,6 +392,7 @@ object Strings {
         Key.FRAME_MOVE_RIGHT to "Mueve el teléfono a la derecha.",
         Key.FRAME_MOVE_UP to "Mueve el teléfono hacia arriba.",
         Key.FRAME_MOVE_DOWN to "Mueve el teléfono hacia abajo.",
+        Key.STILL_READING to "Sigo leyendo la pantalla. Mantén el teléfono apuntando hacia ella.",
     )
 
     val strings: Map<Locale, Map<Key, String>> = mapOf(

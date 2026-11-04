@@ -8,16 +8,19 @@ class ModelWaitTest {
         serverWaitMs = 65_000
         handle(GEvent.Start(0)); handle(GEvent.GoalHeard(0, "synthetic")); handle(GEvent.Frame(0, true, false, null))
     }
+    /** While the cloud works the only permitted effect is the info-priority progress line (no upload, no press prompt). */
+    private fun onlyProgress(effects: List<Effect>) =
+        effects.all { it == Effect.Say(Strings.get(Key.STILL_READING, Strings.EN), Priority.INFO) }
     @Test fun liveWaitDoesNotUploadRetriesAtSixSecondsAndAcceptsSlowTargets() {
         val state = locating()
         assertTrue(state.handle(GEvent.Tick(6_000)).isEmpty())
-        assertTrue(state.handle(GEvent.Tick(44_000)).isEmpty())
+        assertTrue(onlyProgress(state.handle(GEvent.Tick(44_000))))
         state.handle(GEvent.TargetArrived(45_000, "Synthetic target"))
         assertEquals(GState.GUIDING, state.state)
     }
     @Test fun anUnresponsiveServerStillHasABoundedRetry() {
         val state = locating()
-        assertTrue(state.handle(GEvent.Tick(64_999)).isEmpty())
+        assertTrue(onlyProgress(state.handle(GEvent.Tick(64_999))))
         assertEquals(listOf(Effect.SendKeyframe(KeyframePurpose.LOCATE)), state.handle(GEvent.Tick(65_000)))
         state.handle(GEvent.Tick(130_000))
         assertEquals(GState.FRAMING, state.state)
