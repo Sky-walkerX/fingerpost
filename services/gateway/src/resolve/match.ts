@@ -20,8 +20,13 @@ export type Resolution =
   | { kind: 'none' };
 
 /** Words in a goal that never name a control ("press the start button" → "start"). */
-const FILLER = new Set(['press', 'tap', 'touch', 'push', 'click', 'select', 'choose', 'the', 'a', 'an', 'button', 'key', 'please', 'on', 'option', 'दबाएं', 'दबाओ', 'बटन', 'pulsa', 'presiona', 'toca', 'el', 'la', 'botón', 'boton']);
+const FILLER = new Set(['press', 'tap', 'touch', 'push', 'click', 'select', 'choose', 'the', 'a', 'an', 'button', 'key', 'please', 'on', 'option', 'दबाएं', 'दबाओ', 'बटन', 'pulsa', 'presiona', 'toca', 'el', 'la', 'botón', 'boton',
+  // Conversational wrappers ("I wanna press add to order" → "add order").
+  'i', 'im', 'want', 'wanna', 'would', 'like', 'to', 'me', 'can', 'could', 'you', 'let', 'lets', 'need', 'gonna', 'it', 'my', 'for', 'just', 'will', 'do', 'of', 'that', 'this', 'with',
+  'मुझे', 'है', 'करना', 'quiero', 'por', 'favor']);
 export const goalCore = (goal: string) => normalizeLabel(goal).split(' ').filter((word) => word && !FILLER.has(word)).join(' ');
+/** A label without filler words and printed numbers ("add to order 6 90" → "add order"): prices never name a control. */
+const labelCore = (name: string) => name.split(' ').filter((word) => word && !FILLER.has(word) && !/^\p{N}+$/u.test(word)).join(' ');
 
 /**
  * Deterministic first pass before asking Spark: compare the goal core with each tappable element's
@@ -33,7 +38,8 @@ export function resolveByText(goal: string, elements: readonly LayoutElement[]):
   const core = goalCore(goal);
   if (!core) return { kind: 'none' };
   const named = elements.filter((element) => element.role !== 'text').map((element) => ({
-    element, names: [element.label, element.labelLocal, element.textNorm].filter((name) => name !== undefined).map(normalizeLabel),
+    element, names: [element.label, element.labelLocal, element.textNorm].filter((name) => name !== undefined).map(normalizeLabel)
+      .flatMap((name) => [name, labelCore(name)]).filter(Boolean),
   }));
   const exact = named.filter(({ names }) => names.includes(core));
   if (exact.length > 1) return { kind: 'ambiguous', candidates: exact.map(({ element }) => element) };
