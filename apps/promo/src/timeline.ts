@@ -5,7 +5,7 @@ export type SceneId = 'problem' | 'answer' | 'scan' | 'confirm' | 'guide' | 'pri
 
 /** Target lengths in seconds from the approved storyboard; each boundary then snaps to the nearest beat. */
 const TARGET: readonly [SceneId, number][] = [
-  ['problem', 4], ['answer', 3], ['scan', 7], ['confirm', 6], ['guide', 9], ['privacy', 9], ['close', 8],
+  ['problem', 4], ['answer', 3], ['scan', 7], ['confirm', 6], ['guide', 9], ['privacy', 7], ['close', 7],
 ];
 
 const beatFrames = beats.beats.map((b) => Math.round(b * FPS));

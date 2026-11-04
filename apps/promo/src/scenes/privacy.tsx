@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, interpolate, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Caption } from '../components/caption.tsx';
 import { progress, rise } from '../components/motion.ts';
 import { Statement } from '../components/statement.tsx';
@@ -19,6 +19,10 @@ export const Privacy: React.FC = () => {
   const padIn = at(24), detect = at(padIn + 90), headline = at(detect + 40);
   const pad = spring({ frame: frame - padIn, fps, config: springs.snappy });
   const cut = progress(frame, detect, 18);
+  // After detection, keys light as if pressed; the entry field never shows a digit.
+  const pressedKey = frame > detect + 30 ? Math.floor(random(`key-${Math.floor((frame - detect) / 24)}`) * 10) : -1;
+  const pressPhase = ((frame - detect) % 24) / 24;
+  const entered = frame > detect + 30 ? Math.min(4, Math.floor((frame - detect - 30) / 24) + 1) : 0;
   const dots = Array.from({ length: 9 }, (_, i) => {
     const u = ((frame / 40 + i / 9) % 1);
     return { u, x: PHONE.x + (CLOUD.x - PHONE.x) * u, y: PHONE.y + (CLOUD.y - PHONE.y) * u - Math.sin(Math.PI * u) * 80 };
@@ -48,10 +52,10 @@ export const Privacy: React.FC = () => {
           </div>
           <div style={{ position: 'absolute', left: 1290, top: 340, padding: 34, borderRadius: 44, background: color.raised, boxShadow: '0 50px 90px -40px rgba(0,0,0,0.6)', transform: `translateY(${(1 - pad) * 120}px) scale(${0.9 + 0.1 * pad})`, opacity: pad }}>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginBottom: 26 }}>
-              {[0, 1, 2, 3].map((i) => <span key={i} style={{ width: 22, height: 22, borderRadius: '50%', border: `3px solid ${color.nightText}`, opacity: 0.6 }} />)}
+              {[0, 1, 2, 3].map((i) => <span key={i} style={{ width: 22, height: 22, borderRadius: '50%', border: `3px solid ${color.nightText}`, background: i < entered ? color.nightText : 'transparent', opacity: 0.7 }} />)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 104px)', gap: 16 }}>
-              {KEYS.map((k, i) => <div key={i} style={{ height: 96, borderRadius: 24, background: k ? '#24365e' : 'transparent', color: '#9fb0d1', fontFamily: font.body, fontWeight: 600, fontSize: 40, display: 'grid', placeItems: 'center', transform: `scale(${interpolate(spring({ frame: frame - padIn - i * 2, fps, config: springs.snappy }), [0, 1], [0.6, 1])})` }}>{k}</div>)}
+              {KEYS.map((k, i) => <div key={i} style={{ height: 96, borderRadius: 24, background: k ? (KEYS.filter(Boolean).indexOf(k) === pressedKey && pressPhase < 0.5 ? '#3d5a9e' : '#24365e') : 'transparent', color: '#9fb0d1', fontFamily: font.body, fontWeight: 600, fontSize: 40, display: 'grid', placeItems: 'center', transform: `scale(${interpolate(spring({ frame: frame - padIn - i * 2, fps, config: springs.snappy }), [0, 1], [0.6, 1])})` }}>{k}</div>)}
             </div>
           </div>
           <Caption text={appQuote.pinPad} tone="night" appear={detect + 10} speaker="fingerpost" />
