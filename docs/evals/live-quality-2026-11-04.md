@@ -34,7 +34,23 @@ Final configuration per case: washer-01 41.1 s, washer-02 44.6 s, ac-01 48.2 s a
 
 Hedge cost: in the final run 1.2 was started and then cancelled in 4 cases where 1.3 still won (ac-02, tv-02, microwave-02, adversarial). 1.3 was cancelled by a winning 1.2 in 1 case (washer-01); in 4 photo cases 1.3 still reached its 30 s bound while the hedged 1.2 was running, and 1.2 then answered 0–11 s later. Neither cancelled request's tokens reach the usage ledger, as before for timed-out calls.
 
-Total paid image-model requests in this session: **212** (3 batches of 62–63, plus 24 diagnostic probe calls). No ASR, Glimmer, phone or cloud call.
+Total paid image-model requests in this session: **274** (212 for the repairs above, 62 for the reasoning comparison) (3 batches of 62–63, plus 24 diagnostic probe calls). No ASR, Glimmer, phone or cloud call.
+
+## Follow-up: parse reasoning effort (same day)
+
+The Spark parse accepts `reasoning_effort`. The Day 1 low-effort trial (6/10) predates focused grounding and had no default baseline, so the same 13 inputs were rerun with `low` on the parse only (hedge and mask fix in place):
+
+| Parse effort | Paid requests | Photo positives aligned | Touch aligned | Negative | Photo positive finals | Spark 1.3 photo parse |
+|---|---:|---:|---:|---|---|---|
+| model default | 62 | 4/7 | 4/5 | refused | 37.5–48.2 s | 25.5–30 s (4 timeouts) |
+| `low` | 62 | **4/7** (same four) | **4/5** | refused | **30.6–34.9 s** | 17.5–22.5 s |
+
+Adopted as the default (`SPARK_PARSE_REASONING=low`, guidance-spec §8, initial value); `default` restores the old request. Single run per configuration.
+
+## Phone-side follow-ups (same day)
+
+- Live reads were silent after "Looking at the screen." LOCATING now says "Still reading the screen…" every 10 s on live gateways (EN/HI/ES).
+- No-screen and unclear-button asks now carry `ask.reason = "reframe"`; the phone re-frames and sends one fresh keyframe for the same goal instead of asking for the goal again (once per goal).
 
 ## Not fixed: recorded for decision
 

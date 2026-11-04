@@ -23,7 +23,7 @@ export async function restoreUsbForwarding(run: AdbCommand): Promise<UsbState> {
 }
 
 /** Settings `--live` may take from the repo's private .env; nothing else is read from it or from the shell. */
-const LIVE_KEYS = ['META_API_KEY', 'MODEL_TIMEOUT_MS', 'AGENT_PLANNER', 'SIM_TOKEN',
+const LIVE_KEYS = ['META_API_KEY', 'MODEL_TIMEOUT_MS', 'SPARK_PARSE_REASONING', 'AGENT_PLANNER', 'SIM_TOKEN',
   'GLIMMER_URL', 'GLIMMER_TOKEN', 'GLIMMER_MODEL'] as const;
 
 export function readRootEnv(path = new URL('../../../.env', import.meta.url)): Record<string, string> {

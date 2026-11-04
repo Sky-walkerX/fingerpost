@@ -45,7 +45,7 @@ Build/install the USB-address debug APK as described above first. **This command
 Use the documented cooktop/tablet touchscreen for Day 2's full guidance acceptance. An AC remote with physical buttons can be a non-sensitive camera/tracker practice surface, but physical-button controls are outside `design.md` §3.1 and are not a substitute for touchscreen target/press acceptance. Live recognition requires the gateway's actual model adapters and a successful current-policy provider check; it does not require GCP solely to test the model locally.
 
 For an explicitly requested local live run, stop the mock gateway and run `pnpm dev:phone --live`.
-This reads `META_API_KEY`, `MODEL_TIMEOUT_MS`, `AGENT_PLANNER`, `SIM_TOKEN` and the three
+This reads `META_API_KEY`, `MODEL_TIMEOUT_MS`, `SPARK_PARSE_REASONING`, `AGENT_PLANNER`, `SIM_TOKEN` and the three
 `GLIMMER_*` settings from the private root `.env`. It stays bound to laptop loopback with
 development authentication disabled; it is not a production-authentication check. Meta calls
 consume API credits. Private mode becomes available only with all of `GLIMMER_URL`,

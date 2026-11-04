@@ -89,3 +89,18 @@ test('guidance-spec §8: the default hedge starts well inside the per-call bound
   expect(SPARK_HEDGE_MS).toBe(15_000);
   expect(SPARK_HEDGE_MS).toBeLessThan(MODEL_TIMEOUT_DEFAULT_MS);
 });
+
+test('the parse reasoning effort is omitted by default and sent to both Spark versions when configured', async () => {
+  const bodies: Record<string, unknown>[] = [];
+  const fetch = vi.fn<typeof globalThis.fetch>(async (_url, init) => {
+    const body = JSON.parse(String(init?.body)); bodies.push(body);
+    if (body.model === 'muse-spark-1.3') return new Response('{"error":{"message":"synthetic"}}', { status: 503, headers: { 'content-type': 'application/json' } });
+    return completion(body.model, 'From 1.2');
+  });
+  const client = createMetaClient('synthetic-key', 10_000).withOptions({ fetch, logLevel: 'off' });
+  await liveModels(client).parseScreen(image, { locale: 'en' });
+  expect(bodies.map((b) => 'reasoning_effort' in b)).toEqual([false, false]);
+  bodies.length = 0;
+  await liveModels(client, { parseReasoning: 'low' }).parseScreen(image, { locale: 'en' });
+  expect(bodies.map((b) => b.reasoning_effort)).toEqual(['low', 'low']);
+});

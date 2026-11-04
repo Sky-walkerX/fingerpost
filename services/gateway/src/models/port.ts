@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { MODELS } from './meta-client.ts';
 import type { Locale } from '@fingerpost/protocol';
-import { parseScreen, type ParseResult } from '../parse/spark-parse.ts';
+import { parseScreen, type ParseResult, type ReasoningEffort } from '../parse/spark-parse.ts';
 import { segmentByBox, segmentByText, type PxBox, type SamImage, type SegmentResult } from '../parse/sam.ts';
 import { groundControl, type ControlGrounding, type GroundRequest } from '../parse/ground-control.ts';
 
@@ -31,7 +31,7 @@ type ParseOptions = Parameters<ModelPort['parseScreen']>[1];
  * about the whole per-call bound, so 1.2 also starts once 1.3 has been silent for `hedgeMs`; the first valid
  * parse wins and the other request is cancelled. A 4xx before the hedge still fails without 1.2.
  */
-function hedgedParse(client: OpenAI, img: ParseImage, o: ParseOptions, hedgeMs: number): Promise<ParseResult> {
+function hedgedParse(client: OpenAI, img: ParseImage, o: ParseOptions, hedgeMs: number, reasoning?: ReasoningEffort): Promise<ParseResult> {
   const parent = o.signal;
   const primary = new AbortController(), backup = new AbortController();
   const scoped = (c: AbortController) => (parent ? AbortSignal.any([parent, c.signal]) : c.signal);
@@ -47,14 +47,14 @@ function hedgedParse(client: OpenAI, img: ParseImage, o: ParseOptions, hedgeMs: 
     const startBackup = () => {
       if (backupStarted || settled) return;
       backupStarted = true;
-      parseScreen(client, img, { ...o, signal: scoped(backup) }, MODELS.sparkFallback).then(
+      parseScreen(client, img, { ...o, signal: scoped(backup) }, MODELS.sparkFallback, reasoning).then(
         (result) => finish(() => resolve(result), backup),
         (error: unknown) => { backupFailed = true; backupError = error; if (primaryFailed) finish(() => reject(error)); });
     };
     const timer = setTimeout(startBackup, hedgeMs);
     if (parent?.aborted) { onParentAbort(); return; }
     parent?.addEventListener('abort', onParentAbort, { once: true });
-    parseScreen(client, img, { ...o, signal: scoped(primary) }, MODELS.spark).then(
+    parseScreen(client, img, { ...o, signal: scoped(primary) }, MODELS.spark, reasoning).then(
       (result) => finish(() => resolve(result), primary),
       (error: unknown) => {
         primaryFailed = true;
@@ -66,11 +66,12 @@ function hedgedParse(client: OpenAI, img: ParseImage, o: ParseOptions, hedgeMs: 
   });
 }
 
-export function liveModels(client: OpenAI, options: { hedgeMs?: number } = {}): ModelPort {
+/** [parseReasoning] applies only to the screen parse; omitted means the model's own default. */
+export function liveModels(client: OpenAI, options: { hedgeMs?: number; parseReasoning?: ReasoningEffort } = {}): ModelPort {
   const hedgeMs = options.hedgeMs ?? SPARK_HEDGE_MS;
   return {
     // No other retries here (B5-3): the router owns the one jittered retry and the Glimmer step.
-    parseScreen: (img, o) => hedgedParse(client, img, o, hedgeMs),
+    parseScreen: (img, o) => hedgedParse(client, img, o, hedgeMs, options.parseReasoning),
     segmentByBox: (img, box) => segmentByBox(client, img, box),
     segmentByText: (img, phrase) => segmentByText(client, img, phrase),
     groundControl: (img, opts) => groundControl(client, img, opts),

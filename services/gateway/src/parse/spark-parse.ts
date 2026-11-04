@@ -54,8 +54,10 @@ export function toLayout(s: SparkScreen): ParsedLayout {
     language: s.language.slice(0, 16) || 'und', rotation: s.rotation, elements };
 }
 
+export type ReasoningEffort = 'low' | 'medium' | 'high';
+
 export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mime: 'image/jpeg' }, opts: { locale: Locale; goal?: string; signal?: AbortSignal },
-  model: string = MODELS.spark): Promise<ParseResult> {
+  model: string = MODELS.spark, reasoning?: ReasoningEffort): Promise<ParseResult> {
   const started = performance.now();
   const response = await modelRequest(client, opts.signal, (signal) => client.chat.completions.create({
     model,
@@ -67,6 +69,7 @@ export async function parseScreen(client: OpenAI, image: { bytes: Uint8Array; mi
       ] },
     ],
     response_format: { type: 'json_schema', json_schema: { name: 'screen_layout', strict: true, schema: SPARK_SCREEN_JSON_SCHEMA } },
+    ...(reasoning ? { reasoning_effort: reasoning } : {}),
   }, { headers: { 'X-Prompt-Id': PARSE_PROMPT_ID }, signal }));
   const content = response.choices[0]?.message.content;
   if (!content) throw new Error('Spark returned no content');
