@@ -3,52 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Install guide · Fingerpost</title>
 <meta name="description" content="How to install Fingerpost on Android with TalkBack, step by step.">
 <style>
-  :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #cbd5e1; --accent: #facc15; --panel: #111827; --focus: #38bdf8; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 1.125rem/1.6 system-ui, sans-serif; }
-  a { color: var(--accent); }
-  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-  .skip { position: absolute; left: -9999px; }
-  .skip:focus { left: 16px; top: 16px; background: var(--fg); color: var(--bg); padding: 8px 12px; z-index: 1; }
-  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 16px; }
-  header { padding-top: 32px; font-weight: 700; letter-spacing: .02em; }
-  h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 48px 0 16px; }
-  h2 { font-size: 1.4rem; margin-top: 48px; }
-  .lede { color: var(--muted); font-size: 1.25rem; }
-  .badge { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: .95rem; font-weight: 600; }
-  ul { padding-left: 1.2em; }
-  form { background: var(--panel); border-radius: 12px; padding: 20px; margin-top: 16px; }
-  label { display: block; font-weight: 600; margin-bottom: 6px; }
-  input, select, button { font: inherit; border-radius: 8px; }
-  input, select { width: 100%; padding: 12px; border: 2px solid #64748b; background: var(--bg); color: var(--fg); margin-bottom: 16px; }
-  button { background: var(--accent); color: #111; border: 0; padding: 12px 20px; font-weight: 700; cursor: pointer; min-height: 48px; }
-  .hp { position: absolute; left: -9999px; }
-  #thanks { font-weight: 600; }
-  footer { color: var(--muted); padding-top: 48px; padding-bottom: 48px; font-size: 1rem; }
-  nav { max-width: 44rem; margin: 0 auto; padding: 8px 16px 0; }
-  nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
-  .table-wrap { overflow-x: auto; margin-top: 16px; }
-  table { width: 100%; min-width: 36rem; border-collapse: collapse; }
-  th, td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid #334155; }
-  ol li { margin-bottom: 14px; }
-  .note { background: var(--panel); border-radius: 12px; padding: 16px 20px; }
+  /* Tokens. Layout: the spoken guidance is the opening, then a live phone demo, then calm editorial sections on white and mist. */
+  :root {
+    --bg: #ffffff;
+    --fg: #0f1c35;
+    --muted: #4b5873;
+    --accent: #2f5fd6;
+    --panel: #eff4fc;
+    --quiet: #b9c6de;
+    --sand: #f1c9a2;
+    --peach: #ffb98f;
+    --night: #0d1830;
+    --night-2: #1b2a4b;
+    --night-text: #c9d4ea;
+    --line: #dbe3f1;
+    --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    --body: "Hanken Grotesk Variable", "Hanken Grotesk", "Helvetica Neue", system-ui, sans-serif;
+    color-scheme: light;
+  }
 </style>
+<link rel="stylesheet" href="/src/site/doc.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header>Fingerpost</header>
-<nav aria-label="Site">
-  <ul>
-    <li><a href="/">Home</a></li>
-    <li><a href="/install/">Install guide</a></li>
-    <li><a href="/privacy/">Privacy</a></li>
-    <li><a href="/data-safety/">Data safety</a></li>
-  </ul>
-</nav>
-<main id="main">
+<header class="site-header" id="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/" aria-label="Fingerpost home">
+      <svg class="brand-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14" fill="#2f5fd6"/><circle cx="15" cy="15" r="9" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/><circle cx="15" cy="15" r="4.5" fill="#ffb98f"/></svg>
+      <span>Fingerpost</span>
+    </a>
+    <nav aria-label="Site">
+      <ul>
+        <li><a href="/#how">How it works</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="/data-safety/">Data safety</a></li>
+        <li><a href="/install/" aria-current="page">Install guide</a></li>
+      </ul>
+    </nav>
+    <a class="pill" href="/#beta">Get the beta</a>
+  </div>
+</header>
+<main id="main" class="doc wrap">
   <h1>Install Fingerpost on Android</h1>
   <p class="lede">These steps work with TalkBack. They take about five minutes. You need an Android phone with Android 10 or newer.</p>
   <p class="note">Fingerpost is a beta and isn't on Google Play yet, so you install it from its GitHub page. Android will warn you about apps from outside Play; the steps below say what to choose.</p>
@@ -62,7 +61,7 @@
     <li>Double-tap "Install". If Google Play Protect warns that it doesn't know the app, choose the option to install anyway. Wait until TalkBack announces that the app is installed, then double-tap "Open".</li>
     <li>Fingerpost starts with a short spoken tutorial. Listen to it all the way through the first time.</li>
     <li>When asked, allow the camera and the microphone. Fingerpost needs both: the camera to follow your finger and the screen, and the microphone to hear what you want to press.</li>
-    <li>Hold the phone about an arm's length from a touchscreen, pointing straight at it, and say what you want to press, for example "Start". Fingerpost tells you how to move your finger and says "Tap" when you're on the button.</li>
+    <li>Hold the phone about an arm's length from a touchscreen, pointing straight at it, and say what you want to press, for example "Start". Fingerpost tells you how to move your finger and says "Press now" when you're on the button.</li>
   </ol>
 
   <h2>If something goes wrong</h2>
@@ -78,9 +77,19 @@
   <h2>Checking the download (optional)</h2>
   <p>Each release also has a "sha256" file. On a computer, run <code>sha256sum</code> on the downloaded app file; the result must equal the text in that file.</p>
 </main>
-<footer>
-  <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
-  <p><a href="/privacy/">Privacy</a> · <a href="/data-safety/">Data safety</a> · <a href="/install/">Install guide</a> · <a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p class="foot-brand">Fingerpost</p>
+    <p>An assistive aid. Double-check important actions. Not for medical devices.</p>
+    <ul class="foot-links">
+      <li><a href="/privacy/">Privacy</a></li>
+      <li><a href="/data-safety/">Data safety</a></li>
+      <li><a href="/install/">Install guide</a></li>
+      <li><a href="/sim/?scene=fastfood&amp;seed=1">Practice kiosk</a></li>
+      <li><a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a></li>
+    </ul>
+    <p class="licence">Apache-2.0</p>
+  </div>
 </footer>
 </body>
 </html>

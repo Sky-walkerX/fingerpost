@@ -3,15 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <title>Page not found · Fingerpost</title>
   <style>
-    body { max-width: 44rem; margin: 4rem auto; padding: 0 1rem; background: #0b0f17; color: #f3f4f6; font: 1.125rem/1.6 system-ui, sans-serif; }
-    a { color: #facc15; }
-    :focus-visible { outline: 3px solid #38bdf8; outline-offset: 3px; }
+    /* Served as a raw file, so it carries the brand tokens inline. */
+    body { max-width: 44rem; margin: 0 auto; padding: 6rem 1.5rem; background: #ffffff; color: #0f1c35; font: 1.125rem/1.65 "Helvetica Neue", system-ui, sans-serif; }
+    h1 { font: 400 clamp(2.6rem, 6vw, 4rem)/1.05 "Instrument Serif", "Iowan Old Style", Georgia, serif; margin: 0 0 16px; }
+    p { color: #4b5873; }
+    a { color: #2f5fd6; text-underline-offset: 3px; }
+    .mark { display: block; margin-bottom: 32px; }
+    :focus-visible { outline: 3px solid #2f5fd6; outline-offset: 3px; border-radius: 6px; }
   </style>
 </head>
 <body>
   <main>
+    <svg class="mark" width="40" height="40" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14" fill="#2f5fd6"/><circle cx="15" cy="15" r="9" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/><circle cx="15" cy="15" r="4.5" fill="#ffb98f"/></svg>
     <h1>Page not found</h1>
     <p>This address does not lead to a Fingerpost page.</p>
     <p><a href="/">Go to the home page</a> or <a href="/install/">read the install guide</a>.</p>
