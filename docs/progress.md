@@ -130,7 +130,7 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 | IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
 | IF-6 | Overcharge guard | A+B | – | done | Maintainer |
 | IF-7 | Vibration-only (deafblind) mode | A | – | blocked | Maintainer |
-| IF-8 | "My devices" saved appliances | A | – | todo | |
+| IF-8 | "My devices" saved appliances | A | – | blocked | Maintainer |
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
 
@@ -593,3 +593,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-04 IF-6: session-only selected-price/explicit-expectation guard, localized warning and earphone-only terminal path implemented. Four gateway and two JVM regressions pass; normal/tampered fastfood browser flows plus actual AgentSession warning/locked-payment checks pass. Recursive typecheck/822 TS cases (includes concurrent web tests), 80 Python cases and Android JVM/APK/lint pass. No device/audio-route acceptance claimed.
 
 - 2026-11-04 IF-2 review: existing Modal app matches B4-3 L40S/vLLM/proxy-auth/300 s scale-down/no request logging requirements. Glimmer URL/token/model/HF id are absent from private configuration; account, credits and token remain human-only blockers. No deployment, model availability assertion or README “verified” claim.
+
+- 2026-11-04 IF-8 coding: named appliance persistence, expiry, rename/delete, local-ASR save offer and fresh-OCR offline lookup/verify implemented. Three failing-first JVM cases pass; 822 TS tests/typecheck, 80 Python tests and Android JVM/APK/lint pass. Blocked on phone save/airplane-mode <1 s/zero-keyframe acceptance; no media stored.

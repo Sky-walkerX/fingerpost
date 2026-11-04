@@ -77,4 +77,10 @@
     <string name="replay_unavailable">वीडियो रीप्ले उपलब्ध नहीं है। ऐप की निजी रीप्ले फ़ाइल में अनुमोदित सिम्युलेटर MP4 जोड़ें और फिर खोलें।</string>
     <string name="vibration_only">केवल कंपन</string>
     <string name="vibration_tutorial">कंपन दिशाएँ सीखें (20 सेकंड)</string>
+    <string name="my_devices">मेरे उपकरण</string>
+    <string name="rename_device">उपकरण का नाम बदलें</string>
+    <string name="device_name">उपकरण का नाम</string>
+    <string name="save_device">सहेजें</string>
+    <string name="cancel_device">रद्द करें</string>
+    <string name="delete_device">%1$s हटाएँ</string>
 </resources>

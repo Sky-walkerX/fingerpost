@@ -49,6 +49,7 @@ class FrameRouter(
     private data class Anchor(val quad: List<Vec2>, val captureQuad: List<Vec2>?)
     private val anchor = AtomicReference<Anchor?>()
     @Volatile var latestTokens: List<OcrToken>? = null; private set
+    @Volatile var latestOcrAt: Long = 0; private set
     private var lastEstimate = Long.MIN_VALUE / 2
     private var lastOcr = Long.MIN_VALUE / 2
     private var dimensions: Pair<Int, Int>? = null
@@ -125,6 +126,7 @@ class FrameRouter(
                                 if (closed.get()) return@execute
                                 val tokens = ocr.recognize(full)
                                 latestTokens = tokens
+                                latestOcrAt = SystemClock.elapsedRealtime()
                                 // guidance-spec §10.1 tolerances are in pixels: each check gets the aspect of its token space.
                                 val frameAspect = full.width.toDouble() / full.height
                                 val useFrame = tokens == null || normalized == null || PinGate.check(tokens, frameAspect) != PinGateReason.NONE ||

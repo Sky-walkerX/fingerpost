@@ -7,6 +7,7 @@ import java.util.Locale
  * Used across English, Hindi, and Spanish (A4-4).
  */
 enum class Key {
+    DEVICE_SAVE_PROMPT, DEVICE_SAVED,
     OVERCHARGE_WARNING,
     PROVISIONAL_CHECKING, PROVISIONAL_CORRECTION,
     HAPTIC_LEFT, HAPTIC_RIGHT, HAPTIC_UP, HAPTIC_DOWN, HAPTIC_ON,
@@ -120,6 +121,8 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.DEVICE_SAVE_PROMPT to "Save this as a device? Say a name, or no to cancel.",
+        Key.DEVICE_SAVED to "Device saved.",
         Key.OVERCHARGE_WARNING to "Warning: the screen says {shown}, but you chose {expected}. Say yes to continue, or cancel.",
         Key.PROVISIONAL_CHECKING to "Checking…",
         Key.PROVISIONAL_CORRECTION to "Correction: {label}",
@@ -222,6 +225,8 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.DEVICE_SAVE_PROMPT to "इसे उपकरण के रूप में सहेजें? नाम कहें, या रद्द करने के लिए नहीं कहें।",
+        Key.DEVICE_SAVED to "उपकरण सहेजा गया।",
         Key.OVERCHARGE_WARNING to "चेतावनी: स्क्रीन पर {shown} है, लेकिन आपने {expected} चुना था। जारी रखने के लिए हाँ कहें, या रद्द करें।",
         Key.PROVISIONAL_CHECKING to "जाँच रहा हूँ…",
         Key.PROVISIONAL_CORRECTION to "सुधार: {label}",
@@ -324,6 +329,8 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.DEVICE_SAVE_PROMPT to "¿Guardar este aparato? Di un nombre o no para cancelar.",
+        Key.DEVICE_SAVED to "Aparato guardado.",
         Key.OVERCHARGE_WARNING to "Aviso: la pantalla dice {shown}, pero elegiste {expected}. Di sí para continuar o cancelar.",
         Key.PROVISIONAL_CHECKING to "Comprobando…",
         Key.PROVISIONAL_CORRECTION to "Corrección: {label}",

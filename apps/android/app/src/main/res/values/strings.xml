@@ -78,4 +78,10 @@
     <string name="replay_unavailable">Replay unavailable. Add an approved simulator MP4 to the app’s private replay file and reopen.</string>
     <string name="vibration_only">Vibration only</string>
     <string name="vibration_tutorial">Learn vibration directions (20 seconds)</string>
+    <string name="my_devices">My devices</string>
+    <string name="rename_device">Rename device</string>
+    <string name="device_name">Device name</string>
+    <string name="save_device">Save</string>
+    <string name="cancel_device">Cancel</string>
+    <string name="delete_device">Delete %1$s</string>
 </resources>

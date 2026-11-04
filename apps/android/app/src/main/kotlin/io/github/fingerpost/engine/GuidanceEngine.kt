@@ -84,6 +84,17 @@ class GuidanceEngine(
      * when fresh OCR agrees; the keyframe still goes to the gateway, whose target confirms or replaces it.
      */
     private val layoutCache = LocalLayoutCache(layoutStore(context))
+    private val devices = io.github.fingerpost.memory.savedDevices(context)
+    private var usingSavedDevice = false
+    private var cloudAppliance: Layout? = null
+    private var deviceOffer: Pair<Long,CachedLayout>? = null
+    private var deviceOfferAt = 0L
+    private val deviceNameAsr = OfflineAsr(context, onFinal = { name -> post {
+        val offer = deviceOffer
+        deviceOffer = null
+        if (offer != null && YesNo.parse(name) != false && devices.save(name,offer.first,offer.second,System.currentTimeMillis(),"appliance",false))
+            say(Strings.get(Key.DEVICE_SAVED,machine.locale),SpeechPriority.STATE)
+    } }, onUnavailable = { post { deviceOffer = null } })
     private val expectedTotal = ExpectedTotal()
     private var selectedPrice: String? = null
     private var terminalWarning: String? = null
@@ -251,6 +262,7 @@ class GuidanceEngine(
     private fun reset(preserveDonation: Boolean = false) {
         if (!preserveDonation) cancelDonation()
         generation++
+        deviceOffer = null; cloudAppliance = null; deviceNameAsr.stop(); usingSavedDevice = false
         expectedTotal.clear(); selectedPrice = null; terminalWarning = null
         lastCue = null
         wantsMic = false
@@ -291,8 +303,9 @@ class GuidanceEngine(
             is Effect.Say -> say(effect.text, effect.priority, effect.completionId)
             Effect.OpenMic -> wantsMic = true
             Effect.CloseMic -> { wantsMic = false; mic.stop(); offlineAsr.stop() }
-            is Effect.SendKeyframe -> if (offline) { if (!guard.pinMode) offlineKeyframe(effect.purpose) }
+            is Effect.SendKeyframe -> if (offline || usingSavedDevice) { if (!guard.pinMode) offlineKeyframe(effect.purpose) }
             else if (ready && !guard.pinMode) {
+                if (effect.purpose == Purpose.LOCATE && trySavedDevice(goalText)) return
                 router.requestKeyframe(when (effect.purpose) {
                     Purpose.LOCATE -> KeyframePurpose.LOCATE
                     Purpose.VERIFY -> KeyframePurpose.VERIFY
@@ -317,7 +330,7 @@ class GuidanceEngine(
         }
     }
 
-    private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
+    private fun event(kind: EventKind, detail: EventDetail? = null) { if (!offline && !usingSavedDevice) client.send(ClientEvent(newId(), nowMs(), kind, detail)) }
     private fun say(text: String, priority: SpeechPriority, completion: Long? = null) {
         if (!guard.pinMode) lastCue = text
         if (mic.isRunning) mic.stop()
@@ -385,7 +398,13 @@ class GuidanceEngine(
         }
         // guidance-spec §11b: 5 s without the gateway (no network) → basic mode.
         if (!offline && !guard.pinMode && disconnectedSince?.let { now - it >= 5_000 } == true) enterOffline()
-        val input = speechPrivacy.input(offline, guard.pinMode)
+        if (deviceOffer != null) {
+            if (now - deviceOfferAt > 15_000) { deviceOffer = null; deviceNameAsr.stop() }
+            else if (speech.current == null && !deviceNameAsr.isListening && ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                deviceNameAsr.listen(asrLanguage(settings.locale))
+            return
+        }
+        val input = speechPrivacy.input(offline || usingSavedDevice, guard.pinMode)
         if (input == SpeechInput.LOCAL && wantsMic && speech.current == null && !offlineAsr.isListening && !offlineAsrMissing) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
                 offlineAsr.listen(asrLanguage(settings.locale))
@@ -595,7 +614,7 @@ class GuidanceEngine(
     private fun offlineKeyframe(purpose: Purpose) {
         val gen = generation
         scope.launch(Dispatchers.Main) {
-            if (closed || !offline || gen != generation || guard.pinMode) return@launch
+            if (closed || (!offline && !usingSavedDevice) || gen != generation || guard.pinMode) return@launch
             when (purpose) {
                 Purpose.VERIFY -> dispatch(GEvent.VerifyArrived(time(), VerifyResult.OK, offlineSession.verifySay(lastEvidence, machine.locale)))
                 Purpose.LOCATE, Purpose.EXPLORE -> offlineLocate()
@@ -604,6 +623,7 @@ class GuidanceEngine(
     }
 
     private fun offlineLocate() {
+        if (trySavedDevice(offlineGoal)) return
         val frame = latest
         val q = frame?.quad
         val tokens = router.latestTokens
@@ -681,6 +701,38 @@ class GuidanceEngine(
         } else value.donationJpeg?.fill(0)
     }
 
+    private fun trySavedDevice(goal: String): Boolean {
+        if (guard.pinMode || goalIntent == "task" || machine.state !in setOf(GState.LOCATING,GState.FRAMING)) return false
+        val frame = latest ?: return false
+        val q = frame.quad ?: return false
+        if (frame.tracking != TrackState.TRACKING || time()-router.latestOcrAt > 500) return false
+        val tokens = KeyframeTokens.forScreen(router.latestTokens ?: return false,q)
+        val aspect = screenAspect(frame,q)
+        if (!aspect.isFinite()) return false
+        val key = layoutCache.keyIfStable(tokens,aspect) ?: return false
+        val match = devices.find(key,goal,tokens,System.currentTimeMillis(),machine.locale) ?: return false
+        polygon = match.element.polygon; finger.setTarget(polygon,aspect); planner.reset()
+        // Saved devices take the local verify path too; they never create a capture or upload.
+        offlineGoal = goal; usingSavedDevice = true
+        dispatch(GEvent.TargetArrived(time(),match.say,match.element.role))
+        return true
+    }
+
+    private fun offerDeviceSave() {
+        val appliance = cloudAppliance ?: return
+        cloudAppliance = null
+        if (guard.pinMode || settings.privateMode || speechPrivacy.localOnly || offline) return
+        val frame = latest ?: return
+        val q = frame.quad ?: return
+        val tokens = KeyframeTokens.forScreen(router.latestTokens ?: return,q)
+        val key = layoutCache.keyIfStable(tokens,screenAspect(frame,q)) ?: return
+        if (devices.list(System.currentTimeMillis()).any { it.key == key }) return
+        val saved = CachedLayout(appliance.elements.map { CachedElement(it.id,it.label,it.role.name.lowercase(),it.polygon.map { p->Vec2(p.u,p.v) }) })
+        if (!SavedDevices.validLayout(saved)) return
+        deviceOffer = key to saved; deviceOfferAt = time(); wantsMic = false
+        say(Strings.get(Key.DEVICE_SAVE_PROMPT,machine.locale),SpeechPriority.STATE)
+    }
+
     private fun tryProvisional(value: KeyframeCapture) {
         if (machine.state != GState.LOCATING || provisionalLabel != null) return
         val frame = latest ?: return
@@ -733,7 +785,7 @@ class GuidanceEngine(
             return
         }
         when (message) {
-            is Transcript -> if (speechPrivacy.input(offline, guard.pinMode) == SpeechInput.CLOUD && message.final && message.text.isNotBlank()) when (machine.state) {
+            is Transcript -> if (speechPrivacy.input(offline || usingSavedDevice, guard.pinMode) == SpeechInput.CLOUD && message.final && message.text.isNotBlank()) when (machine.state) {
                 GState.LISTENING -> { goalIntent = null; dispatch(GEvent.GoalHeard(time(), message.text)) }
                 GState.ASK, GState.CONFIRM -> dispatch(GEvent.UserSaid(time(), message.text))
                 // "more" and new goals are answered by the gateway; only "touch explore" is handled here.
@@ -745,6 +797,7 @@ class GuidanceEngine(
                 cancelDonation()
                 donations.begin(settings.offerDonations && !settings.privateMode && !speechPrivacy.localOnly && !offline && !guard.pinMode)
                 donationStartedAt = time(); donationOutcome = "failed"
+                usingSavedDevice = false
                 expectedTotal.clear(); expectedTotal.expect(message.goal); selectedPrice = null
                 goalText = message.goal; goalIntent = message.intent.name.lowercase()
                 if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
@@ -772,7 +825,9 @@ class GuidanceEngine(
                 selectedPrice = null
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.WRONG) donationOutcome = "wrong"
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.NOCHANGE) donationOutcome = "nochange"
-                dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
+                dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say))
+                if (message.result == io.github.fingerpost.protocol.VerifyOutcome.OK) offerDeviceSave()
+            }
             is SimTouch -> if (simRunId != null && message.runId == simRunId) dispatch(GEvent.PressDetected(time(), Evidence.SIM))
             is Say -> {
                 say(message.text, SpeechPriority.valueOf(message.priority.name))
@@ -855,6 +910,9 @@ class GuidanceEngine(
     }
 
     private fun target(message: ServerTarget) {
+        cloudAppliance = layout?.takeIf { it.screenType == ScreenType.APPLIANCE && it.sensitivity == Sensitivity.NONE &&
+            !settings.privateMode && !speechPrivacy.localOnly && goalIntent == "guide" }
+
         if (provisionalLabel != null && machine.state in RELOCK_STATES) {
             if (awaitingAnchor) { pendingTarget = message; return }
             val old = provisionalLabel!!
@@ -909,6 +967,7 @@ class GuidanceEngine(
 
     private fun pinEntered() {
         cancelDonation()
+        deviceOffer = null; deviceNameAsr.stop(); cloudAppliance = null
         generation++; relockKey = null; provisionalLabel = null
         haptics.stop(); directionalHaptics.reset()
         wantsMic = false
@@ -990,6 +1049,7 @@ class GuidanceEngine(
         if (closed) return
         closed = true
         reset(); donationAsr.close(); donationUploader.close(); client.close(); sensorManager.unregisterListener(gravity)
+        deviceNameAsr.close()
         hands.close(); tone.release(); haptics.release(); earcons.release(); offlineAsr.close(); speaker.shutdown(); pinHelp.shutdown(); scope.cancel()
     }
     fun closeVision() { router.close() }

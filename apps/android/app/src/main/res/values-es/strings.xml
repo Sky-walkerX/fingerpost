@@ -77,4 +77,10 @@
     <string name="replay_unavailable">Reproducción no disponible. Añade un MP4 aprobado del simulador al archivo privado de reproducción de la app y vuelve a abrirla.</string>
     <string name="vibration_only">Solo vibración</string>
     <string name="vibration_tutorial">Aprende las direcciones por vibración (20 segundos)</string>
+    <string name="my_devices">Mis aparatos</string>
+    <string name="rename_device">Renombrar aparato</string>
+    <string name="device_name">Nombre del aparato</string>
+    <string name="save_device">Guardar</string>
+    <string name="cancel_device">Cancelar</string>
+    <string name="delete_device">Eliminar %1$s</string>
 </resources>

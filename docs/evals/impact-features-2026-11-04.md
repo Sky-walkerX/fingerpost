@@ -31,3 +31,9 @@ Full checks pass: recursive typecheck, 822 TS cases (including concurrent web te
 ## IF-2: human prerequisite
 
 Reviewed existing Modal deployment config against B4-3: L40S, OpenAI-compatible vLLM, 300-second scaledown, proxy authentication, request/access logging off. Private Glimmer configuration is absent. Account/credits/token are human-only; no deployment or “verified on Modal” claim. Live batch private routing and phone evidence await those prerequisites.
+
+## IF-8: saved appliances coding
+
+A verified cloud appliance press offers a local-ASR name prompt. Names/fingerprints/control labels, roles and screen polygons persist in DataStore; no images or raw OCR payloads. Storage is bounded and expires; payment/PIN/input/sensitive/non-appliance layouts are refused. A separate local lookup requires TRACKING, OCR within 500 ms and the existing hashed fingerprint/two-source agreement. Hits bypass keyframe requests and use local verify, including basic mode. Mismatches fall back; disagreement deletes the entry. Settings has localized name editing and deletion with accessible actions.
+
+Three failing-first JVM cases cover save/lookup/rename/delete/codec, mismatch/disagreement eviction and sensitive/expired entries. Full checks pass: 822 TS tests/typecheck, 80 Python tests and Android JVM/debug APK/lint (zero errors/16 existing warnings). The save/airplane-mode phone trial, <1 s cue timing and zero-keyframe transport counters remain unrun; IF-8 stays blocked on that physical acceptance.

@@ -215,6 +215,12 @@ If cloud speech fails during LISTENING, ASK, CONFIRM or EXPLORING, the device sw
 - **Re-lock:** when a guide-intent locate keyframe is sent, a hit is resolved with the gateway's `resolveByText` rules. It guides at once only for a plain control (not pay/confirm/submit, icon or text) whose label fresh OCR inside its box agrees with (§11). OCR disagreement drops the entry. The keyframe still goes to the gateway: its target confirms the re-lock, or replaces the target (and the entry) if it names another element.
 - **Target:** "Found …" in < 0.8 s on a known screen.
 
+### Saved home appliances (IF-8, initial values, 2026-11-04)
+
+After a verified cloud-guided appliance press, offer a local name prompt (on-device ASR, 15 s to answer; “no” cancels). Save at most 10 devices, names up to 40 characters, up to 60 controls with 3–32 screen-space vertices, expiring after 180 days. Store only name, timestamp, hashed OCR fingerprint and control ids/labels/roles/polygons; no media or raw OCR beyond labels. Refuse non-appliance, sensitive, PIN, payment, submit, key or input layouts; private sessions do not offer saving. Settings provides localized rename/delete actions.
+
+Reuse §11c's aspect/SimHash tolerance and CacheRelock's label/geometry agreement, with OCR no older than 500 ms and valid TRACKING. A fingerprint mismatch uses normal cloud/offline resolution; fresh OCR disagreement deletes the entry. A saved-device hit starts guidance without requesting a keyframe and uses local press verification, including with no network. Physical timing/upload-counter acceptance is separate.
+
 ### Provisional target (IF-1, initial algorithm, 2026-11-04)
 
 User-approved conservative label allowlist: EN `Boil, Timer, Fan, Cool, Drinks, Burgers, Sides`; HI `उबाल, टाइमर, पंखा, ठंडा, पेय, बर्गर`; ES `Hervir, Temporizador, Ventilador, Frío, Bebidas, Hamburguesas`. OCR alone has no semantic roles: all other labels wait for cloud classification, including Continue, Start, pay/confirm/submit, icons and digits. Apply the exact §11b resolver to the captured keyframe's screen OCR; only a unique match with a wholly in-screen, positive box qualifies. This user-approved vocabulary heuristic does not establish cloud semantic confidence.

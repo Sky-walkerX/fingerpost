@@ -45,3 +45,18 @@ class DataStoreLayoutStore(private val store: DataStore<Preferences>) : LayoutSt
 
     private companion object { val ENTRIES = stringPreferencesKey("entries") }
 }
+
+
+private val DEVICE_ENTRIES = stringPreferencesKey("named_devices")
+fun savedDevices(context: Context): io.github.fingerpost.guidance.SavedDevices {
+    val store = context.applicationContext.layoutDataStore
+    val initial = runCatching { runBlocking(Dispatchers.IO) { withTimeoutOrNull(500) { store.data.first()[DEVICE_ENTRIES] } } }
+        .getOrNull()?.let(io.github.fingerpost.guidance.SavedDevicesCodec::decode).orEmpty()
+    val writer = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val pending = kotlinx.coroutines.channels.Channel<String>(kotlinx.coroutines.channels.Channel.UNLIMITED)
+    writer.launch { for (encoded in pending) runCatching { store.edit { it[DEVICE_ENTRIES] = encoded } } }
+    return io.github.fingerpost.guidance.SavedDevices(initial) { devices ->
+        val encoded = io.github.fingerpost.guidance.SavedDevicesCodec.encode(devices)
+        pending.trySend(encoded)
+    }
+}

@@ -47,7 +47,21 @@ fun SettingsScreen(
     /** A5-2: empties the on-device layout cache. */
     onClearSavedScreens: () -> Unit = {},
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val devices = remember(context) { io.github.fingerpost.memory.savedDevices(context) }
+    var savedDevices by remember { mutableStateOf(devices.list(System.currentTimeMillis())) }
+    var renaming by remember { mutableStateOf<io.github.fingerpost.guidance.SavedDevice?>(null) }
+    var deviceName by remember { mutableStateOf("") }
     val resources = LocalResources.current
+    renaming?.let { device ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { renaming = null },
+            title = { Text(resources.getString(R.string.rename_device)) },
+            text = { androidx.compose.material3.TextField(value = deviceName, onValueChange = { deviceName = it.take(40) }, label = { Text(resources.getString(R.string.device_name)) }) },
+            confirmButton = { Button(onClick = { if (devices.rename(device.key,deviceName)) { savedDevices = devices.list(System.currentTimeMillis()); renaming = null } }) { Text(resources.getString(R.string.save_device)) } },
+            dismissButton = { Button(onClick = { renaming = null }) { Text(resources.getString(R.string.cancel_device)) } },
+        )
+    }
     var screensCleared by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -193,6 +207,11 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+            Text(resources.getString(R.string.my_devices), Modifier.padding(16.dp).semantics { heading() })
+            for (device in savedDevices) {
+                SettingAction(label = device.name, state = resources.getString(R.string.rename_device), onClick = { deviceName = device.name; renaming = device })
+                SettingAction(label = resources.getString(R.string.delete_device,device.name), state = "", onClick = { devices.delete(device.key); savedDevices = devices.list(System.currentTimeMillis()) })
+            }
             SettingAction(
                 label = resources.getString(R.string.clear_saved),
                 state = if (screensCleared) resources.getString(R.string.cleared) else resources.getString(R.string.saved_explanation),
