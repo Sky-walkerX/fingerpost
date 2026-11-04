@@ -3,12 +3,12 @@ import { useFontsReady } from './fonts.ts';
 import { Answer } from './scenes/answer.tsx';
 import { Confirm } from './scenes/confirm.tsx';
 import { Guide } from './scenes/guide.tsx';
+import { Close } from './scenes/close.tsx';
+import { Privacy } from './scenes/privacy.tsx';
 import { Problem } from './scenes/problem.tsx';
 import { Scan } from './scenes/scan.tsx';
 import { scenes, type SceneId } from './timeline.ts';
 import { color } from './tokens.ts';
-
-const Placeholder: React.FC<{ tone: 'day' | 'night' }> = ({ tone }) => <AbsoluteFill style={{ background: tone === 'day' ? color.day : color.night }} />;
 
 const SCENE: Record<SceneId, React.FC> = {
   problem: Problem,
@@ -16,8 +16,8 @@ const SCENE: Record<SceneId, React.FC> = {
   scan: Scan,
   confirm: Confirm,
   guide: Guide,
-  privacy: () => <Placeholder tone="night" />,
-  close: () => <Placeholder tone="day" />,
+  privacy: Privacy,
+  close: Close,
 };
 
 export const Promo: React.FC = () => {

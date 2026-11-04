@@ -15,7 +15,7 @@ export const copy = {
   scan: 'Screen found.',
   userSays: { payByCard: 'Pay by card', yes: 'Yes.' },
   confirmSummary: 'Pay by card, total 12.40.',
-  privacy: { chip: 'PIN mode · upload off · mic off' },
+  privacy: { chip: 'PIN mode · upload off · mic off', headline: ['Your PIN', 'never leaves your phone.'] },
   close: {
     channels: ['Voice', 'Tone', 'Vibration'],
     languages: [{ text: 'English', lang: 'en' }, { text: 'हिन्दी', lang: 'hi' }, { text: 'Español', lang: 'es' }],
