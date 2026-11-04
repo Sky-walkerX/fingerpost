@@ -16,5 +16,10 @@
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@fontsource-variable/hanken-grotesk": "5.2.8",
+    "@fontsource/instrument-serif": "5.2.8",
+    "motion": "14.4.0"
   }
 }

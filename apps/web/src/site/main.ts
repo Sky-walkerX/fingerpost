@@ -1,4 +1,7 @@
+import { startLanding } from './landing.ts';
 import { submitWaitlist } from './waitlist.ts';
+
+startLanding();
 
 const form = document.querySelector<HTMLFormElement>('#waitlist')!;
 const status = document.querySelector<HTMLElement>('#waitlist-preview')!;

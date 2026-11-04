@@ -4,84 +4,283 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fingerpost</title>
-<meta name="description" content="Fingerpost guides a blind person's finger to the right button on any flat touchscreen, with voice, tone and vibration.">
+<meta name="description" content="Fingerpost is a free Android app that talks a blind or low-vision person's finger to the right button on any flat touchscreen, with voice, a rising tone and vibration.">
+<meta name="theme-color" content="#ffffff">
 <style>
-  :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #cbd5e1; --accent: #facc15; --panel: #111827; --focus: #38bdf8; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 1.125rem/1.6 system-ui, sans-serif; }
-  a { color: var(--accent); }
-  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-  .skip { position: absolute; left: -9999px; }
-  .skip:focus { left: 16px; top: 16px; background: var(--fg); color: var(--bg); padding: 8px 12px; z-index: 1; }
-  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 16px; }
-  header { padding-top: 32px; font-weight: 700; letter-spacing: .02em; }
-  h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 48px 0 16px; }
-  h2 { font-size: 1.4rem; margin-top: 48px; }
-  .lede { color: var(--muted); font-size: 1.25rem; }
-  .badge { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: .95rem; font-weight: 600; }
-  ul { padding-left: 1.2em; }
-  form { background: var(--panel); border-radius: 12px; padding: 20px; margin-top: 16px; }
-  label { display: block; font-weight: 600; margin-bottom: 6px; }
-  input, select, button { font: inherit; border-radius: 8px; }
-  input, select { width: 100%; padding: 12px; border: 2px solid #64748b; background: var(--bg); color: var(--fg); margin-bottom: 16px; }
-  button { background: var(--accent); color: #111; border: 0; padding: 12px 20px; font-weight: 700; cursor: pointer; min-height: 48px; }
-  .hp { position: absolute; left: -9999px; }
-  #thanks { font-weight: 600; }
-  footer { color: var(--muted); padding-top: 48px; padding-bottom: 48px; font-size: 1rem; }
-  nav { max-width: 44rem; margin: 0 auto; padding: 8px 16px 0; }
-  nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  /* Tokens. Layout: the spoken guidance is the opening, then a live phone demo, then calm editorial sections on white and mist. */
+  :root {
+    --bg: #ffffff;
+    --fg: #0f1c35;
+    --muted: #4b5873;
+    --accent: #2f5fd6;
+    --panel: #eff4fc;
+    --quiet: #b9c6de;
+    --sand: #f1c9a2;
+    --peach: #ffb98f;
+    --night: #0d1830;
+    --night-2: #1b2a4b;
+    --night-text: #c9d4ea;
+    --line: #dbe3f1;
+    --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    --body: "Hanken Grotesk Variable", "Hanken Grotesk", "Helvetica Neue", system-ui, sans-serif;
+    color-scheme: light;
+  }
 </style>
+<link rel="stylesheet" href="/src/site/landing.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header>Fingerpost</header>
-<nav aria-label="Site">
-  <ul>
-    <li><a href="/">Home</a></li>
-    <li><a href="/install/">Install guide</a></li>
-    <li><a href="/privacy/">Privacy</a></li>
-    <li><a href="/data-safety/">Data safety</a></li>
-  </ul>
-</nav>
+<header class="site-header" id="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/" aria-label="Fingerpost home">
+      <svg class="brand-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14" fill="#2f5fd6"/><circle cx="15" cy="15" r="9" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/><circle cx="15" cy="15" r="4.5" fill="#ffb98f"/></svg>
+      <span>Fingerpost</span>
+    </a>
+    <nav aria-label="Site">
+      <ul>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#faq">Questions</a></li>
+        <li><a href="/install/">Install guide</a></li>
+      </ul>
+    </nav>
+    <a class="pill" href="#beta">Get the beta</a>
+  </div>
+</header>
+
 <main id="main">
-  <p><span class="badge">Beta target: November 2 · Testing in progress</span></p>
-  <h1>Find the right button on any touchscreen, without sight.</h1>
-  <p class="lede">Fingerpost is an Android app in development for blind and low-vision people. Point your phone at a flat touchscreen and say what you want to press. We're testing guidance with speech, a rising tone and vibration, followed by a check that the press worked.</p>
+  <section class="hear wrap" aria-labelledby="hear-label">
+    <div class="hear-grid">
+      <div>
+        <p class="listen" id="hear-label"><span class="live-dot" aria-hidden="true"></span>What you hear at a drinks kiosk</p>
+        <ol class="transcript" id="hear-lines">
+          <li>Screen found.</li>
+          <li>Move right.</li>
+          <li>Up a little.</li>
+          <li class="now">Press now.</li>
+        </ol>
+      </div>
+      <div class="play-box">
+        <button class="play" id="play" type="button" aria-pressed="false" aria-describedby="play-note">
+          <span class="play-ring" aria-hidden="true"></span>
+          <svg class="play-icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+          <svg class="stop-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+          <span class="play-label" id="play-label">Play it out loud</span>
+        </button>
+        <p class="play-note" id="play-note">Uses your device’s voice and a tone that rises as the finger gets closer, the way the app does.</p>
+      </div>
+    </div>
+    <canvas id="tone" aria-hidden="true"></canvas>
+    <div class="legend" aria-hidden="true"><span>Far away: low, slow tone</span><span>On target: high tone and a buzz</span></div>
+  </section>
 
-  <h2>Who it's for</h2>
-  <p>Blind and low-vision people who meet flat touchscreens with no buttons to feel: self-order kiosks, ticket machines, check-in screens and home appliances.</p>
+  <section class="intro wrap" aria-labelledby="title">
+    <h1 id="title">Fingerpost talks your finger to the right button on any touchscreen.</h1>
+    <div class="intro-copy">
+      <p>A free Android app for blind and low-vision people. Point your phone at a kiosk, ticket machine or appliance and say what you want to press. It guides you with speech, a rising tone and vibration, then checks the press worked.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#beta">Get the Android beta</a>
+        <a class="btn text" href="#how">See how it works</a>
+      </div>
+    </div>
+  </section>
 
-  <h2>What we're building</h2>
-  <ul>
-    <li>Guides one finger to one button, or walks you through a whole order, step by step.</li>
-    <li>Reads the amount and waits for your spoken “yes” before any pay button.</li>
-    <li>Never sends your PIN anywhere. On a PIN pad, the camera stays on your phone and digits are spoken only into your earphones.</li>
-    <li>Free and open source. Works with TalkBack. English, Hindi and Spanish.</li>
-  </ul>
+  <section class="guided" aria-labelledby="guided-title">
+    <div class="wrap guided-grid">
+      <div class="guided-copy">
+        <h2 id="guided-title">Your finger, guided to the right button.</h2>
+        <p>Fingerpost watches the screen and your fingertip through the phone’s camera, many times a second. Directions come as you move, not after.</p>
+        <ul class="facts" aria-label="Key facts">
+          <li>Works with TalkBack, or on its own</li>
+          <li>English, Hindi and Spanish</li>
+          <li>Free and open source</li>
+        </ul>
+      </div>
+      <div class="stage">
+        <div class="stage-glow" aria-hidden="true"></div>
+        <div class="phone" id="guided-demo" role="img" aria-label="Animated example: a phone camera view of a drinks kiosk. A finger marker moves right, then up, onto the Medium button while the phone says each direction, and the button is then selected.">
+          <div class="viewfinder" id="viewfinder">
+            <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+            <div class="kiosk">
+              <div class="kiosk-title">Choose a size</div>
+              <div class="kiosk-grid">
+                <div class="key">Small</div>
+                <div class="key target" id="target">Medium<span class="ring" id="ring"></span></div>
+                <div class="key">Large</div>
+                <div class="key">No drink</div>
+              </div>
+              <div class="kiosk-pay">Pay</div>
+            </div>
+            <div class="finger" id="finger"></div>
+            <div class="caption"><span class="meter" id="meter"><i></i><i></i><i></i><i></i><i></i></span><span id="caption">Press now.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <p><a href="https://github.com/Sky-walkerX/fingerpost/releases/latest">Check GitHub for signed APK releases</a>. Release availability and device acceptance are still pending; read the <a href="/install/">install guide</a> first.</p>
-  <p><a href="https://github.com/Sky-walkerX/fingerpost/releases/latest"><img src="/release-qr.png" width="344" height="344" style="max-width:100%;height:auto" alt="QR code for the latest Fingerpost release on GitHub"></a></p>
-  <h2 id="waitlist-heading">Get the beta</h2>
-  <p id="waitlist-preview" role="status" aria-live="polite">Waitlist registration is not open yet. This preview does not collect or save your details. Check back when the beta is ready.</p>
-  <form id="waitlist" aria-labelledby="waitlist-heading" aria-describedby="waitlist-preview">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" autocomplete="email" required disabled>
-    <label for="locale">Preferred language</label>
-    <select id="locale" name="locale" disabled>
-      <option value="en">English</option>
-      <option value="hi">हिन्दी (Hindi)</option>
-      <option value="es">Español (Spanish)</option>
-    </select>
-    <div class="hp" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off" disabled></div>
-    <button type="submit" disabled>Waitlist not open yet</button>
-  </form>
+  <section class="how wrap" id="how" aria-labelledby="how-title">
+    <h2 id="how-title">Four steps from “where is it?” to “done”.</h2>
+    <p class="sub">The phone does the looking. You keep your hand on the screen and listen.</p>
+    <div class="steps-track" aria-hidden="true"><span class="steps-line" id="steps-line"></span></div>
+    <ol class="steps" id="steps">
+      <li><span class="step-num" aria-hidden="true">1</span><h3>Point</h3><p>Hold the phone toward the screen. It tells you when the whole screen is in view.</p></li>
+      <li><span class="step-num" aria-hidden="true">2</span><h3>Say</h3><p>“Medium drink.” “Start the wash.” “Pay by card.” Plain words are enough.</p></li>
+      <li><span class="step-num" aria-hidden="true">3</span><h3>Follow</h3><p>“Left. Up a little.” The tone rises as you get closer, and the phone buzzes on target.</p></li>
+      <li><span class="step-num" aria-hidden="true">4</span><h3>Press</h3><p>Tap, and Fingerpost looks again to check the screen changed the way you meant.</p></li>
+    </ol>
+  </section>
 
-  <h2>Try the kiosk simulator</h2>
-  <p>Developers and testers can open the <a href="/sim/?scene=fastfood&amp;seed=1">practice kiosk</a> on a tablet or laptop.</p>
+  <section class="band" aria-labelledby="channels-title">
+    <div class="wrap">
+      <h2 id="channels-title">Three ways to know where your finger is.</h2>
+      <div class="channels">
+        <div class="channel">
+          <div class="glyph voice" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <h3>Voice</h3>
+          <p>Short directions: “left”, “up a little”, “press now”. Spoken through TalkBack’s voice or the phone’s own.</p>
+        </div>
+        <div class="channel">
+          <div class="glyph" aria-hidden="true"><svg width="132" height="48" viewBox="0 0 132 48"><path id="rise" d="M3 44 C 34 44, 54 33, 76 22 S 114 5, 129 4" fill="none" stroke="#2f5fd6" stroke-width="4" stroke-linecap="round"/></svg></div>
+          <h3>Tone</h3>
+          <p>The pitch climbs as you close in, so you can hear the distance without waiting for words.</p>
+        </div>
+        <div class="channel">
+          <div class="glyph" aria-hidden="true"><svg id="buzz" width="72" height="48" viewBox="0 0 72 48"><rect x="24" y="5" width="24" height="38" rx="6" fill="none" stroke="#2f5fd6" stroke-width="4"/><path class="wave-l" d="M12 14v20M4 19v10" stroke="#f1c9a2" stroke-width="4" stroke-linecap="round"/><path class="wave-r" d="M60 14v20M68 19v10" stroke="#f1c9a2" stroke-width="4" stroke-linecap="round"/></svg></div>
+          <h3>Vibration</h3>
+          <p>A firm buzz when you are on target. A vibration-only mode for deafblind users is planned.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="languages wrap" id="languages" aria-labelledby="lang-title">
+    <div class="lang-copy">
+      <h2 id="lang-title">It speaks your language.</h2>
+      <p class="sub">Guidance, questions and confirmations in English, Hindi and Spanish. Choose the language in settings, or let it follow your phone.</p>
+    </div>
+    <ul class="phrases" id="phrases">
+      <li lang="en">Press now.</li>
+      <li lang="hi">अब दबाएं।</li>
+      <li lang="es">Pulsa ahora.</li>
+    </ul>
+  </section>
+
+  <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+    <div class="wrap privacy-grid">
+      <div class="privacy-copy">
+        <h2 id="privacy-title">Private where it matters most.</h2>
+        <p>Before any picture leaves the phone, Fingerpost checks it for a keypad or PIN wording. When it finds one, it stops uploading and turns the microphone off until the keypad is gone.</p>
+        <p>It can tell you which digit is under your finger, but only through earphones. It never asks for, sends, logs or stores your PIN.</p>
+        <blockquote class="quote"><p>“PIN pad detected. I'll stay offline while you enter it.”</p><footer>What Fingerpost says when it sees a PIN pad</footer></blockquote>
+        <ul class="rules">
+          <li><strong>You approve every payment.</strong> Before any pay or confirm button, it reads the amount and waits for your spoken “yes”.</li>
+          <li><strong>Pictures are not kept.</strong> Screens and your voice are used to find buttons, then thrown away. Faces are blurred on the phone first.</li>
+          <li><strong>No ads, no tracking.</strong> No third-party analytics, and no account with your name.</li>
+        </ul>
+        <p class="more"><a href="/privacy/">Read the privacy notice</a> · <a href="/data-safety/">Data safety</a></p>
+      </div>
+      <div class="pin-wrap">
+        <div class="pinpad" id="pinpad" aria-hidden="true">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="blank"></span><span>0</span><span class="blank"></span>
+        </div>
+        <p class="pin-status" aria-hidden="true"><span class="off-dot"></span>PIN mode · upload off · microphone off</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="places" aria-labelledby="places-title">
+    <div class="wrap">
+      <h2 id="places-title">Made for screens with nothing to feel.</h2>
+      <p class="sub">Flat glass has replaced buttons almost everywhere. These are the screens we test on.</p>
+    </div>
+    <div class="marquee" id="marquee">
+      <ul class="marquee-row">
+        <li>Self-order kiosks</li><li>Ticket machines</li><li>Airport check-in</li><li>Washing machines</li><li>Air conditioners</li><li>Microwaves</li><li>Card terminals</li><li>Hotel check-in</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="models wrap" aria-labelledby="models-title">
+    <h2 id="models-title">Built on Meta’s models, with the fast parts on your phone.</h2>
+    <div class="models-grid">
+      <svg class="pipeline" id="pipeline" viewBox="0 0 560 300" aria-hidden="true">
+        <path class="pipe" id="pipe-a1" d="M160 58 H210"/>
+        <path class="pipe" id="pipe-a2" d="M360 58 C 388 58, 372 150, 400 150"/>
+        <path class="pipe" id="pipe-b1" d="M160 242 H210"/>
+        <path class="pipe" id="pipe-b2" d="M360 242 C 388 242, 372 150, 400 150"/>
+        <g class="node"><rect x="10" y="30" width="150" height="56" rx="16"/><text x="85" y="64">Camera frame</text></g>
+        <g class="node"><rect x="10" y="214" width="150" height="56" rx="16"/><text x="85" y="248">Your voice</text></g>
+        <g class="node meta"><rect x="210" y="30" width="150" height="56" rx="16"/><text x="285" y="64">Spark + SAM 3.1</text></g>
+        <g class="node meta"><rect x="210" y="214" width="150" height="56" rx="16"/><text x="285" y="248">Voice Transcribe</text></g>
+        <g class="node out"><rect x="400" y="122" width="150" height="56" rx="16"/><text x="475" y="156">Guidance</text></g>
+        <circle class="pulse" id="pulse-a" r="6" cx="160" cy="58"/>
+        <circle class="pulse" id="pulse-b" r="6" cx="160" cy="242"/>
+      </svg>
+      <dl class="model-list">
+        <div><dt>Muse Spark</dt><dd>Reads the screen: every button, its label and what kind of control it is.</dd></div>
+        <div><dt>SAM 3.1</dt><dd>Outlines the screen and the exact shape of the button you asked for.</dd></div>
+        <div><dt>Voice Transcribe</dt><dd>Turns what you say into a goal, in English, Hindi or Spanish.</dd></div>
+        <div><dt>On your phone</dt><dd>Finger tracking at camera speed, the PIN check, and a basic offline mode for text buttons when there is no internet.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="beta" id="beta" aria-labelledby="waitlist-heading">
+    <div class="wrap beta-grid">
+      <div class="beta-copy">
+        <h2 id="waitlist-heading">Get the beta</h2>
+        <p>Fingerpost is in testing. Signed Android builds appear on GitHub as they pass our checks. It needs Android 10 or newer and a camera.</p>
+        <div class="ctas">
+          <a class="btn primary" href="https://github.com/Sky-walkerX/fingerpost/releases/latest">Download from GitHub</a>
+          <a class="btn text" href="/install/">Read the install guide</a>
+        </div>
+        <a class="qr" href="https://github.com/Sky-walkerX/fingerpost/releases/latest"><img src="/release-qr.png" width="172" height="172" alt="QR code for the latest Fingerpost release on GitHub"></a>
+      </div>
+      <div class="waitlist-box">
+        <p id="waitlist-preview" role="status" aria-live="polite">Waitlist registration is not open yet. This preview does not collect or save your details. Check back when the beta is ready.</p>
+        <form id="waitlist" aria-labelledby="waitlist-heading" aria-describedby="waitlist-preview">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required disabled>
+          <label for="locale">Preferred language</label>
+          <select id="locale" name="locale" disabled>
+            <option value="en">English</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="es">Español (Spanish)</option>
+          </select>
+          <div class="hp" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off" disabled></div>
+          <button type="submit" disabled>Waitlist not open yet</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq wrap" id="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Questions</h2>
+    <div class="faq-list">
+      <details><summary>Is Fingerpost free?</summary><p>Yes. It is free and open source under the Apache-2.0 licence, with no ads.</p></details>
+      <details><summary>Which phones does it work on?</summary><p>Android phones running Android 10 or newer, with a rear camera. There is no iPhone version yet.</p></details>
+      <details><summary>Do I need TalkBack?</summary><p>No. Fingerpost speaks for itself, and it also works with TalkBack turned on.</p></details>
+      <details><summary>What happens without internet?</summary><p>After a few seconds without a connection it says “Basic mode: text buttons only.” It keeps guiding to buttons with readable text, using the phone alone, and nothing is uploaded.</p></details>
+      <details><summary>Will it press anything for me?</summary><p>No. You always press. Before a pay or confirm button it reads the amount and waits for your “yes”.</p></details>
+      <details><summary>Can I use it on medical devices?</summary><p>No. Fingerpost is an assistive aid. Double-check important actions, and do not use it for medical devices.</p></details>
+    </div>
+  </section>
 </main>
-<footer>
-  <p>Fingerpost is an assistive aid. Double-check important actions. Not for medical devices.</p>
-  <p><a href="/privacy/">Privacy</a> · <a href="/data-safety/">Data safety</a> · <a href="/install/">Install guide</a> · <a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a> · Apache-2.0</p>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p class="foot-brand">Fingerpost</p>
+    <p>An assistive aid. Double-check important actions. Not for medical devices.</p>
+    <ul class="foot-links">
+      <li><a href="/privacy/">Privacy</a></li>
+      <li><a href="/data-safety/">Data safety</a></li>
+      <li><a href="/install/">Install guide</a></li>
+      <li><a href="/sim/?scene=fastfood&amp;seed=1">Practice kiosk</a></li>
+      <li><a href="https://github.com/Sky-walkerX/fingerpost">Source code on GitHub</a></li>
+    </ul>
+    <p class="licence">Apache-2.0</p>
+  </div>
 </footer>
 <script type="module" src="/src/site/main.ts"></script>
 </body>
