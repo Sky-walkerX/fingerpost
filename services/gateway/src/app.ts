@@ -64,13 +64,23 @@ export async function buildApp(cfg: Config, o: AppOverrides = {}): Promise<Fasti
   const live = cfg.MODEL_MODE === 'live';
   const client = live ? createMetaClient(cfg.META_API_KEY!, cfg.MODEL_TIMEOUT_MS) : null;
   const parseReasoning = cfg.SPARK_PARSE_REASONING === 'default' ? {} : { parseReasoning: cfg.SPARK_PARSE_REASONING };
-  const models = o.models ?? (client ? liveModels(client, { ...parseReasoning, visionModel: cfg.VISION_MODEL }) : mockModels());
+  const callLog = app.log.child({}, { level: cfg.LOG_LEVEL === 'silent' ? 'silent' : 'info' });
+  const timed = <A extends unknown[], R>(step: string, fn: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
+    // Content-free latency line per live model call: step, ms and outcome only.
+    const started = performance.now();
+    try { const r = await fn(...args); callLog.info({ step, ms: Math.round(performance.now() - started), ok: true }, 'model call'); return r; }
+    catch (error) { callLog.info({ step, ms: Math.round(performance.now() - started), ok: false, status: (error as { status?: number }).status }, 'model call'); throw error; }
+  };
+  const liveVision = (port: ModelPort): ModelPort => ({ parseScreen: timed('parse', port.parseScreen), segmentByBox: timed('sam-box', port.segmentByBox),
+    segmentByText: timed('sam-text', port.segmentByText), ...(port.groundControl ? { groundControl: timed('ground', port.groundControl) } : {}) });
+  const models = o.models ?? (client ? liveVision(liveModels(client, { ...parseReasoning, visionModel: cfg.VISION_MODEL })) : mockModels());
   // Glimmer is a paid GPU: only live mode calls it. Mock/dev private sessions use an injected port or are refused.
   const glimmer = o.glimmer ?? (live && privateAvailable(cfg) ? glimmerModels(createGlimmerClient(cfg), cfg.GLIMMER_MODEL!) : undefined);
   const router = createRouter({ meta: models, glimmer, ...(o.routerSleep ? { sleep: o.routerSleep } : {}) });
   const memory = o.memory ?? new MemoryService(o.memoryStore ?? new InMemoryStore(),
     { salt: cfg.MEMORY_SALT ?? randomBytes(16).toString('hex'), minInstalls: cfg.MEMORY_MIN_INSTALLS });
-  const planner = o.planner ?? (client && (cfg.AGENT_PLANNER ?? 'spark') === 'spark' ? sparkPlanner(client) : rulesPlanner());
+  const basePlanner = o.planner ?? (client && (cfg.AGENT_PLANNER ?? 'spark') === 'spark' ? sparkPlanner(client, cfg.VISION_MODEL) : rulesPlanner());
+  const planner: Planner = client && !o.planner ? { id: basePlanner.id, next: timed('plan', basePlanner.next) } : basePlanner;
   const asr: AsrFactory = o.asr ?? (live ? (opts, sink) => openAsrRelay({ ...opts, apiKey: cfg.META_API_KEY! }, sink) : mockAsr());
   const sims = o.sims ?? new SimRegistry();
   const now = o.now ?? Date.now;

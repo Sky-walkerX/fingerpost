@@ -159,15 +159,15 @@ export function stateMessage(state: AgentState): string {
   });
 }
 
-export function sparkPlanner(client: OpenAI): Planner {
+export function sparkPlanner(client: OpenAI, model: string = MODELS.spark): Planner {
   return {
     id: AGENT_PROMPT_ID,
     async next(state, signal) {
       const response = await client.chat.completions.create({
-        model: MODELS.spark,
+        model,
         messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: stateMessage(state) }],
         tools: PLANNER_TOOLS,
-        tool_choice: 'required',
+        tool_choice: 'auto',
         parallel_tool_calls: false,
       }, { headers: { 'X-Prompt-Id': AGENT_PROMPT_ID }, ...(signal ? { signal } : {}) });
       const call = response.choices[0]?.message.tool_calls?.[0];
