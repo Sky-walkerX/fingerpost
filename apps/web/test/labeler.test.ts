@@ -36,3 +36,9 @@ test('boxes outside the image and zero-area boxes cannot become ground truth', (
     expect(() => labelItem(image, 'appliance', [{ ...elements[0]!, box }], '')).toThrow();
   }
 });
+
+test('the labeler page names itself with one top-level heading for screen-reader navigation', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../label/index.html', import.meta.url), 'utf8');
+  expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+});
