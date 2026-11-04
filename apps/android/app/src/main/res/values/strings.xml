@@ -84,4 +84,12 @@
     <string name="save_device">Save</string>
     <string name="cancel_device">Cancel</string>
     <string name="delete_device">Delete %1$s</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_light">Light</string>
+    <string name="section_guidance">Guidance</string>
+    <string name="section_voice">Voice, hand and language</string>
+    <string name="section_privacy">Privacy</string>
+    <string name="section_display">Display</string>
+    <string name="section_saved">Saved screens</string>
 </resources>

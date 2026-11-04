@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Fingerpost" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fp_night</item>
+        <item name="android:colorAccent">@color/fp_periwinkle</item>
+        <item name="android:colorPrimary">@color/fp_night</item>
+        <item name="android:windowSplashScreenBackground">@color/fp_night</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/fp_blue</item>
+    </style>
+</resources>

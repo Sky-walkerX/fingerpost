@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brand palette shared with apps/web (see BrandThemeTest). -->
+<resources>
+    <color name="fp_night">#FF0D1830</color>
+    <color name="fp_blue">#FF2F5FD6</color>
+    <color name="fp_periwinkle">#FFA9C1FF</color>
+</resources>

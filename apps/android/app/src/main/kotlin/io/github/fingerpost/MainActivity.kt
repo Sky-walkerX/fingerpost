@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fingerpost.settings.SettingsScreen
 import io.github.fingerpost.settings.settingsStore
 import io.github.fingerpost.memory.layoutStore
+import io.github.fingerpost.settings.Appearance
 import io.github.fingerpost.ui.FingerpostTheme
 import io.github.fingerpost.ui.SessionScreen
 import io.github.fingerpost.ui.OnboardingGate
@@ -77,7 +79,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         // Guidance stays visible while the user's hands are on another screen.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val replayFile = io.github.fingerpost.camera.MockGlassesSource.selected(this,
@@ -85,7 +87,16 @@ class MainActivity : ComponentActivity() {
         val trackingOptions = TrackingOptions.fromIntent(intent)
         val simRunId = if (BuildConfig.DEBUG) intent.getStringExtra("fingerpost.simRunId")?.takeIf { it.length in 1..64 } else null
         setContent {
-            FingerpostTheme {
+            val settingsStore = remember(this@MainActivity) { settingsStore(this@MainActivity) }
+            val storedSettings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = null)
+            val appearance = storedSettings?.appearance ?: Appearance.DARK
+            LaunchedEffect(appearance) {
+                val transparent = android.graphics.Color.TRANSPARENT
+                val bars = if (appearance == Appearance.LIGHT) SystemBarStyle.light(transparent, transparent)
+                    else SystemBarStyle.dark(transparent)
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+            }
+            FingerpostTheme(appearance) {
                 OnboardingGate {
                     var cameraGranted by remember { mutableStateOf(replayFile != null || hasCameraPermission()) }
                     var requested by rememberSaveable { mutableStateOf(false) }
@@ -120,8 +131,6 @@ class MainActivity : ComponentActivity() {
                         if (denied) view.announceForAccessibility(cameraNeeded)
                     }
 
-                    val settingsStore = remember(this@MainActivity) { settingsStore(this@MainActivity) }
-                    val storedSettings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = null)
                     val settings = storedSettings ?: return@OnboardingGate
                     var showSettings by rememberSaveable { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()

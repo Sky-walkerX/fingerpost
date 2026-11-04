@@ -185,6 +185,21 @@ class SettingsTest {
         assertEquals(null, Settings(volumeKeys = true).hardwareCue(false, false, HardwareCue.UNDER_FINGER))
         assertEquals(null, Settings(volumeKeys = true).hardwareCue(true, true, HardwareCue.REPEAT))
     }
+    @Test fun appearanceDefaultsToDarkPersistsLightAndIgnoresUnknownValues() = runBlocking {
+        // design §3.6: a dark default theme for low vision; Light is an explicit choice.
+        assertEquals(Appearance.DARK, Settings().appearance)
+        val job = SupervisorJob()
+        val data = PreferenceDataStoreFactory.create(scope = CoroutineScope(job + Dispatchers.IO),
+            produceFile = { directory.resolve("appearance.preferences_pb").toFile() })
+        try {
+            val store = SettingsStore(data)
+            assertEquals(Appearance.DARK, store.settings.first().appearance)
+            store.save(Settings(appearance = Appearance.LIGHT))
+            assertEquals(Appearance.LIGHT, store.settings.first().appearance)
+            data.edit { prefs -> prefs[stringPreferencesKey("appearance")] = "SEPIA" }
+            assertEquals(Appearance.DARK, store.settings.first().appearance)
+        } finally { job.cancelAndJoin() }
+    }
     private fun assertNullAction(settings: Settings, cue: HardwareCue) =
         assertEquals(null, settings.hardwareCue(true, false, cue))
 

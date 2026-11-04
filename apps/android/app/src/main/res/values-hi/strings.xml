@@ -83,4 +83,12 @@
     <string name="save_device">सहेजें</string>
     <string name="cancel_device">रद्द करें</string>
     <string name="delete_device">%1$s हटाएँ</string>
+    <string name="appearance">दिखावट</string>
+    <string name="appearance_dark">गहरा</string>
+    <string name="appearance_light">हल्का</string>
+    <string name="section_guidance">मार्गदर्शन</string>
+    <string name="section_voice">आवाज़, हाथ और भाषा</string>
+    <string name="section_privacy">गोपनीयता</string>
+    <string name="section_display">डिस्प्ले</string>
+    <string name="section_saved">सहेजी गई स्क्रीन</string>
 </resources>

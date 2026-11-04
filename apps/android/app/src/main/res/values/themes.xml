@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window colours before Compose draws, so launch never flashes grey or white. -->
+    <style name="Theme.Fingerpost" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fp_night</item>
+        <item name="android:colorAccent">@color/fp_periwinkle</item>
+        <item name="android:colorPrimary">@color/fp_night</item>
+    </style>
+</resources>

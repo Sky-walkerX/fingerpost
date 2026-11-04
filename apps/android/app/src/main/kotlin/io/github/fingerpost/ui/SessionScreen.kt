@@ -20,6 +20,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -169,7 +172,7 @@ fun SessionScreen(
         current?.updateSettings(settings)
     }
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClick = toggle).clearAndSetSemantics {
+        Box(Modifier.fillMaxSize().background(Overlay.halo).clickable(onClick = toggle).clearAndSetSemantics {
             contentDescription = error ?: description
             stateDescription = label
             onClick(label = toggleLabel) { toggle(); true }
@@ -187,7 +190,8 @@ fun SessionScreen(
                         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
                     path.close()
-                    drawPath(path, if (status.tracking) Color.Green else Color.Yellow, style = Stroke(3.dp.toPx()))
+                    drawPath(path, Overlay.halo, style = Stroke(7.dp.toPx()))
+                    drawPath(path, if (status.tracking) Overlay.quadTracking else Overlay.quadCandidate, style = Stroke(3.dp.toPx()))
                 }
                 if (status.state in setOf(GState.GUIDING, GState.ON_TARGET) && status.targetOutline.size >= 3) {
                     val transform = FrameTransform.fillCenter(status.frameWidth, status.frameHeight,
@@ -198,24 +202,33 @@ fun SessionScreen(
                         if (i == 0) outline.moveTo(point.x, point.y) else outline.lineTo(point.x, point.y)
                     }
                     outline.close()
-                    drawPath(outline, Color.Black, style = Stroke(10.dp.toPx()))
-                    drawPath(outline, Color.Yellow, style = Stroke(6.dp.toPx()))
+                    drawPath(outline, Overlay.halo, style = Stroke(10.dp.toPx()))
+                    drawPath(outline, Overlay.target, style = Stroke(6.dp.toPx()))
                 }
                 for (sample in samples) {
                     val transform = FrameTransform.fillCenter(sample.frameW, sample.frameH,
                         size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
                     val point = transform.map(sample.tipX, sample.tipY)
-                    drawCircle(Color.Black, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(10.dp.toPx()))
-                    drawCircle(Color.Yellow, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(6.dp.toPx()))
+                    drawCircle(Overlay.halo, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(10.dp.toPx()))
+                    drawCircle(Overlay.fingertip, 14.dp.toPx(), Offset(point.x, point.y), style = Stroke(6.dp.toPx()))
                 }
             }
-            Column(Modifier.safeDrawingPadding().padding(16.dp).background(Color.Black).clearAndSetSemantics {}) {
-                Text(error ?: label, color = Color.White)
+            Column(Modifier.safeDrawingPadding().padding(16.dp)
+                .background(Overlay.panel, RoundedCornerShape(22.dp))
+                .padding(horizontal = 18.dp, vertical = 14.dp)
+                .clearAndSetSemantics {}) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // A peach dot when the finger is on target or a PIN pad is up; periwinkle otherwise.
+                    val dot = if (error != null) Brand.NightText
+                        else if (status.state == GState.ON_TARGET || status.state == GState.PIN_MODE) Overlay.target else Overlay.quadTracking
+                    Box(Modifier.size(12.dp).background(dot, CircleShape))
+                    Text(error ?: label, color = Brand.White, style = MaterialTheme.typography.bodyLarge)
+                }
                 if (BuildConfig.DEBUG && current != null) {
                     val performance by current.hands.performance.collectAsStateWithLifecycle()
-                    Text(String.format(Locale.ROOT, "%d fps · %d ms", performance.fps, performance.inferenceMs), color = Color.Yellow)
+                    Text(String.format(Locale.ROOT, "%d fps · %d ms", performance.fps, performance.inferenceMs), color = Brand.NightText)
                     if (status.quad != null) Text(if (status.tracking) "Tracking rectangle" else "Screen candidate",
-                        color = if (status.tracking) Color.Green else Color.Yellow)
+                        color = if (status.tracking) Overlay.quadTracking else Overlay.quadCandidate)
                 }
             }
         }
@@ -226,13 +239,15 @@ fun SessionScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(16.dp)
+                .heightIn(min = 64.dp)
                 .clearAndSetSemantics {
                     contentDescription = resources.getString(R.string.settings)
                     role = Role.Button
                     onClick(label = resources.getString(R.string.open_settings)) { onOpenSettings(); true }
-                }
+                },
+            shape = RoundedCornerShape(22.dp)
         ) {
-            Text(resources.getString(R.string.settings))
+            Text(resources.getString(R.string.settings), style = MaterialTheme.typography.labelLarge)
         }
     }
 }

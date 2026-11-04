@@ -83,4 +83,12 @@
     <string name="save_device">Guardar</string>
     <string name="cancel_device">Cancelar</string>
     <string name="delete_device">Eliminar %1$s</string>
+    <string name="appearance">Apariencia</string>
+    <string name="appearance_dark">Oscura</string>
+    <string name="appearance_light">Clara</string>
+    <string name="section_guidance">Guía</string>
+    <string name="section_voice">Voz, mano e idioma</string>
+    <string name="section_privacy">Privacidad</string>
+    <string name="section_display">Pantalla</string>
+    <string name="section_saved">Pantallas guardadas</string>
 </resources>

@@ -9,9 +9,13 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
@@ -62,7 +66,7 @@ fun OnboardingGate(content: @Composable () -> Unit) {
                 Button(onClick = finish) { Text(stringResource(R.string.retry)) }
             } else OnboardingScreen(onComplete = finish)
         }
-        else -> Box(Modifier.fillMaxSize().background(Color.Black))
+        else -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
     }
 }
 
@@ -115,7 +119,7 @@ private fun OnboardingScreen(onComplete: () -> Unit) {
     }
     val instruction = hapticLesson ?: prompt?.text.orEmpty()
     val accessibleInstruction = if (speechFailed) instruction + " " + stringResource(R.string.tutorial_speech_failed) else instruction
-    Column(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding().padding(24.dp)
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(24.dp)
         .clickable(onClick = repeat)
         .pointerInput(Unit) {
             awaitEachGesture {
@@ -138,11 +142,28 @@ private fun OnboardingScreen(onComplete: () -> Unit) {
             customActions = listOf(
                 CustomAccessibilityAction(vibrationTutorialLabel) { tutorialRunning = true; true },
                 CustomAccessibilityAction(skipLabel) { skip(); true })
-        }, verticalArrangement = Arrangement.Center) {
-        Text(instruction, color = Color.White)
-        Button(onClick = { tutorialRunning = true }) { Text(stringResource(R.string.vibration_tutorial)) }
-        Spacer(Modifier.height(24.dp))
-        Text(stringResource(R.string.tutorial_gestures), color = Color.White)
-        if (speechFailed) Text(stringResource(R.string.tutorial_speech_failed), color = Color.White)
+        }, verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically)) {
+        BrandMark()
+        Text(instruction, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.headlineSmall)
+        Button(onClick = { tutorialRunning = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+            shape = RoundedCornerShape(22.dp)) {
+            Text(stringResource(R.string.vibration_tutorial), style = MaterialTheme.typography.labelLarge)
+        }
+        Text(stringResource(R.string.tutorial_gestures), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (speechFailed) Text(stringResource(R.string.tutorial_speech_failed), color = MaterialTheme.colorScheme.tertiary)
+    }
+}
+
+/** The ring-and-fingertip mark and wordmark from the website. Decorative: the screen's own description is spoken. */
+@Composable
+private fun BrandMark() {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.clearAndSetSemantics {}) {
+        Canvas(Modifier.size(44.dp)) {
+            drawCircle(Brand.Blue)
+            drawCircle(Brand.White.copy(alpha = 0.6f), radius = size.minDimension * 0.31f, style = Stroke(1.6.dp.toPx()))
+            drawCircle(Brand.Peach, radius = size.minDimension * 0.16f)
+        }
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
     }
 }
