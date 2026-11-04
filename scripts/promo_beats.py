@@ -65,6 +65,13 @@ def beat_grid(bpm: float, first: float, seconds: float) -> list[float]:
     return [first + i * step for i in range(max(0, count))]
 
 
+def full_grid(bpm: float, anchor: float, seconds: float) -> list[float]:
+    """The even grid through `anchor`, extended back to the first beat at or after 0 s, so quiet intros keep their beats."""
+    step = 60.0 / bpm
+    first = anchor - np.floor(anchor / step) * step
+    return beat_grid(bpm, first, seconds)
+
+
 def decode(path: str, offset: float, sr: int = 22050) -> np.ndarray:
     raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', str(offset), '-i', path, '-ac', '1', '-ar', str(sr), '-f', 'f32le', '-'],
                          check=True, capture_output=True).stdout
@@ -88,7 +95,7 @@ def main(argv: list[str]) -> int:
         sr = 22050
         samples = decode(audio, offset, sr)
         bpm, first = estimate(samples, sr)
-        data = {'bpm': round(bpm, 3), 'offsetSec': offset, 'beats': [round(b, 4) for b in beat_grid(bpm, first, min(seconds, len(samples) / sr))], 'provisional': False}
+        data = {'bpm': round(bpm, 3), 'offsetSec': offset, 'beats': [round(b, 4) for b in full_grid(bpm, first, min(seconds, len(samples) / sr))], 'provisional': False}
     with open(out, 'w') as f:
         json.dump(data, f, indent=1)
         f.write('\n')

@@ -1,5 +1,6 @@
 import { AbsoluteFill, Sequence } from 'remotion';
 import { useFontsReady } from './fonts.ts';
+import { Music } from './music.tsx';
 import { Answer } from './scenes/answer.tsx';
 import { Confirm } from './scenes/confirm.tsx';
 import { Guide } from './scenes/guide.tsx';
@@ -24,6 +25,7 @@ export const Promo: React.FC = () => {
   useFontsReady();
   return (
     <AbsoluteFill style={{ background: color.night }}>
+      <Music />
       {scenes.map((s) => {
         const Scene = SCENE[s.id];
         return <Sequence key={s.id} from={s.from} durationInFrames={s.duration} name={s.id}><Scene /></Sequence>;

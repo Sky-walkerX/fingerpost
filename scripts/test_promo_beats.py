@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from promo_beats import beat_grid, estimate
+from promo_beats import beat_grid, estimate, full_grid
 
 SR = 22050
 
@@ -37,6 +37,13 @@ class PromoBeatsTest(unittest.TestCase):
         steps = np.diff(beats)
         self.assertTrue(np.allclose(steps, 60.0 / bpm, atol=1e-9))
         self.assertAlmostEqual(beats[0], first)
+
+    def test_full_grid_extends_back_to_the_start_through_a_quiet_intro(self):
+        beats = full_grid(100.0, 4.0, 10.0)
+        self.assertLess(beats[0], 0.6)
+        self.assertGreaterEqual(beats[0], 0.0)
+        self.assertTrue(any(abs(b - 4.0) < 1e-9 for b in beats))
+        self.assertTrue(np.allclose(np.diff(beats), 0.6, atol=1e-9))
 
 
 if __name__ == '__main__':
