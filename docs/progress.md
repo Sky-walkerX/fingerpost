@@ -119,6 +119,19 @@ Three lanes run in parallel (A device · B brain · C quality/story). A task wai
 | C6-3 | Tester session #3, X warm-up | C | – | todo | |
 | D7 | Freeze, bug bash, tag v1.0.0-beta | all | Day 6 | blocked | Codex / Human |
 
+## Impact features: `docs/superpowers/plans/2026-11-04-impact-features.md`
+Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safety gates stay hard; see the plan's rules.
+
+| Task | What | Lane | Depends on | Status | Owner |
+|---|---|---|---|---|---|
+| IF-0 | Committed live batch driver | C | – | todo | |
+| IF-1 | Instant guidance from on-device OCR | A | – | todo | |
+| IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | |
+| IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
+| IF-6 | Overcharge guard | A+B | – | todo | |
+| IF-7 | Vibration-only (deafblind) mode | A | – | todo | |
+| IF-8 | "My devices" saved appliances | A | – | todo | |
+
 ## Open security follow-ups (from the automated review of 8af4b1c)
 
 - B4-3 local phone-launch repair (2026-11-03, Owner Codex): `dev:phone --live` discarded all three Glimmer settings, leaving private mode unavailable even with a configured endpoint. Four new regressions fail before the fix; all 21 phone-launch cases pass afterward, including ready-flag, partial-config refusal and mock credential isolation. Full TS suite: 710 passed. This is local configuration evidence only; Modal deployment, actual private inference and device acceptance remain blocked.
