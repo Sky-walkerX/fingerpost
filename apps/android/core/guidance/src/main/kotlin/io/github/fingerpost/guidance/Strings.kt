@@ -7,6 +7,7 @@ import java.util.Locale
  * Used across English, Hindi, and Spanish (A4-4).
  */
 enum class Key {
+    PROVISIONAL_CHECKING, PROVISIONAL_CORRECTION,
     HAPTIC_LEFT, HAPTIC_RIGHT, HAPTIC_UP, HAPTIC_DOWN, HAPTIC_ON,
     MOVE_FINGER, CHEST_FRAME, CHEST_CLOSER, CHEST_BACK,
     // Prompts (GuidanceStateMachine)
@@ -118,6 +119,8 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.PROVISIONAL_CHECKING to "Checking…",
+        Key.PROVISIONAL_CORRECTION to "Correction: {label}",
         Key.HAPTIC_LEFT to "Left: two short pulses.",
         Key.HAPTIC_RIGHT to "Right: one long pulse.",
         Key.HAPTIC_UP to "Up: three short pulses.",
@@ -217,6 +220,8 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.PROVISIONAL_CHECKING to "जाँच रहा हूँ…",
+        Key.PROVISIONAL_CORRECTION to "सुधार: {label}",
         Key.HAPTIC_LEFT to "बाएँ: दो छोटे कंपन।",
         Key.HAPTIC_RIGHT to "दाएँ: एक लंबा कंपन।",
         Key.HAPTIC_UP to "ऊपर: तीन छोटे कंपन।",
@@ -316,6 +321,8 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.PROVISIONAL_CHECKING to "Comprobando…",
+        Key.PROVISIONAL_CORRECTION to "Corrección: {label}",
         Key.HAPTIC_LEFT to "Izquierda: dos pulsos cortos.",
         Key.HAPTIC_RIGHT to "Derecha: un pulso largo.",
         Key.HAPTIC_UP to "Arriba: tres pulsos cortos.",

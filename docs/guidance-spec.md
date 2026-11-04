@@ -126,11 +126,11 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 | `IDLE` | App start, task end | Mic opens (app open, tile, shortcut) | — |
 | `LISTENING` | Prompt "What do you want to press?" | Final transcript → FRAMING | 8 s → reprompt once → IDLE |
 | `FRAMING` | Goal known | Quad fully in view with a 4% margin, stable for 10 frames (corner motion < 1% per frame) → keyframe sent → LOCATING | 30 s → framing tips, stay |
-| `LOCATING` | Keyframe sent | `target` → GUIDING; `ask` → ASK (task intent; guide intent → LISTENING); `confirm` → CONFIRM; `layout.screenType = pin_pad`, or `payment_entry` that has a key/input element or no pay/confirm/submit button → PIN_MODE (§10.1) | 6 s → retry once → error message |
+| `LOCATING` | Keyframe sent | `target` → GUIDING; approved provisional OCR target (§11c) → GUIDING; `ask` → ASK (task intent; guide intent → LISTENING); `confirm` → CONFIRM; `layout.screenType = pin_pad`, or `payment_entry` that has a key/input element or no pay/confirm/submit button → PIN_MODE (§10.1) | 6 s → retry once → error message |
 | `GUIDING` | Target known | Zone ON for 6 frames → ON_TARGET | No hand for 1.5 s → "Raise your pointing finger into view"; 45 s total → offer explore |
 | `ON_TARGET` | Pad stably ON | Press evidence (§9) → VERIFYING; leaves ON → GUIDING (300 ms quiet) | 5 s → "Press now" once, then stay |
 | `VERIFYING` | Press evidence | `verify.ok` → DONE or next agent step; `verify.wrong` → speak and follow the agent; `verify.nochange` → ON_TARGET once, then RETRY | 4 s → treat as nochange |
-| `VERIFYING`→`AWAIT_NEXT` | `verify.ok` in task intent | `target` → GUIDING; `ask` → ASK; `confirm` → CONFIRM; `finish` → DONE or IDLE | 6 s → resend a locate keyframe once; 6 s more → "I lost track. What do you want to do?" → LISTENING (initial value) |
+| `VERIFYING`→`AWAIT_NEXT` | `verify.ok` in task intent | `target` → GUIDING; approved provisional OCR target (§11c) → GUIDING; `ask` → ASK; `confirm` → CONFIRM; `finish` → DONE or IDLE | 6 s → resend a locate keyframe once; 6 s more → "I lost track. What do you want to do?" → LISTENING (initial value) |
 | `ASK` | Server `ask` | User answer sent, then a locate keyframe → LOCATING | 10 s → repeat the question once; 10 s more → LISTENING (initial value) |
 | `CONFIRM` | Server `confirm` | Spoken "yes" → LOCATING; anything else → cancel the step | 15 s → cancel, "Payment not confirmed" |
 | `PIN_MODE` | PIN or payment screen detected (server or local) | Keypad gone for 2 s (local) → a fresh locate keyframe (LOCATING), or DONE if the gateway finished the task meanwhile | none (user-driven) |
@@ -210,6 +210,12 @@ If cloud speech fails during LISTENING, ASK, CONFIRM or EXPLORING, the device sw
 - **Key:** a 4-bit aspect bucket (16 log-spaced buckets over 1/3 … 3) plus a 60-bit SimHash of character trigrams of the OCR words inside the screen quad; words with digits or currency symbols are dropped, so prices and order numbers don't change it. A lookup hits the nearest entry within Hamming **3** on the SimHash bits and at most one aspect bucket away (initial values, 2026-11-02).
 - **Re-lock:** when a guide-intent locate keyframe is sent, a hit is resolved with the gateway's `resolveByText` rules. It guides at once only for a plain control (not pay/confirm/submit, icon or text) whose label fresh OCR inside its box agrees with (§11). OCR disagreement drops the entry. The keyframe still goes to the gateway: its target confirms the re-lock, or replaces the target (and the entry) if it names another element.
 - **Target:** "Found …" in < 0.8 s on a known screen.
+
+### Provisional target (IF-1, initial algorithm, 2026-11-04)
+
+User-approved conservative label allowlist: EN `Boil, Timer, Fan, Cool, Drinks, Burgers, Sides`; HI `उबाल, टाइमर, पंखा, ठंडा, पेय, बर्गर`; ES `Hervir, Temporizador, Ventilador, Frío, Bebidas, Hamburguesas`. OCR alone has no semantic roles: all other labels wait for cloud classification, including Continue, Start, pay/confirm/submit, icons and digits. Apply the exact §11b resolver to the captured keyframe's screen OCR; only a unique match with a wholly in-screen, positive box qualifies. This user-approved vocabulary heuristic does not establish cloud semantic confidence.
+
+After a guide-intent locate keyframe passes the local PIN gate and is sent, start GUIDING in the same callback using its OCR rectangle and “{label}, {position}. Checking…”. Require TRACKING and a quad; exclude task/explore, offline/private/sensitive sessions. A matching normalized cloud label adopts its target silently (including updated plane coordinates); a different authorized label retargets once with “Correction: {label}” without stopping the tone. Cloud ask/refusal/error/mode change or sensitive classification cancels early guidance; normal confirmation/PIN rules still apply. The existing cache re-lock is subject to the same privacy/tracking guards. Phone <1 s / ten-attempt acceptance remains a separate gate.
 
 ## 11d. Optional session donation (initial values, 2026-11-03)
 

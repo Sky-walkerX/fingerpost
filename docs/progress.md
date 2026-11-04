@@ -125,7 +125,7 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 | Task | What | Lane | Depends on | Status | Owner |
 |---|---|---|---|---|---|
 | IF-0 | Committed live batch driver | C | – | done | Maintainer |
-| IF-1 | Instant guidance from on-device OCR | A | – | todo | |
+| IF-1 | Instant guidance from on-device OCR | A | – | blocked | Maintainer |
 | IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | |
 | IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
 | IF-6 | Overcharge guard | A+B | – | todo | |
@@ -585,3 +585,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-04 IF-0: committed production batch driver reproduces 4/7 positive photos and 4/5 synthetic touchscreens; negative asks, 58 paid requests, 60 s deadline. Four recorder/projection regressions pass, recursive typecheck and 810 TS tests pass (including final additional cap regression), 80 Python tests and baseline Android JVM/APK/lint pass. No device/cloud acceptance. See [impact report](evals/impact-features-2026-11-04.md).
 
 - 2026-11-04 IF-7 coding: dominant-axis patterns, distance-based cadence, persisted preset, accessibility announcements and localized 20 s tutorial implemented. Three failing-first JVM haptic cases plus preset checks pass; 811 TS tests/typecheck, 80 Python tests, Android JVM/debug APK/lint pass (0 errors/16 existing warnings). Blocked only on physical 4/5 navigation acceptance; no phone run claimed.
+
+- 2026-11-04 IF-1 coding: user approves conservative EN/HI/ES ordinary-label allowlist because OCR has no semantic roles. Same-callback captured-frame provisional guidance, silent agreement, continuous correction and cloud cancellation implemented. Three failing-first JVM cases pass; 811 TS tests/typecheck, 80 Python tests and Android JVM/APK/lint pass. Blocked only on live phone ten-attempt <1 s acceptance.

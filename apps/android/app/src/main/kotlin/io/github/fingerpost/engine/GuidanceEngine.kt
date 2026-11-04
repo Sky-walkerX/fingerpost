@@ -88,6 +88,7 @@ class GuidanceEngine(
     private var goalIntent: String? = null
     private var relockKey: Long? = null
     private var relockLabel = ""
+    private var provisionalLabel: String? = null
     private var onlineWhenIdle = false
     private var offlineGoal = ""
     private var lastEvidence: Evidence? = null
@@ -259,7 +260,7 @@ class GuidanceEngine(
         planner.reset()
         router.cancelKeyframes()
         capture = null; layout = null; verifyId = null; polygon = emptyList(); pendingTarget = null; awaitingAnchor = false
-        explorer.reset(); relockKey = null
+        explorer.reset(); relockKey = null; provisionalLabel = null
         dispatch(GEvent.Abort(time()))
     }
 
@@ -293,7 +294,7 @@ class GuidanceEngine(
                     Purpose.VERIFY -> KeyframePurpose.VERIFY
                     Purpose.EXPLORE -> KeyframePurpose.EXPLORE
                 }, generation, donations.ticket.takeIf { donations.collecting })
-                if (effect.purpose == Purpose.LOCATE) tryRelock()
+                // Provisional OCR uses this exact captured frame after its PIN gate and successful send.
             }
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
             Effect.ToneOff -> tone.stop()
@@ -409,7 +410,7 @@ class GuidanceEngine(
         val now = time()
         if (frame.tracking != TrackState.TRACKING) { tone.stop(); haptics.stop(); directionalHaptics.reset() }
         if (frame.tracking == TrackState.LOST && machine.state in setOf(GState.LOCATING, GState.GUIDING, GState.ON_TARGET)) {
-            generation++; finger.clear(); planner.reset(); capture = null; layout = null; relockKey = null
+            generation++; finger.clear(); planner.reset(); capture = null; layout = null; relockKey = null; provisionalLabel = null
             router.cancelKeyframes(); event(EventKind.LOST)
             dispatch(GEvent.TrackingLost(now))
         }
@@ -482,7 +483,7 @@ class GuidanceEngine(
     private fun tryRelock() {
         val gen = generation
         scope.launch(Dispatchers.Main) {
-            if (closed || offline || gen != generation || guard.pinMode || machine.state != GState.LOCATING || goalIntent != "guide") return@launch
+            if (closed || offline || settings.privateMode || speechPrivacy.localOnly || latest?.tracking != TrackState.TRACKING || gen != generation || guard.pinMode || machine.state != GState.LOCATING || goalIntent != "guide") return@launch
             val frame = latest ?: return@launch
             val q = frame.quad ?: return@launch
             val screen = KeyframeTokens.forScreen(router.latestTokens ?: return@launch, q)
@@ -667,12 +668,40 @@ class GuidanceEngine(
                     value.donationTicket ?: -1)
             }
             capture = value
+            if (value.encoded.header.purpose == KeyframePurpose.LOCATE) tryProvisional(value)
             if (value.encoded.header.purpose == KeyframePurpose.VERIFY) verifyId = value.encoded.header.id
         } else value.donationJpeg?.fill(0)
     }
 
+    private fun tryProvisional(value: KeyframeCapture) {
+        if (machine.state != GState.LOCATING || provisionalLabel != null) return
+        val frame = latest ?: return
+        val q = value.quad ?: return
+        val raw = value.encoded.header.ocrTokens.map { io.github.fingerpost.guidance.OcrToken(it.text,it.box.u,it.box.v,it.box.w,it.box.h) }
+        val tokens = if (value.encoded.header.kind == KeyframeKind.FULL) KeyframeTokens.forScreen(raw,q) else raw
+        val match = ProvisionalTarget.resolve(goalText,tokens,frame.tracking == TrackState.TRACKING,
+            guard.pinMode,settings.privateMode || offline,speechPrivacy.localOnly || layout?.sensitivity?.let { it != Sensitivity.NONE } == true,goalIntent)
+        if (match == null) { tryRelock(); return }
+        val aspect = screenAspect(frame,q)
+        if (!aspect.isFinite()) return
+        polygon = ProvisionalTarget.polygon(match)
+        finger.setTarget(polygon,aspect); planner.reset()
+        provisionalLabel = match.text
+        dispatch(GEvent.TargetArrived(time(),ProvisionalTarget.say(match,machine.locale),"button"))
+    }
+
+    private fun cancelEarlyGuidance() {
+        if (provisionalLabel == null && relockKey == null) return
+        provisionalLabel = null; relockKey = null
+        polygon = emptyList(); finger.clear(); planner.reset(); pendingTarget = null
+        tone.stop(); haptics.stop()
+        dispatch(GEvent.CloudTurnPending(time()))
+    }
+
     private fun server(message: ServerMessage) {
-        if (message is Layout && message.sensitivity != Sensitivity.NONE) protectSpeech()
+        if (message is Layout && message.sensitivity != Sensitivity.NONE) { cancelEarlyGuidance(); protectSpeech() }
+        if (message is Ask || message is Confirm || message is ErrorMessage || message is Mode ||
+            (message is Say && message.priority == io.github.fingerpost.protocol.Priority.SAFETY)) cancelEarlyGuidance()
         if (message is Ready) {
             machine.serverWaitMs = message.flags.modelWaitMs ?: 6_000L
             if (offline) {
@@ -715,7 +744,7 @@ class GuidanceEngine(
             is Layout -> {
                 // A verify keyframe's layout arrives while VERIFYING; in task mode the next target refers to it.
                 // After a cache re-lock it arrives while already GUIDING, and its target confirms the re-lock.
-                val relocked = relockKey != null && machine.state in RELOCK_STATES
+                val relocked = (relockKey != null || provisionalLabel != null) && machine.state in RELOCK_STATES
                 if (machine.state !in LAYOUT_STATES && !relocked) return
                 layout = message
                 rememberLayout(message)
@@ -815,6 +844,27 @@ class GuidanceEngine(
     }
 
     private fun target(message: ServerTarget) {
+        if (provisionalLabel != null && machine.state in RELOCK_STATES) {
+            if (awaitingAnchor) { pendingTarget = message; return }
+            val old = provisionalLabel!!
+            provisionalLabel = null
+            val element = layout?.elements?.find { it.id == message.elementId }
+            if (element == null) { finger.clear(); polygon = emptyList(); dispatch(GEvent.CloudTurnPending(time())); return }
+            if (!machine.policy.mayGuide(element.role.name.lowercase(),element.id)) {
+                finger.clear(); polygon = emptyList(); dispatch(GEvent.CloudTurnPending(time()))
+                dispatch(GEvent.TargetArrived(time(),message.say,element.role.name.lowercase())); return
+            }
+            val agrees = normalizeLabel(element.label) == normalizeLabel(old)
+            val frame = latest ?: return
+            val aspect = screenAspect(frame,frame.quad ?: return)
+            val corrected = message.polygon.map { Vec2(it.u,it.v) }
+            if (!aspect.isFinite() || QuadEstimator.quadArea(corrected) == 0.0) {
+                finger.clear(); polygon = emptyList(); dispatch(GEvent.CloudTurnPending(time())); return
+            }
+            polygon = corrected; finger.setTarget(polygon,aspect); planner.reset()
+            if (!agrees) dispatch(GEvent.TargetCorrection(time(),ProvisionalTarget.correction(element.label,machine.locale)))
+            return
+        }
         if (relockKey != null && machine.state in RELOCK_STATES) { confirmRelock(message); return }
         if (machine.state !in TURN_STATES) return
         if (awaitingAnchor) { pendingTarget = message; return }
@@ -847,7 +897,7 @@ class GuidanceEngine(
 
     private fun pinEntered() {
         cancelDonation()
-        generation++; relockKey = null
+        generation++; relockKey = null; provisionalLabel = null
         haptics.stop(); directionalHaptics.reset()
         wantsMic = false
         updateNotice.clear()

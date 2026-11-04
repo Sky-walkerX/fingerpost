@@ -16,6 +16,8 @@ sealed interface GEvent {
     data class Frame(override val nowMs: Long, val quadStable: Boolean, val handVisible: Boolean, val zone: Zone?) : GEvent
     /** [role] is the element's protocol role ("button", "pay", …): pay/confirm/submit pass the device safety policy first. */
     data class TargetArrived(override val nowMs: Long, val say: String, val role: String = "button") : GEvent
+    data class CloudTurnPending(override val nowMs: Long) : GEvent
+    data class TargetCorrection(override val nowMs: Long, val say: String) : GEvent
     data class TargetNotFound(override val nowMs: Long, val say: String) : GEvent
     data class PressDetected(override val nowMs: Long, val evidence: Evidence) : GEvent
     data class VerifyArrived(override val nowMs: Long, val result: VerifyResult, val say: String) : GEvent
@@ -233,6 +235,15 @@ class GuidanceStateMachine(var locale: Locale = Strings.EN) {
             if (ev is GEvent.FinishArrived && ev.result == "done") finishedInPin = ev.say
             if (ev is GEvent.Abort) { go(GState.IDLE, ev.nowMs); return listOf(Effect.ExitPinMode, Effect.ResumeUploads, Effect.ToneOff, Effect.CloseMic) }
             return emptyList()
+        }
+        if (ev is GEvent.CloudTurnPending && state in setOf(GState.GUIDING, GState.ON_TARGET)) {
+            go(GState.LOCATING,ev.nowMs)
+            return listOf(Effect.ToneOff)
+        }
+        if (ev is GEvent.TargetCorrection && state in setOf(GState.GUIDING, GState.ON_TARGET)) {
+            debounce.reset(); noHandSince = null; lastZone = null
+            go(GState.GUIDING,ev.nowMs)
+            return listOf(Effect.Say(ev.say,Priority.STATE))
         }
         if (ev is GEvent.FinishArrived) {
             if (state == GState.IDLE || state == GState.DONE) return emptyList()
