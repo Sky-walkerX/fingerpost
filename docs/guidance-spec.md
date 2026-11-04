@@ -118,6 +118,8 @@ Screen axes are mapped to speech axes by projecting gravity into image space and
 - **Success earcon (initial value):** an 80 ms accessibility-stream acknowledgement at the same volume when entering ON.
 - **Mix settings:** the user sets the weights for speech, tone and haptics. Each mode can be off. Never all three: the settings UI blocks the last remaining one from being turned off.
 
+**Vibration-only preset (IF-7, initial values, 2026-11-04):** speech off, tone off, haptics on. Directions follow screen axes, using the dominant error component (horizontal wins ties). Pulse durations are 80 ms short, 240 ms long, with 80 ms gaps: left = short/short; right = long; up = short/short/short; down = long/short. Repeat every 1,200 ms far away, 900 ms below error 0.30, 600 ms below 0.10. ON retains the strong double click. Invalid hand/tracking, PIN, state exit and shutdown cancel directional vibration; no audio earcons in this preset. When speech is off, state utterances also become accessibility announcements for TalkBack/braille; protected PIN output remains isolated. Onboarding offers five four-second vibration lessons (20 s total) with localized accessible text; it requires no camera or network.
+
 ## 8. State machine
 | State | Enters when | Leaves when | Timeout → action |
 |---|---|---|---|

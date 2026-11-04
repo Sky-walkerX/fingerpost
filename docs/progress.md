@@ -129,7 +129,7 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 | IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | |
 | IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
 | IF-6 | Overcharge guard | A+B | – | todo | |
-| IF-7 | Vibration-only (deafblind) mode | A | – | todo | |
+| IF-7 | Vibration-only (deafblind) mode | A | – | blocked | Maintainer |
 | IF-8 | "My devices" saved appliances | A | – | todo | |
 
 ## Open security follow-ups (from the automated review of 8af4b1c)
@@ -583,3 +583,5 @@ _(task id · what changed · why · who approved)_
 - 2026-11-03 multimedia diagnostic (Codex): completed eight appliance/remote photos, two actual public video sequences (six distinct sampled frames) and ten synthetic spoken goals through the real Standard adapters and loopback gateway.86 image requests started/11 ASR connections include two retained interrupted attempts; all ten selected cases finish without harness errors. Speech cores match10/10; one positive photo aligns, one target misses, remaining photo/video flows ask. The knob negative is not a semantic-refusal pass. Production Kotlin replay compiles and eight direction checks pass; no full-suite or device rerun claimed. Raw inputs/results and source licensing stay ignored locally; no runtime/dependency/private-env change, commit or push. [Detailed results](evals/appliance-multimedia-check-2026-11-03.md).
 
 - 2026-11-04 IF-0: committed production batch driver reproduces 4/7 positive photos and 4/5 synthetic touchscreens; negative asks, 58 paid requests, 60 s deadline. Four recorder/projection regressions pass, recursive typecheck and 810 TS tests pass (including final additional cap regression), 80 Python tests and baseline Android JVM/APK/lint pass. No device/cloud acceptance. See [impact report](evals/impact-features-2026-11-04.md).
+
+- 2026-11-04 IF-7 coding: dominant-axis patterns, distance-based cadence, persisted preset, accessibility announcements and localized 20 s tutorial implemented. Three failing-first JVM haptic cases plus preset checks pass; 811 TS tests/typecheck, 80 Python tests, Android JVM/debug APK/lint pass (0 errors/16 existing warnings). Blocked only on physical 4/5 navigation acceptance; no phone run claimed.

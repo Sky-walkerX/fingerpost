@@ -89,6 +89,12 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SettingToggle(
+                label = resources.getString(R.string.vibration_only),
+                checked = settings.vibrationOnly,
+                onCheckedChange = { onUpdate(if (it) settings.withVibrationOnly() else settings.copy(speech = true, tone = true)) }
+            )
+
+            SettingToggle(
                 label = resources.getString(R.string.speech),
                 checked = settings.speech,
                 enabled = !settings.speech || settings.canDisableOutput(Output.SPEECH),

@@ -75,4 +75,6 @@
     <string name="donation_uploaded">दान अपलोड हो गया।</string>
     <string name="donation_failed">अपलोड पूरा नहीं हुआ।</string>
     <string name="replay_unavailable">वीडियो रीप्ले उपलब्ध नहीं है। ऐप की निजी रीप्ले फ़ाइल में अनुमोदित सिम्युलेटर MP4 जोड़ें और फिर खोलें।</string>
+    <string name="vibration_only">केवल कंपन</string>
+    <string name="vibration_tutorial">कंपन दिशाएँ सीखें (20 सेकंड)</string>
 </resources>

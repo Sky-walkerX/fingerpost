@@ -28,6 +28,10 @@ import io.github.fingerpost.guidance.Priority
 import io.github.fingerpost.guidance.Utterance
 import io.github.fingerpost.onboarding.onboardingStore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import io.github.fingerpost.guidance.HapticTutorial
+import io.github.fingerpost.guidance.Strings
+import io.github.fingerpost.engine.Haptics
 
 /** Capture and session creation wait for a successful read and completion of the local tutorial. */
 @Composable
@@ -93,7 +97,23 @@ private fun OnboardingScreen(onComplete: () -> Unit) {
     val skip = { guide.skip(); speaker.stop(); complete(); Unit }
     val skipLabel = stringResource(R.string.skip_tutorial)
     val repeatLabel = stringResource(R.string.repeat_tutorial)
-    val instruction = prompt?.text.orEmpty()
+    val vibrationTutorialLabel = stringResource(R.string.vibration_tutorial)
+    var hapticLesson by remember { mutableStateOf<String?>(null) }
+    var tutorialRunning by remember { mutableStateOf(false) }
+    val haptics = remember(context) { Haptics(context) }
+    DisposableEffect(haptics) { onDispose { haptics.release() } }
+    LaunchedEffect(tutorialRunning, active) {
+        if (!tutorialRunning || !active) { haptics.stop(); return@LaunchedEffect }
+        speaker.stop()
+        try {
+            for (lesson in HapticTutorial.lessons(java.util.Locale.getDefault())) {
+                hapticLesson = lesson.text
+                haptics.pattern(lesson.pattern)
+                delay(HapticTutorial.lessonMs)
+            }
+        } finally { haptics.stop(); hapticLesson = null; tutorialRunning = false }
+    }
+    val instruction = hapticLesson ?: prompt?.text.orEmpty()
     val accessibleInstruction = if (speechFailed) instruction + " " + stringResource(R.string.tutorial_speech_failed) else instruction
     Column(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding().padding(24.dp)
         .clickable(onClick = repeat)
@@ -114,9 +134,13 @@ private fun OnboardingScreen(onComplete: () -> Unit) {
         }.clearAndSetSemantics {
             contentDescription = accessibleInstruction
             onClick(label = repeatLabel) { repeat(); true }
-            customActions = listOf(CustomAccessibilityAction(skipLabel) { skip(); true })
+            liveRegion = LiveRegionMode.Polite
+            customActions = listOf(
+                CustomAccessibilityAction(vibrationTutorialLabel) { tutorialRunning = true; true },
+                CustomAccessibilityAction(skipLabel) { skip(); true })
         }, verticalArrangement = Arrangement.Center) {
         Text(instruction, color = Color.White)
+        Button(onClick = { tutorialRunning = true }) { Text(stringResource(R.string.vibration_tutorial)) }
         Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.tutorial_gestures), color = Color.White)
         if (speechFailed) Text(stringResource(R.string.tutorial_speech_failed), color = Color.White)

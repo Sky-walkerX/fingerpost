@@ -7,6 +7,7 @@ import java.util.Locale
  * Used across English, Hindi, and Spanish (A4-4).
  */
 enum class Key {
+    HAPTIC_LEFT, HAPTIC_RIGHT, HAPTIC_UP, HAPTIC_DOWN, HAPTIC_ON,
     MOVE_FINGER, CHEST_FRAME, CHEST_CLOSER, CHEST_BACK,
     // Prompts (GuidanceStateMachine)
     ASK_GOAL,
@@ -117,6 +118,12 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.HAPTIC_LEFT to "Left: two short pulses.",
+        Key.HAPTIC_RIGHT to "Right: one long pulse.",
+        Key.HAPTIC_UP to "Up: three short pulses.",
+        Key.HAPTIC_DOWN to "Down: long, then short. Faster patterns mean closer.",
+        Key.HAPTIC_ON to "Two strong clicks: on target. Press now.",
+
         Key.OFFLINE_TTS_UNAVAILABLE to "Offline speech output is unavailable. Install an offline voice in Android settings.",
         Key.MOVE_FINGER to "Move your finger",
         Key.CHEST_FRAME to "Stand about an arm's length from the screen and point your chest-mounted camera at it.",
@@ -210,6 +217,12 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.HAPTIC_LEFT to "बाएँ: दो छोटे कंपन।",
+        Key.HAPTIC_RIGHT to "दाएँ: एक लंबा कंपन।",
+        Key.HAPTIC_UP to "ऊपर: तीन छोटे कंपन।",
+        Key.HAPTIC_DOWN to "नीचे: लंबा, फिर छोटा कंपन। तेज़ कंपन का मतलब पास।",
+        Key.HAPTIC_ON to "दो तेज़ कंपन: सही जगह। अब दबाएँ।",
+
         Key.OFFLINE_TTS_UNAVAILABLE to "ऑफ़लाइन आवाज़ उपलब्ध नहीं है। Android सेटिंग में ऑफ़लाइन आवाज़ इंस्टॉल करें।",
         Key.MOVE_FINGER to "अपनी उंगली ले जाएँ",
         Key.CHEST_FRAME to "स्क्रीन से लगभग एक हाथ की दूरी पर खड़े हों और सीने पर लगे कैमरे को उसकी ओर करें।",
@@ -303,6 +316,12 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.HAPTIC_LEFT to "Izquierda: dos pulsos cortos.",
+        Key.HAPTIC_RIGHT to "Derecha: un pulso largo.",
+        Key.HAPTIC_UP to "Arriba: tres pulsos cortos.",
+        Key.HAPTIC_DOWN to "Abajo: largo y corto. Más rápido significa más cerca.",
+        Key.HAPTIC_ON to "Dos pulsos fuertes: en el objetivo. Pulsa ahora.",
+
         Key.OFFLINE_TTS_UNAVAILABLE to "La voz sin conexión no está disponible. Instala una voz sin conexión en los ajustes de Android.",
         Key.MOVE_FINGER to "Mueve el dedo",
         Key.CHEST_FRAME to "Ponte a un brazo de distancia de la pantalla y apunta la cámara del pecho hacia ella.",

@@ -75,4 +75,6 @@
     <string name="donation_uploaded">Donación subida.</string>
     <string name="donation_failed">La subida no se completó.</string>
     <string name="replay_unavailable">Reproducción no disponible. Añade un MP4 aprobado del simulador al archivo privado de reproducción de la app y vuelve a abrirla.</string>
+    <string name="vibration_only">Solo vibración</string>
+    <string name="vibration_tutorial">Aprende las direcciones por vibración (20 segundos)</string>
 </resources>

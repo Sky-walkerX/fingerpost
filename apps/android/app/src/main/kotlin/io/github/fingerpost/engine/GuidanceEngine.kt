@@ -51,6 +51,7 @@ class GuidanceEngine(
     private val machine = GuidanceStateMachine()
     private val finger = FingerGuidance()
     private val planner = CuePlanner()
+    private val directionalHaptics = DirectionalHaptics()
     private val speech = SpeechQueue()
     private val coach = FramingCoach()
     private val change = ScreenChangeDetector()
@@ -211,6 +212,7 @@ class GuidanceEngine(
 
     fun updateSettings(newSettings: Settings) {
         settings = newSettings.safeOutputs()
+        haptics.stop(); directionalHaptics.reset()
         if (!settings.offerDonations || settings.privateMode) cancelDonation()
         if (settings.privateMode) protectSpeech()
         speaker.setRate(settings.speechRate)
@@ -249,7 +251,7 @@ class GuidanceEngine(
         wantsMic = false
         mic.stop()
         offlineAsr.stop()
-        tone.stop()
+        tone.stop(); haptics.stop(); directionalHaptics.reset()
         updateNotice.clear()
         speaker.stop()
         speech.clear()
@@ -263,7 +265,9 @@ class GuidanceEngine(
 
     private fun dispatch(event: GEvent) {
         val before = machine.state
-        machine.handle(event).forEach(::effect)
+        val effects = machine.handle(event)
+        if (machine.state != before) { directionalHaptics.reset(); haptics.stop() }
+        effects.forEach(::effect)
         if (machine.state != before) {
             if (machine.state == GState.FRAMING) { framingSince = time(); fallbackSent = false }
             if (machine.state == GState.ON_TARGET) {
@@ -293,7 +297,7 @@ class GuidanceEngine(
             }
             Effect.ToneOn -> Unit // A fresh valid hand sample supplies the frequency and starts audio.
             Effect.ToneOff -> tone.stop()
-            is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind)
+            is Effect.Haptic -> if (settings.haptics) haptics.play(effect.kind, audio = settings.tone)
             Effect.SendTargetReached -> event(EventKind.TARGET_REACHED)
             Effect.SendScreenChanged -> event(EventKind.SCREEN_CHANGED)
             is Effect.SendTapDetected -> {
@@ -316,12 +320,25 @@ class GuidanceEngine(
         act(speech.offer(Utterance(text, priority, time(), completion)))
         pumpSpeech()
     }
+    private fun announceAccessible(text: String) {
+        if (guard.pinMode) return
+        val manager = context.getSystemService(android.view.accessibility.AccessibilityManager::class.java)
+        if (!manager.isEnabled) return
+        @Suppress("DEPRECATION")
+        val event = android.view.accessibility.AccessibilityEvent.obtain(android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT)
+        event.packageName = context.packageName
+        event.className = javaClass.name
+        event.text.add(text)
+        manager.sendAccessibilityEvent(event)
+    }
+
     private fun pumpSpeech() { act(speech.poll(time())) }
     private fun act(action: SpeechAction) {
         if (!settings.speech) {
             when (action) {
                 is SpeechAction.Speak, is SpeechAction.Interrupt -> {
                     val u = if (action is SpeechAction.Speak) action.u else (action as SpeechAction.Interrupt).u
+                    announceAccessible(u.text)
                     if (speech.onDone(u)) {
                         if (u.completionId == DONATION_PROMPT_ID) donationPromptFinished = true
                         u.completionId?.let { dispatch(GEvent.SpeechDone(time(), it)) }
@@ -348,7 +365,7 @@ class GuidanceEngine(
             dispatch(GEvent.Frame(now, true, false, null))
         }
         if (now - lastHandAt > 200) {
-            tone.stop()
+            tone.stop(); haptics.stop(); directionalHaptics.reset()
             if (machine.state == GState.GUIDING || machine.state == GState.ON_TARGET)
                 dispatch(GEvent.Frame(now, false, false, null))
         }
@@ -390,7 +407,7 @@ class GuidanceEngine(
             pendingTarget?.let { pendingTarget = null; target(it) }
         }
         val now = time()
-        if (frame.tracking != TrackState.TRACKING) tone.stop()
+        if (frame.tracking != TrackState.TRACKING) { tone.stop(); haptics.stop(); directionalHaptics.reset() }
         if (frame.tracking == TrackState.LOST && machine.state in setOf(GState.LOCATING, GState.GUIDING, GState.ON_TARGET)) {
             generation++; finger.clear(); planner.reset(); capture = null; layout = null; relockKey = null
             router.cancelKeyframes(); event(EventKind.LOST)
@@ -403,7 +420,8 @@ class GuidanceEngine(
         if (machine.state == GState.FRAMING) {
             coach.cueToSpeak(q, frame.width, frame.height, now)?.let { say(framingText(it), SpeechPriority.GUIDE) }
             if (coach.evaluate(q, frame.width, frame.height) == FramingCue.GOOD && now - lastGoodTick >= 1500) {
-                lastGoodTick = now; haptics.softTick()
+                lastGoodTick = now
+                if (settings.tone) haptics.softTick() else if (settings.haptics) haptics.play(HapticKind.TICK, false)
             }
             val inView = frame.quad?.all { it.x in 0.04..0.96 && it.y in 0.04..0.96 } == true
             dispatch(GEvent.Frame(now, frame.stable && inView, false, null))
@@ -439,7 +457,12 @@ class GuidanceEngine(
             samples.map { HandSample(Vec2(it.tipX.toDouble(), it.tipY.toDouble()), Vec2(it.dipX.toDouble(), it.dipY.toDouble()), it.presence.toDouble(), it.hand) },
             frame.quad?.map { Vec2(it.x * first.frameW, it.y * first.frameH) }, preferredHand()) else null
         dispatch(GEvent.Frame(now, false, result != null, result?.zone))
-        if (result == null || machine.state != GState.GUIDING || now < quietUntil) { tone.stop(); return }
+        if (result == null || machine.state != GState.GUIDING || now < quietUntil) {
+            tone.stop()
+            if (result == null) { haptics.stop(); directionalHaptics.reset() }
+            return
+        }
+        if (settings.vibrationOnly) directionalHaptics.next(result.error, now)?.let(haptics::pattern)
         planner.plan(result.error, orientationFor(pitch), now)?.let { Phrases.render(it, machine.locale.language, CueVerbosity.valueOf(settings.verbosity.name)) }?.let { say(it, SpeechPriority.GUIDE) }
         tone.setFrequency(toneFrequencyHz(result.error.length))
         tone.setPan(tonePan(result.error.x))
@@ -825,6 +848,7 @@ class GuidanceEngine(
     private fun pinEntered() {
         cancelDonation()
         generation++; relockKey = null
+        haptics.stop(); directionalHaptics.reset()
         wantsMic = false
         updateNotice.clear()
         mic.stop(); offlineAsr.stop(); tone.stop(); speaker.stop(); speech.clear()

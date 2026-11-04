@@ -76,4 +76,6 @@
     <string name="donation_uploaded">Donation uploaded.</string>
     <string name="donation_failed">Upload did not finish.</string>
     <string name="replay_unavailable">Replay unavailable. Add an approved simulator MP4 to the app’s private replay file and reopen.</string>
+    <string name="vibration_only">Vibration only</string>
+    <string name="vibration_tutorial">Learn vibration directions (20 seconds)</string>
 </resources>

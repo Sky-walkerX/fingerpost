@@ -31,6 +31,8 @@ data class Settings(
     val volumeKeys: Boolean = false,
     val offerDonations: Boolean = false
 ) {
+    val vibrationOnly: Boolean get() = !speech && !tone && haptics
+    fun withVibrationOnly() = copy(speech = false, tone = false, haptics = true)
     fun safeOutputs(): Settings = if (!speech && !tone && !haptics) copy(speech = true) else this
     fun canDisableOutput(output: Output): Boolean = when (output) {
         Output.SPEECH -> tone || haptics

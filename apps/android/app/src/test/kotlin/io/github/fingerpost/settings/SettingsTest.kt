@@ -21,6 +21,15 @@ class SettingsTest {
     @TempDir
     lateinit var directory: Path
 
+    @Test fun vibrationPresetKeepsOneOutputAndUsesExistingPersistence() {
+        val preset = Settings().withVibrationOnly()
+        assertTrue(preset.vibrationOnly)
+        assertFalse(preset.speech)
+        assertFalse(preset.tone)
+        assertFalse(preset.canDisableOutput(Output.HAPTICS))
+        assertEquals(preset, preset.safeOutputs())
+    }
+
     @Test
     fun defaultsMatchSpec() = runBlocking {
         val defaultSettings = Settings()

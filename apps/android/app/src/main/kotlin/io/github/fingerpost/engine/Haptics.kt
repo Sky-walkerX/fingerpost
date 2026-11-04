@@ -19,11 +19,11 @@ class Haptics(context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val earcon = runCatching { ToneGenerator(AudioManager.STREAM_ACCESSIBILITY, 25) }.getOrNull()
 
-    fun play(kind: HapticKind) {
+    fun play(kind: HapticKind, audio: Boolean = true) {
         when (kind) {
             HapticKind.TICK -> vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
             HapticKind.ON_TARGET -> {
-                earcon?.startTone(ToneGenerator.TONE_PROP_ACK, 80)
+                if (audio) earcon?.startTone(ToneGenerator.TONE_PROP_ACK, 80)
                 vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
                 main.postDelayed({ vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)) }, 120)
             }
@@ -35,6 +35,12 @@ class Haptics(context: Context) {
     fun softTick() {
         earcon?.startTone(ToneGenerator.TONE_PROP_BEEP, 40)
     }
+
+    fun pattern(timings: List<Long>) {
+        if (timings.isNotEmpty()) vibrator.vibrate(VibrationEffect.createWaveform(timings.toLongArray(), -1))
+    }
+
+    fun stop() { main.removeCallbacksAndMessages(null); vibrator.cancel() }
 
     fun release() {
         main.removeCallbacksAndMessages(null)
