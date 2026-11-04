@@ -5,7 +5,7 @@ import { buildPinPad, type PinLayout } from './pinpad.ts';
 
 const el = (id: string, label: string, role: SimElement['role'], x: number, y: number, w = 300, h = 120): SimElement => ({ id, label, role, rect: { x, y, w, h } });
 
-export function buildFastFood(seed: number, layout: PinLayout = 'scrambled'): SimScene {
+export function buildFastFood(seed: number, layout: PinLayout = 'scrambled', overcharge = false): SimScene {
   const rnd = mulberry32(seed);
   const pinScene = buildPinPad(seed, layout);
   const pinScreen: SimScreen = {
@@ -22,7 +22,7 @@ export function buildFastFood(seed: number, layout: PinLayout = 'scrambled'): Si
       el('small', 'Small ₹99', 'button', 120, 240), el('medium', 'Medium ₹149', 'button', 490, 240), el('large', 'Large ₹179', 'button', 860, 240),
       el('back', 'Back', 'back', 120, 600, 220, 110) ] },
     { id: 'pay', title: 'Pay', next: { 'pay-card': 'pin', cancel: 'menu' }, elements: [
-      el('total', 'Total ₹149', 'text', 340, 120, 600, 100), el('cancel', 'Cancel', 'cancel', 160, 520, 340, 140), el('pay-card', 'Pay by card', 'pay', 780, 520, 340, 140) ] },
+      el('total', overcharge ? 'Total ₹1,490' : 'Total ₹149', 'text', 340, 120, 600, 100), el('cancel', 'Cancel', 'cancel', 160, 520, 340, 140), el('pay-card', 'Pay by card', 'pay', 780, 520, 340, 140) ] },
     { id: 'done', title: 'Thank you', next: { 'start-over': 'home' }, elements: [
       el('thanks', 'Payment started. Thank you!', 'text', 290, 160, 700, 100), el('start-over', 'Start over', 'button', 490, 480) ] },
   ];

@@ -21,3 +21,13 @@ Three failing-first JVM cases cover four directions, invalid errors, cadence/res
 The user explicitly chose a conservative EN/HI/ES label allowlist over requiring a previously classified layout. The spec records that decision and all words; unknown labels wait for classification. Resolution uses the exact OfflineResolver and the sent keyframe's OCR, transformed through its capture quad, after the production PIN gate. The main callback starts guidance immediately, only for TRACKING normal guide sessions. Cached re-lock also now rejects private/sensitive/untracked sessions. Cloud label agreement silently adopts the current polygon; disagreement retargets with one localized correction. Asks, confirmation, errors, safety refusal, mode changes and sensitive layouts cancel early guidance. No protocol change.
 
 Three missing-API tests failed first, then passed: exclusions/ambiguity, all locales and same-tick state transitions with tone-preserving correction/cloud ask. Full 811 TS tests/typecheck, 80 Python tests and Android JVM/debug APK/lint pass (zero errors/16 existing warnings). Phone keyframe-to-cue timing and ten-attempt correctness are unmeasured; no latency claim.
+
+## IF-6: overcharge guard
+
+Four gateway regressions cover sums, explicit expectations, EN/HI/ES numerals/currencies, matching minor units, mismatch, currency changes, ambiguous prices and console silence. Actual AgentSession confirms warn only for the tampered total and leave payment locked. Two failing-first JVM cases cover local OCR comparison, language support, reset and protected output selection. A synthetic web scene test pins that only the displayed total changes. A real headless browser clicked Start order → Drinks → Medium on both normal and `overcharge=1` fastfood URLs and verified each displayed total. No paid model call was needed; this is deterministic simulator acceptance. The unchanged confirmation policy requires explicit yes.
+
+Full checks pass: recursive typecheck, 822 TS cases (including concurrent web tests), 80 Python cases, Android JVM/debug APK/lint (zero errors/16 existing warnings). Earphone playback on a physical terminal is not established by JVM routing checks. No amount persistence or logging API was added.
+
+## IF-2: human prerequisite
+
+Reviewed existing Modal deployment config against B4-3: L40S, OpenAI-compatible vLLM, 300-second scaledown, proxy authentication, request/access logging off. Private Glimmer configuration is absent. Account/credits/token are human-only; no deployment or “verified on Modal” claim. Live batch private routing and phone evidence await those prerequisites.

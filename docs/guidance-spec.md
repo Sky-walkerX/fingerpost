@@ -187,6 +187,10 @@ The server's `screenType ∈ {pin_pad, payment_entry}` is a second layer for mis
 - **Icon-only targets:** server confidence must be at least 0.75. Otherwise speak the uncertainty.
 - **Roles `pay | confirm | submit`:** the device refuses to guide unless the server has a matching `confirm` that the user accepted in this session. Defense in depth: the gateway's policy layer enforces the same rule.
 
+### Overcharge guard (IF-6, initial algorithm, 2026-11-04)
+
+Session-only expected totals come from prices on verified selected controls, or an explicit “I expect …” / “उम्मीद …” / “Espero …” amount. Normalize Latin, Devanagari and Arabic decimal digits, currency symbols/codes and EN/HI/ES currency words to integer minor units; compare both currency and value. A mixed-currency selection has no inferred sum. Ambiguous OCR amounts are not guessed. A differing total leads the confirm summary with a localized warning stating both values and offering cancel; explicit acceptance is still required. The local terminal path compares fresh local OCR before digit guidance, and if PIN is already active speaks only through protected earphone output. Amounts are never persisted or logged; reset clears them. No new protocol fields.
+
 ## 11a. Explore and touch-explore
 - **Summary:** the gateway reads the screen by region (≤ 3 sentences, ending "Say more for details."); "more" reads the next region. The device only sends the explore keyframe and speaks the `say` at INFO priority.
 - **Touch-explore (local only):** over the last layout, the element under the finger's pad (§3 pad point, through the tracked homography) is named once it has stayed under the pad for **150 ms**, and not again until the finger leaves it. The smallest polygon under the pad wins. Plain `text` elements are prefixed ("Text: Total ₹149") so they aren't mistaken for controls.

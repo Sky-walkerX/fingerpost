@@ -5,6 +5,7 @@ import { resolveByText, tokenSetRatio } from '../resolve/match.ts';
 import { listLabels } from '../resolve/describe.ts';
 import { elementKey, isSensitive, Policy } from './policy.ts';
 import { rulesPlanner, screenAmount, type AgentState, type Planner, type ToolCall } from './planner.ts';
+import { ExpectedTotal, moneyText } from './overcharge.ts';
 import { layoutSummary } from './tools.ts';
 
 /** What the session asks the pipeline to send for one screen. `says` go out first, then the action. */
@@ -63,6 +64,7 @@ export class AgentSession {
   private paidOn: string | null = null;
   private finished = false;
   private readonly policy: Policy;
+  private readonly expectedTotal = new ExpectedTotal();
   private readonly fallback: Planner;
 
   private readonly d: AgentDeps;
@@ -70,6 +72,7 @@ export class AgentSession {
   constructor(goal: string, d: AgentDeps) {
     this.d = d;
     this.goal = goal;
+    this.expectedTotal.expect(goal);
     this.policy = new Policy({ now: d.now });
     this.fallback = d.fallback ?? rulesPlanner();
   }
@@ -93,6 +96,7 @@ export class AgentSession {
       else if (this.loopScreen) this.policy.forgetScreen(this.loopScreen);
       return true;
     }
+    this.expectedTotal.expect(text);
     this.answers.push(text.slice(0, 200));
     return true;
   }
@@ -103,7 +107,7 @@ export class AgentSession {
     if (!p || p.kind !== 'confirm' || p.id !== re) return 'ignored';
     this.pending = null;
     if (accepted && this.policy.accept(re)) return 'accepted';
-    this.finished = true;
+    this.finished = true; this.expectedTotal.clear();
     return 'declined';
   }
 
@@ -121,12 +125,13 @@ export class AgentSession {
   /** A verified press. After a confirmed payment press the session waits for PIN entry or a new screen. */
   pressed(el: LayoutElement, layout: Layout): void {
     if (isSensitive(el)) this.paidOn = layout.fingerprint;
+    else this.expectedTotal.selected(el.label);
   }
 
   /** The device entered PIN mode: the task's cloud part is over. */
   pinEntered(): boolean {
     if (this.finished || this.paidOn === null) return false;
-    this.finished = true;
+    this.finished = true; this.expectedTotal.clear();
     return true;
   }
 
@@ -222,6 +227,10 @@ export class AgentSession {
         let summary = String(a.summary ?? '').trim().slice(0, 300) || t(this.locale, 'your_order');
         // The user must hear the amount the screen shows, whatever the model wrote.
         if (shown && !summary.includes(String(shown.value))) summary = `${summary}, ${shown.label}`.slice(0, 300);
+        const difference = shown ? this.expectedTotal.compare(shown) : null;
+        if (difference) summary = t(this.locale, 'overcharge_warning', {
+          shown: moneyText(difference.shown), expected: moneyText(difference.expected),
+        });
         const id = ulid();
         this.policy.recordConfirm(id, covered);
         this.pending = { kind: 'confirm', id };

@@ -12,7 +12,7 @@ const q = new URLSearchParams(location.search);
 const seed = Number(q.get('seed') ?? '1') || 1;
 const runId = q.get('run') ?? `run-${Date.now().toString(36)}`;
 const builders: Record<string, (seed: number) => SimScene> = {
-  fastfood: buildFastFood,
+  fastfood: (s) => buildFastFood(s, 'scrambled', q.get('overcharge') === '1'),
   ticket: buildTicket,
   cooktop: buildCooktop,
   pinpad: (s) => buildPinPad(s, (q.get('layout') as PinLayout | null) ?? 'phone'),

@@ -6,6 +6,7 @@ import type { ErrorCode, Locale } from '@fingerpost/protocol';
  * Only spoken text lives here; feedback strings for the planner model stay English.
  */
 const en = {
+  overcharge_warning: 'Warning: the screen says {shown}, but you chose {expected}. Say yes to continue, or cancel.',
   local_speech: 'Private speech stays on this phone.',
   found: 'Found {label}, {position}.',
   found_short: 'Found {label}.',
@@ -60,6 +61,7 @@ const en = {
 export type StringKey = keyof typeof en;
 
 const hi: Record<StringKey, string> = {
+  overcharge_warning: 'चेतावनी: स्क्रीन पर {shown} है, लेकिन आपने {expected} चुना था। जारी रखने के लिए हाँ कहें, या रद्द करें।',
   local_speech: 'प्राइवेट आवाज़ पहचान इसी फ़ोन पर होती है।',
   found: '{label} मिला, {position}।',
   found_short: '{label} मिला।',
@@ -113,6 +115,7 @@ const hi: Record<StringKey, string> = {
 };
 
 const es: Record<StringKey, string> = {
+  overcharge_warning: 'Aviso: la pantalla dice {shown}, pero elegiste {expected}. Di sí para continuar o cancelar.',
   local_speech: 'El reconocimiento de voz privado se queda en este teléfono.',
   found: 'Encontré {label}, {position}.',
   found_short: 'Encontré {label}.',

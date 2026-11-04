@@ -126,9 +126,9 @@ Chosen by the user on 2026-11-04 to raise impact and the chance of winning. Safe
 |---|---|---|---|---|---|
 | IF-0 | Committed live batch driver | C | – | done | Maintainer |
 | IF-1 | Instant guidance from on-device OCR | A | – | blocked | Maintainer |
-| IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | |
+| IF-2 🔑 | Glimmer private mode live on Modal | B | Modal account (human) | blocked | Human |
 | IF-5 | Appliance multi-step tasks + display readback | A+B | IF-0 | todo | |
-| IF-6 | Overcharge guard | A+B | – | todo | |
+| IF-6 | Overcharge guard | A+B | – | done | Maintainer |
 | IF-7 | Vibration-only (deafblind) mode | A | – | blocked | Maintainer |
 | IF-8 | "My devices" saved appliances | A | – | todo | |
 
@@ -589,3 +589,7 @@ _(task id · what changed · why · who approved)_
 - 2026-11-04 IF-1 coding: user approves conservative EN/HI/ES ordinary-label allowlist because OCR has no semantic roles. Same-callback captured-frame provisional guidance, silent agreement, continuous correction and cloud cancellation implemented. Three failing-first JVM cases pass; 811 TS tests/typecheck, 80 Python tests and Android JVM/APK/lint pass. Blocked only on live phone ten-attempt <1 s acceptance.
 
 - 2026-11-04 Landing page rebuilt from the user's chosen direction ("Hear the way" opening plus the guided phone demo): spoken-transcript hero with tone line and a user-started "Play it out loud" (device voice + rising beeps), guided finger demo, scroll-filled steps, voice/tone/vibration glyphs, EN/HI/ES phrases taken from `Strings.kt`, PIN/payment privacy, places strip, Meta-model pipeline, beta + existing waitlist contract, FAQ. Reduced motion renders every section static and complete. Six failing-first landing tests (4 failed first) plus existing axe/contrast tests pass: web 61/61, recursive typecheck, build and built-site check (6 pages, 18 resources). Hosting deploy (C6-1 🔑) is still open.
+
+- 2026-11-04 IF-6: session-only selected-price/explicit-expectation guard, localized warning and earphone-only terminal path implemented. Four gateway and two JVM regressions pass; normal/tampered fastfood browser flows plus actual AgentSession warning/locked-payment checks pass. Recursive typecheck/822 TS cases (includes concurrent web tests), 80 Python cases and Android JVM/APK/lint pass. No device/audio-route acceptance claimed.
+
+- 2026-11-04 IF-2 review: existing Modal app matches B4-3 L40S/vLLM/proxy-auth/300 s scale-down/no request logging requirements. Glimmer URL/token/model/HF id are absent from private configuration; account, credits and token remain human-only blockers. No deployment, model availability assertion or README “verified” claim.

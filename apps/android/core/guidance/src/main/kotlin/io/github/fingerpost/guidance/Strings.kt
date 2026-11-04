@@ -7,6 +7,7 @@ import java.util.Locale
  * Used across English, Hindi, and Spanish (A4-4).
  */
 enum class Key {
+    OVERCHARGE_WARNING,
     PROVISIONAL_CHECKING, PROVISIONAL_CORRECTION,
     HAPTIC_LEFT, HAPTIC_RIGHT, HAPTIC_UP, HAPTIC_DOWN, HAPTIC_ON,
     MOVE_FINGER, CHEST_FRAME, CHEST_CLOSER, CHEST_BACK,
@@ -119,6 +120,7 @@ object Strings {
     val EN: Locale = Locale.ENGLISH
 
     private val en: Map<Key, String> = mapOf(
+        Key.OVERCHARGE_WARNING to "Warning: the screen says {shown}, but you chose {expected}. Say yes to continue, or cancel.",
         Key.PROVISIONAL_CHECKING to "Checking…",
         Key.PROVISIONAL_CORRECTION to "Correction: {label}",
         Key.HAPTIC_LEFT to "Left: two short pulses.",
@@ -220,6 +222,7 @@ object Strings {
     )
 
     private val hi: Map<Key, String> = mapOf(
+        Key.OVERCHARGE_WARNING to "चेतावनी: स्क्रीन पर {shown} है, लेकिन आपने {expected} चुना था। जारी रखने के लिए हाँ कहें, या रद्द करें।",
         Key.PROVISIONAL_CHECKING to "जाँच रहा हूँ…",
         Key.PROVISIONAL_CORRECTION to "सुधार: {label}",
         Key.HAPTIC_LEFT to "बाएँ: दो छोटे कंपन।",
@@ -321,6 +324,7 @@ object Strings {
     )
 
     private val es: Map<Key, String> = mapOf(
+        Key.OVERCHARGE_WARNING to "Aviso: la pantalla dice {shown}, pero elegiste {expected}. Di sí para continuar o cancelar.",
         Key.PROVISIONAL_CHECKING to "Comprobando…",
         Key.PROVISIONAL_CORRECTION to "Corrección: {label}",
         Key.HAPTIC_LEFT to "Izquierda: dos pulsos cortos.",

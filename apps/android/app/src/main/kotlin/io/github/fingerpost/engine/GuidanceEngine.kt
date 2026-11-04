@@ -84,6 +84,9 @@ class GuidanceEngine(
      * when fresh OCR agrees; the keyframe still goes to the gateway, whose target confirms or replaces it.
      */
     private val layoutCache = LocalLayoutCache(layoutStore(context))
+    private val expectedTotal = ExpectedTotal()
+    private var selectedPrice: String? = null
+    private var terminalWarning: String? = null
     private var goalText = ""
     private var goalIntent: String? = null
     private var relockKey: Long? = null
@@ -248,6 +251,7 @@ class GuidanceEngine(
     private fun reset(preserveDonation: Boolean = false) {
         if (!preserveDonation) cancelDonation()
         generation++
+        expectedTotal.clear(); selectedPrice = null; terminalWarning = null
         lastCue = null
         wantsMic = false
         mic.stop()
@@ -647,6 +651,10 @@ class GuidanceEngine(
 
     /** PIN mode: announce the keypad layout once, then the digit under the finger's pad. Local only. */
     private fun pinHand(samples: List<FingerSample>) {
+        terminalWarning?.let { warning ->
+            if (amountOutput(guard.pinMode) == AmountOutput.EARPHONES && pinHelp.speak(warning)) terminalWarning = null
+            return
+        }
         val tokens = router.latestTokens ?: return
         if (!layoutAnnounced) classifyKeypad(tokens)?.let { if (pinHelp.speak(it.spoken(machine.locale))) layoutAnnounced = true }
         val s = selectedHand(samples)
@@ -737,6 +745,7 @@ class GuidanceEngine(
                 cancelDonation()
                 donations.begin(settings.offerDonations && !settings.privateMode && !speechPrivacy.localOnly && !offline && !guard.pinMode)
                 donationStartedAt = time(); donationOutcome = "failed"
+                expectedTotal.clear(); expectedTotal.expect(message.goal); selectedPrice = null
                 goalText = message.goal; goalIntent = message.intent.name.lowercase()
                 if (machine.state == GState.LISTENING) dispatch(GEvent.GoalHeard(time(), message.goal))
                 dispatch(GEvent.IntentArrived(time(), message.intent.name.lowercase()))
@@ -759,6 +768,8 @@ class GuidanceEngine(
             is Ask -> if (machine.state in TURN_STATES) dispatch(GEvent.AskArrived(time(), message.id, message.question, message.options,
                 reframe = message.reason == io.github.fingerpost.protocol.AskReason.REFRAME))
             is Verify -> if (message.re == verifyId) { verifyId = null
+                if (message.result == io.github.fingerpost.protocol.VerifyOutcome.OK && goalIntent == "task") selectedPrice?.let(expectedTotal::selected)
+                selectedPrice = null
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.WRONG) donationOutcome = "wrong"
                 if (message.result == io.github.fingerpost.protocol.VerifyOutcome.NOCHANGE) donationOutcome = "nochange"
                 dispatch(GEvent.VerifyArrived(time(), VerifyResult.valueOf(message.result.name), message.say)) }
@@ -870,6 +881,7 @@ class GuidanceEngine(
         if (awaitingAnchor) { pendingTarget = message; return }
         val element = layout?.elements?.find { it.id == message.elementId } ?: return
         val role = element.role.name.lowercase()
+        selectedPrice = element.label.takeIf { role !in SafetyPolicy.SENSITIVE }
         // Device-side half of the pay rule (guidance-spec §11); the gateway enforces the same.
         if (!machine.policy.mayGuide(role, element.id)) {
             dispatch(GEvent.TargetArrived(time(), message.say, role)); return
@@ -909,11 +921,12 @@ class GuidanceEngine(
         say(Strings.get(Key.PIN_PAD_DETECTED, machine.locale), SpeechPriority.SAFETY)
         digitUnder.reset(); layoutAnnounced = false
         pinHelp.start()
+        terminalWarning = expectedTotal.warning(router.latestTokens.orEmpty().map { it.text }, machine.locale)
         // Without earphones nothing about the keys is spoken: the speaker could be overheard.
         if (!pinHelp.earphonesConnected()) say(Strings.get(Key.CONNECT_EARPHONES, machine.locale), SpeechPriority.SAFETY)
     }
     private fun pinExited() {
-        pinHelp.stop(); digitUnder.reset()
+        pinHelp.stop(); digitUnder.reset(); terminalWarning = null
         event(EventKind.PIN_MODE_EXITED)
         mutableStatus.value = mutableStatus.value.copy(cloudOff = !ready)
         if (finishedDuringPin) {
