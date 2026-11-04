@@ -7,9 +7,12 @@ import { PITCH_TOTAL } from './pitch/timeline.ts';
 import { Promo } from './promo.tsx';
 import { TOTAL_FRAMES } from './timeline.ts';
 import { FPS, HEIGHT, WIDTH } from './tokens.ts';
+import { SensoryPromo } from './sensory/sensory-promo.tsx';
+import { SENSORY } from './sensory/story.ts';
 
 export const Root: React.FC = () => (
   <Fragment>
+    <Composition id="SensoryPromo" component={SensoryPromo} fps={SENSORY.fps} width={SENSORY.width} height={SENSORY.height} durationInFrames={SENSORY.frames} />
     <Composition id="Promo" component={Promo} fps={FPS} width={WIDTH} height={HEIGHT} durationInFrames={TOTAL_FRAMES} />
     <Still id="Banner" component={Banner} width={BANNER.width} height={BANNER.height} />
     <Still id="Flow" component={FlowDiagram} width={FLOW.width} height={FLOW.height} />

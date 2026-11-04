@@ -43,3 +43,7 @@ video/out/
 
 # Live demo recordings show a real room and voice: keep them local.
 apps/promo/public/demo/
+
+# Locally generated sensory-promo media and renders.
+apps/promo/public/sensory/
+apps/promo/out/

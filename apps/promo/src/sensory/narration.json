@@ -1,0 +1,19 @@
+{
+  "model": "gemini-3.8-flash-tts",
+  "segments": [
+    { "id": "hook", "at": 0.12, "maxDuration": 3.55, "voice": "Sulafat", "kind": "narrator", "text": "Flat glass. Nothing to feel.", "style": "Read with quiet urgency, intimate and grounded. Two deliberate short sentences, no dramatic overacting. Finish in under three seconds." },
+    { "id": "reveal", "at": 4.2, "maxDuration": 3.3, "voice": "Sulafat", "kind": "narrator", "text": "Fingerpost. Hear the way.", "style": "Confident, warm brand reveal. Pronounce Fingerpost as finger post. Keep it crisp, under three seconds." },
+    { "id": "explain", "at": 8.12, "maxDuration": 5.5, "voice": "Sulafat", "kind": "narrator", "text": "Point your phone. Say what you want. It guides your finger.", "style": "Clear warm conversational narration, with forward momentum. Three short thoughts. Finish in under five seconds." },
+    { "id": "pay", "at": 14.08, "maxDuration": 1.1, "voice": "Charon", "kind": "user", "text": "Pay by card.", "style": "A natural person giving a short voice command. Direct and quick. Less than one second." },
+    { "id": "amount", "at": 15.35, "maxDuration": 3.65, "voice": "Kore", "kind": "app", "text": "Total twelve forty. Say yes to pay, or no to cancel.", "style": "A clear friendly assistive app voice. Speak briskly but intelligibly, roughly 220 words per minute. Finish the exact text in under three and a half seconds." },
+    { "id": "yes", "at": 19.15, "maxDuration": 0.65, "voice": "Charon", "kind": "user", "text": "Yes.", "style": "A very brief natural affirmative. No introductory sound or trailing breath." },
+    { "id": "right", "at": 20.2, "maxDuration": 1.2, "voice": "Kore", "kind": "app", "text": "Move right.", "style": "Short, clear assistive app direction. Calm and concise, less than one second." },
+    { "id": "up", "at": 22.3, "maxDuration": 1.25, "voice": "Kore", "kind": "app", "text": "Up a little.", "style": "Short, clear assistive app direction. Calm and concise, less than one second." },
+    { "id": "press", "at": 24.8, "maxDuration": 1.1, "voice": "Kore", "kind": "app", "text": "Press now.", "style": "Short, confident assistive app cue. Crisp and immediate, less than one second." },
+    { "id": "done", "at": 27.3, "maxDuration": 0.8, "voice": "Kore", "kind": "app", "text": "Done.", "style": "Brief warm confirmation from an assistive app. Less than half a second." },
+    { "id": "pin", "at": 29.3, "maxDuration": 5.4, "voice": "Kore", "kind": "app", "text": "PIN pad detected. I'll stay offline while you enter it.", "style": "Clear calm safety cue from an assistive app. Firm and reassuring. Finish in under four seconds." },
+    { "id": "access", "at": 35.7, "maxDuration": 5.4, "voice": "Sulafat", "kind": "narrator", "text": "Voice. Tone. Vibration. In English, Hindi and Spanish.", "style": "Warm rhythmic narration, each sensory mode gets a small beat. Finish in under four and a half seconds." },
+    { "id": "glasses", "at": 42.0, "maxDuration": 7.3, "voice": "Sulafat", "kind": "narrator", "text": "Next: Meta camera glasses. The same guidance, completely hands-free.", "style": "Optimistic but grounded, reveal a future possibility. Give emphasis to Next and hands-free. Finish in under six seconds." },
+    { "id": "close", "at": 50.85, "maxDuration": 4.65, "voice": "Sulafat", "kind": "narrator", "text": "Fingerpost. Free. Open source. Hear the way.", "style": "Confident memorable close. Pronounce Fingerpost as finger post. No sing-song delivery. Finish in under four seconds." }
+  ]
+}

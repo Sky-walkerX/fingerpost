@@ -6,7 +6,9 @@
   "scripts": {
     "studio": "remotion studio src/index.ts --port=3418",
     "still": "remotion still src/index.ts Promo --port=3417",
-    "render": "remotion render src/index.ts Promo out/promo.mp4 --port=3417",
+    "render": "remotion render src/index.ts SensoryPromo out/sensory/fingerpost-sensory-raw.mp4 --port=3417",
+    "render:original": "remotion render src/index.ts Promo out/promo.mp4 --port=3417",
+    "render:sensory": "remotion render src/index.ts SensoryPromo out/sensory/fingerpost-sensory-raw.mp4 --port=3417",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

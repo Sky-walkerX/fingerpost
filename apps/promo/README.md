@@ -1,12 +1,46 @@
 # Fingerpost promo video
 
+## New sensory cut
+
+`SensoryPromo` is the 56-second, 1920×1080/60 fps cut requested on November 5. Its nine scenes use kinetic close-ups, six seconds of the real Juniper Grill phone recording, a separately labeled payment illustration, spoken amount confirmation, spatial rising guidance, a double haptic hit, a hard PIN lock and an explicitly future glasses concept. Every voice line has burned-in captions; SRT, VTT and a transcript are exported too.
+
+The phone recording remains local in ignored `public/demo/`. New generated media stays in ignored `public/sensory/`; final renders stay in ignored `out/`. These are local exports, not hosted assets or device acceptance evidence. Narrator, user and app roles use distinct prebuilt Gemini voices. No voice cloning.
+
+From the repository root, after explicit authorization for paid TTS:
+
+```bash
+python3 scripts/sensory_tts.py <gcp-project>
+python3 scripts/sensory_sound.py
+pnpm --filter @fingerpost/promo test
+pnpm -r typecheck
+```
+
+From `apps/promo`:
+
+```bash
+./node_modules/.bin/remotion render src/index.ts SensoryPromo out/sensory/fingerpost-sensory-raw.mp4 --concurrency=4 --port=3417
+./node_modules/.bin/remotion render src/index.ts SensoryPromo out/sensory/fingerpost-sensory-mix.wav --codec=wav --port=3420
+```
+
+Then from the repository root:
+
+```bash
+python3 scripts/sensory_finish.py
+```
+
+Final: `apps/promo/out/sensory/fingerpost-sensory.mp4`, H.264/stereo AAC with fast-start metadata. The master targets −16 LUFS and −1.5 dBTP. Music gain falls 75% against the preceding bed during 14–28 seconds, and cuts to zero at PIN entry. Guidance uses `docs/guidance-spec.md` §7's 220–1760 Hz mapping, spatial pan, near-target pulses and 120 ms double-click spacing. The mechanical lock, glass scrapes and transition impacts are editorial sound design.
+
+Gemini 3.8 styling uses a separate `speechMetadata` field so direction is not read as transcript ([Google's request format](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/text-to-speech/overview)). Synthesis resumes existing measured takes and refuses clips needing more than 1.45× time compression. The music is the owner's previously selected licensed track; see `public/music/LICENSE.md`.
+
+## Original cut
+
 A 40–50 s, 1920 × 1080, 60 fps promo built with Remotion. Design: `docs/superpowers/specs/2026-11-04-promo-video-design.md`; plan: `docs/superpowers/plans/2026-11-04-promo-video.md`.
 
 ## Preview and render
 
 ```bash
 pnpm --filter @fingerpost/promo studio      # live preview at http://localhost:3418
-pnpm --filter @fingerpost/promo render      # writes apps/promo/out/promo.mp4
+pnpm --filter @fingerpost/promo render:original # writes apps/promo/out/promo.mp4
 ```
 
 Port 3417/3418 is used because another local app often holds Remotion's default port 3000.
