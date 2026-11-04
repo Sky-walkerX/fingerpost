@@ -44,35 +44,42 @@
         <li><a href="/install/" aria-current="page">Install guide</a></li>
       </ul>
     </nav>
-    <a class="pill" href="/#beta">Get the beta</a>
+    <a class="pill" href="/#beta">Try the demo</a>
   </div>
 </header>
 <main id="main" class="doc wrap">
-  <h1>Install Fingerpost on Android</h1>
-  <p class="lede">These steps work with TalkBack. They take about five minutes. You need an Android phone with Android 10 or newer.</p>
-  <p class="note">Fingerpost is a beta and isn't on Google Play yet, so you install it from its GitHub page. Android will warn you about apps from outside Play; the steps below say what to choose.</p>
+  <h1>Set up the Fingerpost demo</h1>
+  <p class="lede">You need an Android 10+ phone, a laptop and a USB cable. The current hackathon APK connects to a gateway running on your laptop. The phone steps work with TalkBack.</p>
+  <p class="note">This is a debug build for practice screens. Recognition and safety acceptance are still being tested. Do not use it for real payments.</p>
 
-  <h2>Steps</h2>
+  <h2>Prepare your laptop first</h2>
+  <p>Install Node 24, pnpm 11.10.0 and Android platform tools (<code>adb</code>). Set <code>ANDROID_HOME</code> to your Android SDK folder so the gateway can find <code>platform-tools/adb</code>. Download the <a href="https://github.com/Sky-walkerX/fingerpost">Fingerpost source code</a> and open a terminal in its folder. Enable USB debugging on your phone, connect it by USB and approve the debugging prompt.</p>
+  <p>Run <code>pnpm install --frozen-lockfile</code>, then <code>pnpm dev:phone</code>. Keep the command running; it connects the app to the laptop gateway over USB. This practice mode uses canned answers without an API key or model charges.</p>
+  <p>For real screen reading, add your Meta API key to a local <code>.env</code> file as <code>META_API_KEY</code>, then use <code>pnpm dev:phone --live</code> instead. Live requests use your Meta API credits. Keep the key private.</p>
+  <p>In another terminal, run <code>pnpm --filter @fingerpost/web dev</code> and open <a href="http://localhost:5173/kiosk/">http://localhost:5173/kiosk/</a> on the laptop. Keep the practice kiosk fullscreen. The <a href="https://github.com/Sky-walkerX/fingerpost/blob/main/docs/local-development.md">local development guide</a> has more setup help.</p>
+
+  <h2>Install and try it on your phone</h2>
   <ol>
-    <li>On your phone, open Chrome and go to the <a href="https://github.com/Sky-walkerX/fingerpost/releases/latest">latest Fingerpost release</a>. TalkBack reads the release title, then its notes.</li>
-    <li>Swipe right until TalkBack reads a file name that starts with "fingerpost" and ends in "apk". Double-tap it to download. Skip the file that ends in "sha256"; that one is for checking the download.</li>
+    <li>On your phone, open Chrome and go to the <a href="https://github.com/Sky-walkerX/fingerpost/releases/tag/hackathon-2026-11-04">Fingerpost hackathon demo release</a>. TalkBack reads the release title, then its notes.</li>
+    <li>Swipe right until TalkBack reads <code>fingerpost-hackathon-debug.apk</code>. Double-tap it to download. Skip the file that ends in "sha256"; that one is for checking the download.</li>
     <li>When Chrome says the download is complete, double-tap "Open". If you missed it, open the Files app, go to Downloads and double-tap the Fingerpost file.</li>
     <li>If Android says Chrome isn't allowed to install apps, double-tap "Settings", turn on "Allow from this source", then go back with the Back gesture.</li>
-    <li>Double-tap "Install". If Google Play Protect warns that it doesn't know the app, choose the option to install anyway. Wait until TalkBack announces that the app is installed, then double-tap "Open".</li>
+    <li>Double-tap "Install". Review any Android security prompts and the release notes before deciding whether to continue. Wait until TalkBack announces that the app is installed, then double-tap "Open".</li>
     <li>Fingerpost starts with a short spoken tutorial. Listen to it all the way through the first time.</li>
     <li>When asked, allow the camera and the microphone. Fingerpost needs both: the camera to follow your finger and the screen, and the microphone to hear what you want to press.</li>
-    <li>Hold the phone about an arm's length from a touchscreen, pointing straight at it, and say what you want to press, for example "Start". Fingerpost tells you how to move your finger and says "Press now" when you're on the button.</li>
+    <li>Keep the USB cable connected and the laptop gateway running. Point the phone at the practice kiosk. After the beep, say "I want to press start order". Fingerpost tells you how to move your finger and says "Press now" when you're on the button.</li>
   </ol>
 
   <h2>If something goes wrong</h2>
   <ul>
     <li><strong>"App not installed"</strong>: an older Fingerpost from a different source may be on the phone. Uninstall it, then install again.</li>
     <li><strong>No speech</strong>: check the media volume, and that a text-to-speech voice is installed in Android's accessibility settings.</li>
+    <li><strong>Not connected</strong>: check the USB cable, approve USB debugging and make sure <code>pnpm dev:phone</code> is still running on the laptop.</li>
     <li><strong>No internet</strong>: Fingerpost switches to basic mode, which finds buttons that have words on them.</li>
   </ul>
 
   <h2>Updating</h2>
-  <p>Repeat these steps with the newest release. Your settings and saved screens are kept.</p>
+  <p>Check the release notes before installing another build. Updates signed with the same key keep your settings and saved screens; changing signing keys may require reinstalling.</p>
 
   <h2>Checking the download (optional)</h2>
   <p>Each release also has a "sha256" file. On a computer, run <code>sha256sum</code> on the downloaded app file; the result must equal the text in that file.</p>

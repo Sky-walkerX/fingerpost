@@ -581,7 +581,7 @@ User explicitly requests this optional coding on 2026-11-03; physical acceptance
 
 ### Lane C
 #### C6-1: final landing page
-- [x] **Content:** download button + QR to the latest Release, the install guide, privacy, and a waitlist wired to B6-2. The axe check passes.
+- [x] **Content:** download button + QR to the published hackathon prerelease, laptop/USB setup guide, privacy, and a waitlist wired to B6-2 (closed until a public HTTPS backend is configured). Wonder and Muse Code attribution added on 2026-11-04. The axe check passes.
 - [ ] **🔑 Deploy:** `fingerpost.web.app` via Firebase Hosting.
 - [x] **Commit:** `feat(web): launch landing page`
 

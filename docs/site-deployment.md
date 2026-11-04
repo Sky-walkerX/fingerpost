@@ -1,6 +1,6 @@
 # Website deployment handoff
 
-Local preparation is complete; Firebase Hosting deployment and public browser acceptance are still pending.
+Local preparation is complete for the hackathon preview; Firebase Hosting deployment and public browser acceptance are still pending. The page links directly to the debug APK prerelease and explains its laptop gateway/USB requirement. The waitlist remains closed without a configured HTTPS API base.
 
 `infra/firebase.json` preserves the deny-all Firestore rules and serves only `apps/web/dist` on Hosting site `fingerpost`. Run Firebase commands from the repository root with `--config infra/firebase.json` and an explicit project. The public path is relative to that configuration file. Do not deploy the repository or the Vite source directory.
 
@@ -20,7 +20,7 @@ The site has directory indexes for `/privacy/`, `/data-safety/`, `/install/`, `/
 
 - Confirm the chosen gateway has persistent production Firestore waitlist storage and the intended CORS origin. An in-memory mock registration is not a public waitlist.
 - Build with the intended HTTPS API base, for example `VITE_GATEWAY_URL=https://gateway.example.test pnpm --filter @fingerpost/web build`. This is an example domain, not a deployment setting. The client stays closed without a configured HTTPS base.
-- Confirm that the latest-release link/QR resolves to an actual published APK, and retain the clean-phone installation result separately.
+- Confirm that the hackathon-release link/QR resolves to the published debug APK, and retain the clean-phone installation result separately. Replace both links and regenerate the QR when a public beta is accepted.
 - Confirm the removal-request contact and the privacy/data-safety disclosures. Current default builds disable Crashlytics uploads. Enabling `fingerpost.crashReporting=true` requires a reviewed disclosure and the privacy verification in [the crash-reporting handoff](android-crash-reporting.md).
 
 ## Human deployment and acceptance

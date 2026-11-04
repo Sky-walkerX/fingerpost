@@ -44,7 +44,7 @@ test('the waitlist keeps the ids and closed default that main.ts relies on', () 
   expect(doc.getElementById('waitlist-preview')!.getAttribute('role')).toBe('status');
   for (const id of ['email', 'locale', 'website']) expect(form.querySelector(`#${id}`), id).not.toBeNull();
   for (const control of form.querySelectorAll('input, select, button')) expect((control as HTMLInputElement).disabled).toBe(true);
-  expect(doc.querySelector('a[href="https://github.com/Sky-walkerX/fingerpost/releases/latest"] img[src="/release-qr.png"]')).not.toBeNull();
+  expect(doc.querySelector('a[href="https://github.com/Sky-walkerX/fingerpost/releases/tag/hackathon-2026-11-04"] img[src="/release-qr.png"]')).not.toBeNull();
 });
 
 test('the motion script honours reduced motion', () => {

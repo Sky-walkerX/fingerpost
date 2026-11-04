@@ -45,7 +45,7 @@ test('the install guide is screen-reader-first: numbered steps and no visual-onl
   const text = d.querySelector('main')!.textContent!.toLowerCase();
   for (const visual of ['click', 'blue', 'green', 'red button', 'top right', 'see the', 'look for the icon']) expect(text).not.toContain(visual);
   expect(text).toContain('talkback');
-  expect(d.querySelector('a[href="https://github.com/Sky-walkerX/fingerpost/releases/latest"]')).not.toBeNull();
+  expect(d.querySelector('a[href="https://github.com/Sky-walkerX/fingerpost/releases/tag/hackathon-2026-11-04"]')).not.toBeNull();
 });
 
 test('privacy and data-safety pages state the PIN, retention and no-training promises', () => {

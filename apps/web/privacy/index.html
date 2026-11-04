@@ -44,13 +44,13 @@
         <li><a href="/install/">Install guide</a></li>
       </ul>
     </nav>
-    <a class="pill" href="/#beta">Get the beta</a>
+    <a class="pill" href="/#beta">Try the demo</a>
   </div>
 </header>
 <main id="main" class="doc wrap">
   <h1>Privacy</h1>
   <p class="lede">Fingerpost looks at touchscreens for you. It's built so that pictures and your voice are used for that and then thrown away, and so that your PIN never leaves your phone.</p>
-  <p>This notice describes the beta as it is built today. Updated 2 November 2026.</p>
+  <p>This notice describes the development build. Updated 4 November 2026. The hackathon demo runs its gateway on your laptop over USB; public cloud hosting and full safety acceptance are pending.</p>
 
   <h2>The short version</h2>
   <ul>
@@ -62,7 +62,7 @@
 
   <h2>What the camera sees</h2>
   <p>The phone tracks your finger and the screen on the phone itself. To read a screen, the app sends a picture of it to the Fingerpost server. After the first picture, it sends only a cropped, straightened picture of the touchscreen, not your surroundings. Faces in the first picture are blurred on the phone before it is sent.</p>
-  <p>The server asks Meta's models (Muse Spark and SAM 3.1) to read the picture. Fingerpost uses Meta's Standard mode, never Contributor mode. Pictures are held in memory only while they are read and are never stored by Fingerpost.</p>
+  <p>In live mode, the server asks Meta's models (Muse Wonder or Muse Spark, plus SAM 3.1) to read the picture. Fingerpost uses Meta's Standard mode, never Contributor mode. Pictures are held in memory only while they are read and are never stored by Fingerpost. The laptop practice mode uses canned answers without calling Meta's models.</p>
   <p><strong>Private mode</strong> (in settings, when available) reads the screen with an open model on Fingerpost's own server at Modal instead, and nothing goes to Meta.</p>
 
   <h2>Your voice</h2>

@@ -1,6 +1,6 @@
 import AppKit
 import CoreImage
-let target = "https://github.com/Sky-walkerX/fingerpost/releases/latest"
+let target = "https://github.com/Sky-walkerX/fingerpost/releases/tag/hackathon-2026-11-04"
 let filter = CIFilter(name: "CIQRCodeGenerator")!
 filter.setValue(target.data(using: .utf8)!, forKey: "inputMessage")
 filter.setValue("M", forKey: "inputCorrectionLevel")
