@@ -13,6 +13,8 @@ export const copy = {
   problem: ['Flat glass.', 'No buttons to feel.'],
   answer: { name: 'Fingerpost.', line: 'Your phone finds the button for you.' },
   scan: 'Screen found.',
+  /** The app's status label while framing (strings.xml `frame_screen`). */
+  framing: 'Frame the screen',
   userSays: { payByCard: 'Pay by card', yes: 'Yes.' },
   confirmSummary: 'Pay by card, total 12.40.',
   privacy: { chip: 'PIN mode · upload off · mic off', headline: ['Your PIN', 'never leaves your phone.'] },
