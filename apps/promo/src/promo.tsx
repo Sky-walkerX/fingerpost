@@ -1,6 +1,8 @@
 import { AbsoluteFill, Sequence } from 'remotion';
 import { useFontsReady } from './fonts.ts';
 import { Answer } from './scenes/answer.tsx';
+import { Confirm } from './scenes/confirm.tsx';
+import { Guide } from './scenes/guide.tsx';
 import { Problem } from './scenes/problem.tsx';
 import { Scan } from './scenes/scan.tsx';
 import { scenes, type SceneId } from './timeline.ts';
@@ -12,8 +14,8 @@ const SCENE: Record<SceneId, React.FC> = {
   problem: Problem,
   answer: Answer,
   scan: Scan,
-  confirm: () => <Placeholder tone="day" />,
-  guide: () => <Placeholder tone="day" />,
+  confirm: Confirm,
+  guide: Guide,
   privacy: () => <Placeholder tone="night" />,
   close: () => <Placeholder tone="day" />,
 };
